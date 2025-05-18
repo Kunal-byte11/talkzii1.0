@@ -165,9 +165,10 @@ export default function SignupPage() {
             setIsLoading(false);
             return;
         }
+        // Simplified file path: USER_ID/fileName (no 'public/' prefix here as per simpler RLS)
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-        // Simplified file path: USER_ID/fileName
         const filePath = `${signUpData.user.id}/${fileName}`;
+
 
         const { error: uploadError } = await supabase.storage
           .from('avatars') // Target 'avatars' bucket
@@ -200,9 +201,10 @@ export default function SignupPage() {
         avatar_url: avatarPublicUrl,
       };
 
+      // Using .insert() instead of .upsert() for clarity on new profile creation
       const { error: profileError } = await supabase
         .from('profiles')
-        .upsert(profileData, { onConflict: 'id' });
+        .insert(profileData); // Changed from .upsert(profileData, { onConflict: 'id' })
 
       if (profileError) {
         setIsLoading(false);
@@ -400,5 +402,7 @@ export default function SignupPage() {
     </div>
   );
 }
+
+    
 
     
