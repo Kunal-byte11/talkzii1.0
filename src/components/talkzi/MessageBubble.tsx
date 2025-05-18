@@ -19,9 +19,10 @@ export function MessageBubble({ message }: MessageBubbleProps) {
     ? 'bg-destructive/80 text-destructive-foreground' 
     : 'bg-muted text-muted-foreground';
   
+  // Updated border radius for a more modern chat bubble look
   const borderRadiusClass = isUser 
-    ? 'rounded-tl-xl rounded-tr-xl rounded-bl-xl' 
-    : 'rounded-tl-xl rounded-tr-xl rounded-br-xl';
+    ? 'rounded-t-2xl rounded-bl-2xl' 
+    : 'rounded-t-2xl rounded-br-2xl';
 
   const Icon = isUser ? User : isCrisis ? AlertTriangle : Bot;
 
@@ -38,7 +39,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         )}
         <div
           className={cn(
-            'p-3 shadow-md',
+            'p-3 shadow-md', // Consider neumorphic-shadow-soft for a different feel if desired
             bubbleColorClass,
             borderRadiusClass,
             isCrisis ? 'border border-destructive' : ''
