@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { ChatMessage, FeedbackType } from '@/types/talkzi';
+import type { ChatMessage } from '@/types/talkzi';
 import { MessageBubble } from './MessageBubble';
 import { ChatInputBar } from './ChatInputBar';
 import { TypingIndicator } from './TypingIndicator';
@@ -13,14 +13,11 @@ import { hinglishAICompanion, type HinglishAICompanionInput } from '@/ai/flows/h
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertCircle, MessageSquareText } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth'; // Import useAuth
-import { saveMessageFeedback, logChatMessageForTraining } from '@/lib/firebase/firestore'; // Import Firestore function
 
-const CHAT_HISTORY_KEY_PREFIX = 'talkzi_chat_history_'; // Prefix for user-specific history
-const AI_FRIEND_TYPE_KEY_PREFIX = 'talkzi_ai_friend_type_';
+const CHAT_HISTORY_KEY = 'talkzi_chat_history'; // Generic key
+const AI_FRIEND_TYPE_KEY = 'talkzi_ai_friend_type'; // Generic key
 
 export function ChatInterface() {
-  const { user, isLoading: authIsLoading } = useAuth(); // Get user from auth
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const { chatCount, incrementChatCount, isLimitReached, isLoading: isCounterLoading } = useChatCounter();
@@ -29,54 +26,39 @@ export function ChatInterface() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [currentAiFriendType, setCurrentAiFriendType] = useState<string | undefined>(undefined);
 
-  const getChatHistoryKey = useCallback(() => user ? `${CHAT_HISTORY_KEY_PREFIX}${user.uid}` : null, [user]);
-  const getAiFriendTypeKey = useCallback(() => user ? `${AI_FRIEND_TYPE_KEY_PREFIX}${user.uid}` : null, [user]);
 
-
-  // Load chat history and AI friend type from localStorage, now user-specific
+  // Load chat history and AI friend type from localStorage
   useEffect(() => {
-    if (authIsLoading || !user) return; // Wait for auth and user
-
-    const chatHistoryKey = getChatHistoryKey();
-    const aiFriendTypeKey = getAiFriendTypeKey();
-
-    if (chatHistoryKey) {
-      try {
-        const storedHistory = localStorage.getItem(chatHistoryKey);
-        if (storedHistory) {
-          setMessages(JSON.parse(storedHistory));
-        } else {
-          setMessages([]); // Initialize with empty if no history for this user
-        }
-      } catch (error) {
-        console.error("Error loading chat history from localStorage", error);
+    try {
+      const storedHistory = localStorage.getItem(CHAT_HISTORY_KEY);
+      if (storedHistory) {
+        setMessages(JSON.parse(storedHistory));
+      } else {
         setMessages([]);
       }
+    } catch (error) {
+      console.error("Error loading chat history from localStorage", error);
+      setMessages([]);
     }
 
-    if (aiFriendTypeKey) {
-      try {
-        const storedFriendType = localStorage.getItem(aiFriendTypeKey);
-        setCurrentAiFriendType(storedFriendType || undefined);
-      } catch (error) {
-        console.error("Error loading AI friend type from localStorage", error);
-        setCurrentAiFriendType(undefined);
-      }
+    try {
+      const storedFriendType = localStorage.getItem(AI_FRIEND_TYPE_KEY);
+      setCurrentAiFriendType(storedFriendType || undefined);
+    } catch (error) {
+      console.error("Error loading AI friend type from localStorage", error);
+      setCurrentAiFriendType(undefined);
     }
-  }, [user, authIsLoading, getChatHistoryKey, getAiFriendTypeKey]);
+  }, []);
 
-  // Save chat history to localStorage, now user-specific
+  // Save chat history to localStorage
   useEffect(() => {
-    if (!user || messages.length === 0) return; // Don't save if no user or no messages
-    const chatHistoryKey = getChatHistoryKey();
-    if (chatHistoryKey) {
-      try {
-        localStorage.setItem(chatHistoryKey, JSON.stringify(messages));
-      } catch (error) {
-        console.error("Error saving chat history to localStorage", error);
-      }
+    if (messages.length === 0 && localStorage.getItem(CHAT_HISTORY_KEY) === null) return; // Avoid saving empty initial array
+    try {
+      localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(messages));
+    } catch (error) {
+      console.error("Error saving chat history to localStorage", error);
     }
-  }, [messages, user, getChatHistoryKey]);
+  }, [messages]);
 
 
   // Scroll to bottom when new messages are added
@@ -89,50 +71,37 @@ export function ChatInterface() {
     }
   }, [messages, isAiLoading]);
 
-  const addMessage = (text: string, sender: ChatMessage['sender'], isCrisisMsg: boolean = false, originalUserPrompt?: string) => {
+  const addMessage = (text: string, sender: ChatMessage['sender'], isCrisisMsg: boolean = false) => {
     const newMessage: ChatMessage = {
-      id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, // More unique ID
+      id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       text,
       sender,
       timestamp: Date.now(),
       isCrisis: isCrisisMsg,
-      feedback: null, // Initialize feedback as null
     };
-    if (sender === 'ai' && originalUserPrompt) {
-      newMessage.originalUserPromptForAiResponse = originalUserPrompt;
-    }
     setMessages(prev => [...prev, newMessage]);
   };
 
   const handleSendMessage = useCallback(async (userInput: string) => {
-    if (!user) {
-      toast({ title: "Not Logged In", description: "Please log in to chat.", variant: "destructive" });
-      return;
-    }
     if (isLimitReached && !isCounterLoading) {
       setShowSubscriptionModal(true);
       return;
     }
 
     addMessage(userInput, 'user');
-    incrementChatCount(); // This should ideally be tied to AI responses, not just user messages.
+    incrementChatCount();
     setIsAiLoading(true);
-
-    let aiResponseMessage = "Sorry, I couldn't process that. Try again!"; // Default AI response
 
     try {
       const crisisResponse = await detectCrisis({ message: userInput });
       if (crisisResponse.isCrisis && crisisResponse.response) {
         addMessage(crisisResponse.response, 'system', true);
-        aiResponseMessage = crisisResponse.response; // For logging
-        // logChatMessageForTraining(user.uid, userInput, aiResponseMessage); // Log crisis response
         setIsAiLoading(false);
         return;
       }
 
       const companionInput: HinglishAICompanionInput = { message: userInput };
-      const friendTypeKey = getAiFriendTypeKey();
-      const storedFriendType = friendTypeKey ? localStorage.getItem(friendTypeKey) : null;
+      const storedFriendType = localStorage.getItem(AI_FRIEND_TYPE_KEY);
 
       if (storedFriendType && storedFriendType !== 'default') {
         const validPersonaTypes: HinglishAICompanionInput['aiFriendType'][] = ['female_best_friend', 'male_best_friend', 'topper_friend', 'filmy_friend'];
@@ -145,20 +114,13 @@ export function ChatInterface() {
       
       const aiResponse = await hinglishAICompanion(companionInput);
       if (aiResponse.response) {
-        addMessage(aiResponse.response, 'ai', false, userInput);
-        aiResponseMessage = aiResponse.response;
+        addMessage(aiResponse.response, 'ai');
       } else {
         addMessage("Sorry, I couldn't process that. Try again!", 'system');
       }
-      // Log successful interaction (optional, implement with care for privacy)
-      // await logChatMessageForTraining(user.uid, userInput, aiResponseMessage);
-
     } catch (error) {
       console.error('AI interaction error:', error);
       addMessage("Oops! Something went wrong. Please try again later.", 'system');
-      aiResponseMessage = "Oops! Something went wrong."; // For logging
-      // await logChatMessageForTraining(user.uid, userInput, aiResponseMessage); // Log error response
-
       toast({
         title: "Error",
         description: "Could not connect to the AI. Please check your connection or try again later.",
@@ -167,57 +129,14 @@ export function ChatInterface() {
     } finally {
       setIsAiLoading(false);
     }
-  }, [user, isLimitReached, incrementChatCount, toast, isCounterLoading, getAiFriendTypeKey]);
-
-  const handleFeedback = async (messageId: string, feedback: FeedbackType) => {
-    if (!user) return;
-
-    const messageToUpdate = messages.find(msg => msg.id === messageId);
-    if (!messageToUpdate || messageToUpdate.sender !== 'ai') return;
-
-    // Update local state for immediate UI change
-    setMessages(prevMessages =>
-      prevMessages.map(msg =>
-        msg.id === messageId ? { ...msg, feedback } : msg
-      )
-    );
-    
-    try {
-      await saveMessageFeedback(
-        messageId,
-        user.uid,
-        feedback === 'liked', // true for liked, false for disliked (assuming null means no feedback yet or removed)
-        messageToUpdate.originalUserPromptForAiResponse || "N/A",
-        messageToUpdate.text
-      );
-      toast({
-        title: "Feedback Noted",
-        description: `Thanks for your feedback on the message! (${feedback || 'Removed'})`,
-        duration: 2000,
-      });
-    } catch (error) {
-      console.error("Failed to save feedback:", error);
-      toast({
-        title: "Feedback Error",
-        description: "Could not save your feedback. Please try again.",
-        variant: "destructive",
-      });
-      // Revert local state if Firestore save fails (optional, for consistency)
-      setMessages(prevMessages =>
-        prevMessages.map(msg =>
-          msg.id === messageId ? { ...msg, feedback: messageToUpdate.feedback } : msg // revert to original feedback
-        )
-      );
-    }
-  };
-
+  }, [isLimitReached, incrementChatCount, toast, isCounterLoading]);
 
   const handleSubscribe = () => {
     toast({ title: "Subscribed!", description: "Welcome to Talkzi Premium! (This is a demo)" });
     setShowSubscriptionModal(false);
   };
   
-  if (authIsLoading || isCounterLoading) {
+  if (isCounterLoading) { // Simplified loading check
     return <div className="flex items-center justify-center h-full"><TypingIndicator /></div>;
   }
 
@@ -234,7 +153,7 @@ export function ChatInterface() {
             </div>
           )}
           {messages.map((msg) => (
-            <MessageBubble key={msg.id} message={msg} onFeedback={msg.sender === 'ai' ? handleFeedback : undefined} />
+            <MessageBubble key={msg.id} message={msg} />
           ))}
           {isAiLoading && <TypingIndicator />}
         </div>

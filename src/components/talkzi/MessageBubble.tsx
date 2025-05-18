@@ -1,24 +1,18 @@
 
-import type { ChatMessage, FeedbackType } from '@/types/talkzi';
+import type { ChatMessage } from '@/types/talkzi';
 import { cn } from '@/lib/utils';
-import { Bot, User, AlertTriangle, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Bot, User, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
-import { Button } from '@/components/ui/button';
-import { useState } from 'react';
 
 interface MessageBubbleProps {
   message: ChatMessage;
-  onFeedback?: (messageId: string, feedback: FeedbackType) => void;
 }
 
-export function MessageBubble({ message, onFeedback }: MessageBubbleProps) {
+export function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.sender === 'user';
   const isSystem = message.sender === 'system';
-  const isAi = message.sender === 'ai';
+  // const isAi = message.sender === 'ai'; // No longer needed for feedback
   const isCrisis = message.isCrisis;
-
-  const [feedbackGiven, setFeedbackGiven] = useState<FeedbackType | null>(message.feedback || null);
-
 
   const alignmentClass = isUser ? 'items-end' : 'items-start';
   const bubbleColorClass = isUser
@@ -32,17 +26,6 @@ export function MessageBubble({ message, onFeedback }: MessageBubbleProps) {
     : 'rounded-t-2xl rounded-br-2xl';
 
   const Icon = isUser ? User : isCrisis ? AlertTriangle : Bot;
-
-  const handleFeedbackClick = (feedback: FeedbackType) => {
-    if (onFeedback && feedbackGiven !== feedback) { // Only call if new feedback or changing feedback
-      onFeedback(message.id, feedback);
-      setFeedbackGiven(feedback);
-    } else if (onFeedback && feedbackGiven === feedback) { // Clicking the same feedback again to remove it
-       onFeedback(message.id, null); // or a specific "remove" type
-       setFeedbackGiven(null);
-    }
-  };
-
 
   return (
     <div className={cn('flex flex-col w-full my-2', alignmentClass)}>
@@ -70,34 +53,7 @@ export function MessageBubble({ message, onFeedback }: MessageBubbleProps) {
         <p className={cn('text-xs text-muted-foreground/70')}>
           {format(new Date(message.timestamp), 'p')}
         </p>
-        {isAi && onFeedback && (
-          <div className="flex items-center space-x-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "h-6 w-6 p-0.5 text-muted-foreground/70 hover:text-green-500",
-                feedbackGiven === 'liked' && "text-green-500 bg-green-500/10"
-              )}
-              onClick={() => handleFeedbackClick('liked')}
-              title="Like response"
-            >
-              <ThumbsUp className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "h-6 w-6 p-0.5 text-muted-foreground/70 hover:text-red-500",
-                feedbackGiven === 'disliked' && "text-red-500 bg-red-500/10"
-              )}
-              onClick={() => handleFeedbackClick('disliked')}
-              title="Dislike response"
-            >
-              <ThumbsDown className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
+        {/* Feedback UI removed */}
       </div>
     </div>
   );
