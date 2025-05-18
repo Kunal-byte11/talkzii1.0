@@ -1,39 +1,39 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback, type ReactNode } from 'react';
+import React, { useState, useEffect, useCallback, createContext, useContext, type ReactNode } from 'react';
+import type { User as FirebaseUser, AuthError } from 'firebase/auth';
 import { useRouter, usePathname } from 'next/navigation';
 import {
   onAuthStateChanged,
   firebaseLogin,
   firebaseLogout,
   firebaseSignUp,
-  type User, // Firebase User type
-  type AuthError // Firebase AuthError type
 } from '@/lib/firebase/auth';
 import { createUserProfile } from '@/lib/firebase/firestore';
 
-// Define the shape of the context value
+// Define the shape of the context data
 type AuthContextType = {
-  user: User | null;
+  user: FirebaseUser | null;
   isLoggedIn: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<User>;
-  signup: (email: string, password: string) => Promise<User>;
+  login: (email: string, password: string) => Promise<FirebaseUser>;
+  signup: (email: string, password: string) => Promise<FirebaseUser>;
   logout: () => Promise<void>;
 };
 
-// Create the context with an undefined initial value to ensure proper checking in useAuth
+// Create the context with an undefined initial value
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
+// AuthProvider component
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged((firebaseUser: User | null) => {
+    const unsubscribe = onAuthStateChanged((firebaseUser: FirebaseUser | null) => {
       setUser(firebaseUser);
       setIsLoading(false);
     });
@@ -41,37 +41,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const login = useCallback(async (email: string, password: string): Promise<User> => {
+  const login = useCallback(async (email: string, password: string): Promise<FirebaseUser> => {
     setIsLoading(true);
     try {
       const loggedInUser = await firebaseLogin(email, password);
       setUser(loggedInUser);
       return loggedInUser;
     } catch (error) {
-      setUser(null);
-      throw error as AuthError;
+      setUser(null); // Ensure user state is cleared on error
+      throw error as AuthError; // Re-throw to be caught by UI
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  const signup = useCallback(async (email: string, password: string): Promise<User> => {
+  const signup = useCallback(async (email: string, password: string): Promise<FirebaseUser> => {
     setIsLoading(true);
     try {
       const newUser = await firebaseSignUp(email, password);
-      setUser(newUser); // Set user immediately
-      // Attempt to create user profile in Firestore.
-      // This is a side effect and should not block the signup flow.
-      // Errors here are logged but don't prevent signup completion.
-      if (newUser && newUser.uid) {
-        createUserProfile(newUser.uid, newUser.email ?? null).catch(profileError => {
+      setUser(newUser);
+      // Create a user profile in Firestore, but don't let this block signup success
+      if (newUser?.uid && newUser.email) { // Ensure email is not null for createUserProfile
+        createUserProfile(newUser.uid, newUser.email).catch(profileError => {
+          // Log profile creation error, but don't fail the signup for it
           console.error("Error creating user profile during signup:", profileError);
+        });
+      } else if (newUser?.uid) {
+        // Handle case where email might be null, though Firebase usually requires it
+         createUserProfile(newUser.uid, null).catch(profileError => {
+          console.error("Error creating user profile (null email) during signup:", profileError);
         });
       }
       return newUser;
     } catch (error) {
-      setUser(null);
-      throw error as AuthError;
+      setUser(null); // Ensure user state is cleared on error
+      throw error as AuthError; // Re-throw to be caught by UI
     } finally {
       setIsLoading(false);
     }
@@ -87,8 +91,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
          router.push('/');
       }
     } catch (error) {
+      // Log logout error, UI might want to show a message
       console.error("Logout failed:", (error as AuthError).message);
-      // Still attempt to clear local state even if Firebase logout fails for some reason
+      // Optionally clear user state here too, though firebaseLogout should trigger onAuthStateChanged
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -97,15 +102,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isLoggedIn = !!user;
 
-  // Define the context value object with the correct type
-  const contextValue: AuthContextType = {
+  // Memoize the context value to prevent unnecessary re-renders
+  const contextValue = React.useMemo(() => ({
     user,
     isLoggedIn,
     isLoading,
     login,
     signup,
     logout,
-  };
+  }), [user, isLoggedIn, isLoading, login, signup, logout]);
 
   return (
     <AuthContext.Provider value={contextValue}>
@@ -114,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// Custom hook to use the AuthContext
 export function useAuth(): AuthContextType {
   const context = React.useContext(AuthContext);
   if (context === undefined) {
@@ -121,3 +127,4 @@ export function useAuth(): AuthContextType {
   }
   return context;
 }
+
