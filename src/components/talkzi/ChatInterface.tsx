@@ -1,0 +1,150 @@
+"use client";
+
+import { useState, useEffect, useRef, useCallback } from 'react';
+import type { ChatMessage } from '@/types/talkzi';
+import { MessageBubble } from './MessageBubble';
+import { ChatInputBar } from './ChatInputBar';
+import { TypingIndicator } from './TypingIndicator';
+import { SubscriptionModal } from './SubscriptionModal';
+import { useChatCounter } from '@/hooks/useChatCounter';
+import { detectCrisis } from '@/ai/flows/crisis-detection';
+import { hinglishAICompanion } from '@/ai/flows/hinglish-ai-companion';
+import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { AlertCircle } from 'lucide-react';
+
+const CHAT_HISTORY_KEY = 'talkzi_chat_history';
+
+export function ChatInterface() {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const { chatCount, incrementChatCount, isLimitReached, isLoading: isCounterLoading } = useChatCounter();
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const { toast } = useToast();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  // Load chat history from localStorage
+  useEffect(() => {
+    try {
+      const storedHistory = localStorage.getItem(CHAT_HISTORY_KEY);
+      if (storedHistory) {
+        setMessages(JSON.parse(storedHistory));
+      }
+    } catch (error) {
+      console.error("Error loading chat history from localStorage", error);
+    }
+  }, []);
+
+  // Save chat history to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(messages));
+    } catch (error) {
+      console.error("Error saving chat history to localStorage", error);
+    }
+  }, [messages]);
+
+  // Scroll to bottom when new messages are added
+   useEffect(() => {
+    if (scrollAreaRef.current) {
+      const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight;
+      }
+    }
+  }, [messages, isAiLoading]);
+
+
+  const addMessage = (text: string, sender: ChatMessage['sender'], isCrisisMsg: boolean = false) => {
+    const newMessage: ChatMessage = {
+      id: Date.now().toString(),
+      text,
+      sender,
+      timestamp: Date.now(),
+      isCrisis: isCrisisMsg,
+    };
+    setMessages(prev => [...prev, newMessage]);
+  };
+
+  const handleSendMessage = useCallback(async (userInput: string) => {
+    if (isLimitReached && !isCounterLoading) {
+      setShowSubscriptionModal(true);
+      return;
+    }
+
+    addMessage(userInput, 'user');
+    incrementChatCount();
+    setIsAiLoading(true);
+
+    try {
+      const crisisResponse = await detectCrisis({ message: userInput });
+      if (crisisResponse.isCrisis && crisisResponse.response) {
+        addMessage(crisisResponse.response, 'system', true);
+        setIsAiLoading(false);
+        return;
+      }
+
+      const aiResponse = await hinglishAICompanion({ message: userInput });
+      if (aiResponse.response) {
+        addMessage(aiResponse.response, 'ai');
+      } else {
+        addMessage("Sorry, I couldn't process that. Try again!", 'system');
+      }
+    } catch (error) {
+      console.error('AI interaction error:', error);
+      addMessage("Oops! Something went wrong. Please try again later.", 'system');
+      toast({
+        title: "Error",
+        description: "Could not connect to the AI. Please check your connection or try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAiLoading(false);
+    }
+  }, [isLimitReached, incrementChatCount, toast, isCounterLoading]);
+
+  const handleSubscribe = () => {
+    // Placeholder for actual subscription logic
+    toast({ title: "Subscribed!", description: "Welcome to Talkzi Premium! (This is a demo)" });
+    // Potentially reset chat counter or grant premium status in a real app
+    setShowSubscriptionModal(false);
+  };
+  
+  if (isCounterLoading) {
+    return <div className="flex items-center justify-center h-full"><TypingIndicator /></div>;
+  }
+
+  return (
+    <div className="flex flex-col h-full bg-background">
+      <ScrollArea className="flex-grow p-4 md:p-6" ref={scrollAreaRef}>
+        <div className="max-w-3xl mx-auto space-y-4">
+          {messages.length === 0 && !isAiLoading && (
+            <div className="text-center text-muted-foreground py-10">
+              <MessageSquareText className="mx-auto h-12 w-12 mb-4" />
+              <p className="text-lg font-semibold">Start a conversation!</p>
+              <p>Type your first message below.</p>
+            </div>
+          )}
+          {messages.map((msg) => (
+            <MessageBubble key={msg.id} message={msg} />
+          ))}
+          {isAiLoading && <TypingIndicator />}
+        </div>
+      </ScrollArea>
+      {isLimitReached && (
+         <div className="p-3 border-t bg-amber-50 border-amber-200 text-amber-700 text-sm flex items-center justify-center space-x-2">
+            <AlertCircle className="h-5 w-5" />
+            <span>You've reached your free message limit. </span>
+            <button onClick={() => setShowSubscriptionModal(true)} className="font-semibold underline hover:text-amber-800">Upgrade to Premium</button>
+            <span>.</span>
+         </div>
+      )}
+      <ChatInputBar onSendMessage={handleSendMessage} isLoading={isAiLoading} />
+      <SubscriptionModal
+        isOpen={showSubscriptionModal}
+        onClose={() => setShowSubscriptionModal(false)}
+        onSubscribe={handleSubscribe}
+      />
+    </div>
+  );
+}
