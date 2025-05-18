@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format, isValid, subYears, getYear, getMonth, getDate } from 'date-fns';
 import { AlertCircle, ImageUp, UserCircle } from "lucide-react";
 import Image from 'next/image';
+import type { UserProfile } from '@/types/talkzi';
 
 const MAX_AVATAR_SIZE_MB = 2;
 const ALLOWED_AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp"];
@@ -26,7 +27,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [gender, setGender] = useState<string | undefined>(undefined);
+  const [gender, setGender] = useState<UserProfile['gender'] | undefined>(undefined);
   
   const [selectedDay, setSelectedDay] = useState<string | undefined>(undefined);
   const [selectedMonth, setSelectedMonth] = useState<string | undefined>(undefined);
@@ -42,7 +43,7 @@ export default function SignupPage() {
   const currentYear = getYear(new Date());
   const years = useMemo(() => 
     Array.from({ length: 100 }, (_, i) => currentYear - MIN_AGE - i)
-    .filter(year => year >= currentYear - 100), // Ensure we don't go too far back
+    .filter(year => year >= currentYear - 100), 
     [currentYear]
   );
   const months = useMemo(() => [
@@ -58,15 +59,13 @@ export default function SignupPage() {
   useEffect(() => {
     if (selectedDay && selectedMonth && selectedYear) {
       const day = parseInt(selectedDay, 10);
-      const month = parseInt(selectedMonth, 10); // Month is 1-12 from select
+      const month = parseInt(selectedMonth, 10); 
       const year = parseInt(selectedYear, 10);
-      // For Date constructor, month is 0-indexed (0 for January, 11 for December)
       const potentialDob = new Date(year, month - 1, day);
-       // Basic check to ensure constructed date matches selected parts, as new Date() can overflow
       if (getDate(potentialDob) === day && getMonth(potentialDob) === month - 1 && getYear(potentialDob) === year) {
         setDob(potentialDob);
       } else {
-        setDob(undefined); // Invalid date constructed (e.g., Feb 30)
+        setDob(undefined); 
       }
     } else {
       setDob(undefined);
@@ -167,10 +166,11 @@ export default function SignupPage() {
             return;
         }
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-        const filePath = `public/${signUpData.user.id}/${fileName}`;
+        // Simplified file path: USER_ID/fileName
+        const filePath = `${signUpData.user.id}/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('avatars')
+          .from('avatars') // Target 'avatars' bucket
           .upload(filePath, avatarFile, { upsert: true });
 
         if (uploadError) {
@@ -183,6 +183,7 @@ export default function SignupPage() {
             description: `Your account was created, but we couldn't upload your profile picture. Error: ${supabaseErrorMessage}. You can try adding one later.`,
             variant: "destructive", 
           });
+          // We don't return here, try to save profile without avatar
         } else {
           const { data: urlData } = supabase.storage
             .from('avatars')
@@ -191,7 +192,7 @@ export default function SignupPage() {
         }
       }
 
-      const profileData = {
+      const profileData: UserProfile = {
         id: signUpData.user.id,
         email: signUpData.user.email,
         gender: gender,
@@ -328,7 +329,7 @@ export default function SignupPage() {
 
           <div className="space-y-2">
             <Label>Gender</Label>
-            <RadioGroup onValueChange={setGender} value={gender} className="flex flex-wrap gap-x-4 gap-y-2">
+            <RadioGroup onValueChange={(value) => setGender(value as UserProfile['gender'])} value={gender} className="flex flex-wrap gap-x-4 gap-y-2">
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="male" id="male" />
                 <Label htmlFor="male">Male</Label>
@@ -399,3 +400,5 @@ export default function SignupPage() {
     </div>
   );
 }
+
+    
