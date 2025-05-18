@@ -1,9 +1,10 @@
+
 'use server';
 
 /**
- * @fileOverview An AI agent that detects crisis cues in user messages and responds with support.
+ * @fileOverview An AI agent that previously detected crisis cues. This functionality is now primarily handled elsewhere.
  *
- * - detectCrisis - A function that handles the crisis detection process.
+ * - detectCrisis - A function that calls the crisis detection flow.
  * - DetectCrisisInput - The input type for the detectCrisis function.
  * - DetectCrisisOutput - The return type for the detectCrisis function.
  */
@@ -12,13 +13,13 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const DetectCrisisInputSchema = z.object({
-  message: z.string().describe('The user message to analyze for crisis cues.'),
+  message: z.string().describe('The user message to analyze.'),
 });
 export type DetectCrisisInput = z.infer<typeof DetectCrisisInputSchema>;
 
 const DetectCrisisOutputSchema = z.object({
-  isCrisis: z.boolean().describe('Whether the message indicates a crisis.'),
-  response: z.string().describe('A supportive response with grounding techniques and hotline references.'),
+  isCrisis: z.boolean().describe('Whether the message indicates a crisis. This will always be false from this flow.'),
+  response: z.string().describe('A supportive response. This will always be empty from this flow.'),
 });
 export type DetectCrisisOutput = z.infer<typeof DetectCrisisOutputSchema>;
 
@@ -30,19 +31,18 @@ const prompt = ai.definePrompt({
   name: 'detectCrisisPrompt',
   input: {schema: DetectCrisisInputSchema},
   output: {schema: DetectCrisisOutputSchema},
-  prompt: `You are an AI assistant designed to detect crisis situations in user messages.
+  prompt: `You are an AI assistant. Your previous role involved detecting crisis cues in user messages.
+This specific crisis intervention messaging is no longer handled by this part of the system.
 
-  Analyze the following message and determine if it contains cues indicating self-harm, suicidal thoughts, or a crisis situation.
+For any user message you receive, you MUST return the following JSON structure:
+{
+  "isCrisis": false,
+  "response": ""
+}
 
-  If a crisis is detected, respond with a supportive message that includes grounding techniques and provides hotline references.  Set isCrisis to true, otherwise set isCrisis to false and return an empty response.
-
-  Message: {{{message}}}
-
-  Follow this format:
-  {
-    "isCrisis": true/false,
-    "response": "Supportive message with grounding techniques and hotline references."
-  }`,
+Do not deviate from this output structure.
+User Message: {{{message}}}
+`,
 });
 
 const detectCrisisFlow = ai.defineFlow(
@@ -53,6 +53,14 @@ const detectCrisisFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    // Ensure the output conforms, although the prompt is very directive.
+    if (output) {
+      return {
+        isCrisis: output.isCrisis || false,
+        response: output.response || "",
+      };
+    }
+    // Fallback if LLM somehow fails to produce valid output per schema
+    return { isCrisis: false, response: "" };
   }
 );
