@@ -1,5 +1,13 @@
 
 // Firebase Studio: Attempt to fix persistent parsing error - v_final_attempt_env_issue_likely_explicit_react
+// IF THIS PARSING ERROR PERSISTS ("Expected '>', got 'value'" on AuthContext.Provider):
+// 1. STOP your dev server.
+// 2. DELETE the .next folder in your project.
+// 3. Manually DELETE this file (src/hooks/useAuth.ts) from your project.
+// 4. CREATE a new, empty file named useAuth.ts in src/hooks/.
+// 5. PASTE this exact code (from the XML response) into the new file.
+// 6. SAVE and RESTART your dev server.
+// This error is almost certainly environmental (hidden characters, corrupted cache).
 "use client";
 
 import React from 'react'; // Explicitly import React
@@ -101,15 +109,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const isLoggedIn = !!user;
 
-  // Defining contextValue directly without useMemo for this troubleshooting iteration
-  const contextValue: AuthContextType = {
+  const contextValue = React.useMemo<AuthContextType>(() => ({
     user,
     isLoading,
     isLoggedIn,
     login,
     signup,
     logout,
-  };
+  }), [user, isLoading, isLoggedIn, login, signup, logout]);
   
   // If the error "Expected '>', got 'value'" persists on the <AuthContext.Provider> line below:
   // 1. STOP your dev server.
@@ -135,4 +142,3 @@ export function useAuth(): AuthContextType {
   }
   return context;
 }
-
