@@ -1,3 +1,4 @@
+
 "use client";
 
 import { HeroSection } from '@/components/talkzi/HeroSection';
@@ -13,9 +14,11 @@ export default function HomePage() {
   const { login, isLoggedIn, isLoading } = useAuth();
   const router = useRouter();
 
-  const handleLoginAndChat = () => {
-    login();
-    router.push('/chat');
+  const handleLoginAndGoToPersona = () => {
+    if (!isLoggedIn) {
+      login();
+    }
+    router.push('/aipersona');
   };
 
   if (isLoading) {
@@ -34,9 +37,9 @@ export default function HomePage() {
             <Logo className="h-8 w-auto" />
           </Link>
           {isLoggedIn ? (
-            <Button variant="outline" onClick={() => router.push('/chat')}>Go to Chat</Button>
+            <Button variant="outline" onClick={() => router.push('/aipersona')}>Choose Persona & Chat</Button>
           ) : (
-            <Button onClick={handleLoginAndChat} className="gradient-button">Login & Chat</Button>
+            <Button onClick={handleLoginAndGoToPersona} className="gradient-button">Login & Chat</Button>
           )}
         </div>
       </header>

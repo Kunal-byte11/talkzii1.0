@@ -1,11 +1,24 @@
+
 "use client";
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion'; // For simple animations
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
 export function HeroSection() {
+  const { login, isLoggedIn } = useAuth();
+  const router = useRouter();
+
+  const handleStartChatting = () => {
+    if (!isLoggedIn) {
+      login();
+    }
+    router.push('/aipersona');
+  };
+  
   return (
     <section className="relative flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] text-center p-4 sm:p-8 overflow-hidden">
       {/* Animated Blobs Background (Simplified with CSS Gradients) */}
@@ -55,15 +68,16 @@ export function HeroSection() {
         <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
           Your friendly AI companion, always ready to listen and chat in Hinglish. Share your thoughts, get support, or just have a fun conversation.
         </p>
-        <Link href="/chat" passHref>
-          <Button
-            size="lg"
-            className="gradient-button font-semibold text-lg py-4 px-8 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-          >
-            Start Chatting Free
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
-        </Link>
+        
+        <Button
+          size="lg"
+          onClick={handleStartChatting}
+          className="gradient-button font-semibold text-lg py-4 px-8 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+        >
+          Start Chatting Free
+          <ArrowRight className="ml-2 h-5 w-5" />
+        </Button>
+        
         <div className="mt-12 flex justify-center space-x-4 text-4xl">
           <motion.span whileHover={{ scale: 1.5, rotate: 15 }} role="img" aria-label="Sad emoji">😞</motion.span>
           <motion.span className="text-primary" animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0.2 }}>→</motion.span>
