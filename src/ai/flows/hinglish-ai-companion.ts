@@ -26,38 +26,54 @@ const HinglishAICompanionOutputSchema = z.object({
 });
 export type HinglishAICompanionOutput = z.infer<typeof HinglishAICompanionOutputSchema>;
 
+// New schema for the prompt's input, including boolean flags for personas
+const HinglishAICompanionPromptInputSchema = HinglishAICompanionInputSchema.extend({
+  isFemaleBestFriend: z.boolean().describe('Flag indicating if the female best friend persona is active.'),
+  isMaleBestFriend: z.boolean().describe('Flag indicating if the male best friend persona is active.'),
+  isTopperFriend: z.boolean().describe('Flag indicating if the topper friend persona is active.'),
+  isFilmyFriend: z.boolean().describe('Flag indicating if the filmy friend persona is active.'),
+});
+type HinglishAICompanionPromptInput = z.infer<typeof HinglishAICompanionPromptInputSchema>;
+
+
 export async function hinglishAICompanion(input: HinglishAICompanionInput): Promise<HinglishAICompanionOutput> {
   return hinglishAICompanionFlow(input);
 }
 
 const prompt = ai.definePrompt({
   name: 'hinglishAICompanionPrompt',
-  input: {schema: HinglishAICompanionInputSchema},
+  input: {schema: HinglishAICompanionPromptInputSchema}, // Use the new schema here
   output: {schema: HinglishAICompanionOutputSchema},
   prompt: `You are Talkzii – an AI emotional support companion created especially for Gen Z Indians.
 You communicate in Hinglish (mix of Hindi + English), using relatable desi slang and culturally aware expressions.
 You’re here to provide chill, non-judgmental, and emotionally supportive vibes.
 
 {{#if aiFriendType}}
-Based on the user’s selected friend type, you take on a specific emotional support personality.
+Based on the user’s selected friend type, you take on a specific emotional support personality. Always maintain a safe, caring, and friendly tone.
 
-  {{#eq aiFriendType "female_best_friend"}}
+  {{#if isFemaleBestFriend}}
 You are a soft, caring, slightly bubbly female bestie.
 Speak with warm, understanding words – like a trusted didi or college friend.
 Use friendly terms like: "Aree yaar," "kya soch rahi ho," "main hoon na!"
-  {{else eq aiFriendType "male_best_friend"}}
+  {{else}}
+    {{#if isMaleBestFriend}}
 You’re a relaxed, fun, emotionally aware bro – dependable and non-preachy.
 Your tone is like that of a safe space male friend.
 Use terms like: "Chill kar na bro," "sab sambhal jaayega," "bata kya chal raha hai?"
-  {{else eq aiFriendType "topper_friend"}}
+    {{else}}
+      {{#if isTopperFriend}}
 You're a helpful, slightly nerdy but kind friend who gives emotional + practical advice.
 Speak with balance – calm logic + empathy.
 Use lines like: "Ek kaam kar, isse likh ke dekh," "I get it, par tu strong hai bro."
-  {{else eq aiFriendType "filmy_friend"}}
+      {{else}}
+        {{#if isFilmyFriend}}
 You’re dramatic, expressive, full Bollywood mode emotional buddy.
 Use lots of emotional phrases, Bollywood-style metaphors.
 Example: "Zindagi mein dard bhi hero banata hai," "dil hai chhota sa, par feels bade bade!"
-  {{/eq}}
+        {{/if}}
+      {{/if}}
+    {{/if}}
+  {{/if}}
 {{else}}
 Your default persona is an empathetic and friendly companion. You're understanding, supportive, and a good listener.
 {{/if}}
@@ -77,11 +93,20 @@ AI Response (in Hinglish):`,
 const hinglishAICompanionFlow = ai.defineFlow(
   {
     name: 'hinglishAICompanionFlow',
-    inputSchema: HinglishAICompanionInputSchema,
+    inputSchema: HinglishAICompanionInputSchema, // Flow input remains the original schema
     outputSchema: HinglishAICompanionOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async (flowInput: HinglishAICompanionInput): Promise<HinglishAICompanionOutput> => {
+    // Prepare the data for the prompt, including the boolean flags
+    const promptInputData: HinglishAICompanionPromptInput = {
+      ...flowInput,
+      isFemaleBestFriend: flowInput.aiFriendType === 'female_best_friend',
+      isMaleBestFriend: flowInput.aiFriendType === 'male_best_friend',
+      isTopperFriend: flowInput.aiFriendType === 'topper_friend',
+      isFilmyFriend: flowInput.aiFriendType === 'filmy_friend',
+    };
+
+    const {output} = await prompt(promptInputData); // Pass the extended data to the prompt
     return output!;
   }
 );
