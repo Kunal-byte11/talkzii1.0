@@ -1,15 +1,15 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, createContext, useContext, type ReactNode } from 'react';
+import React, { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import {
   onAuthStateChanged,
   firebaseLogin,
   firebaseLogout,
   firebaseSignUp,
-  type User,
-  type AuthError
+  type User, // Firebase User type
+  type AuthError // Firebase AuthError type
 } from '@/lib/firebase/auth';
 import { createUserProfile } from '@/lib/firebase/firestore';
 
@@ -23,8 +23,8 @@ type AuthContextType = {
   logout: () => Promise<void>;
 };
 
-// Create the context with an undefined initial value
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Create the context with an undefined initial value to ensure proper checking in useAuth
+const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged((firebaseUser) => {
+    const unsubscribe = onAuthStateChanged((firebaseUser: User | null) => {
       setUser(firebaseUser);
       setIsLoading(false);
     });
@@ -48,8 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(loggedInUser);
       return loggedInUser;
     } catch (error) {
-      setUser(null); // Clear user on login failure
-      throw error as AuthError; // Re-throw for the component to handle
+      setUser(null);
+      throw error as AuthError;
     } finally {
       setIsLoading(false);
     }
@@ -59,17 +59,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       const newUser = await firebaseSignUp(email, password);
-      // Ensure email is passed correctly; User type has email as string | null
-      // Create user profile in Firestore, but don't block on it
-      createUserProfile(newUser.uid, newUser.email ?? null).catch(profileError => {
-        console.error("Error creating user profile during signup:", profileError);
-        // Decide if this error should be surfaced to the user or just logged
-      });
-      setUser(newUser);
+      setUser(newUser); // Set user immediately
+      // Attempt to create user profile in Firestore.
+      // This is a side effect and should not block the signup flow.
+      // Errors here are logged but don't prevent signup completion.
+      if (newUser && newUser.uid) {
+        createUserProfile(newUser.uid, newUser.email ?? null).catch(profileError => {
+          console.error("Error creating user profile during signup:", profileError);
+        });
+      }
       return newUser;
     } catch (error) {
-      setUser(null); // Clear user on signup failure
-      throw error as AuthError; // Re-throw for the component to handle
+      setUser(null);
+      throw error as AuthError;
     } finally {
       setIsLoading(false);
     }
@@ -80,13 +82,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await firebaseLogout();
       setUser(null);
-      // Redirect to home page after logout, only if not already on home page
+      // Redirect to home page after logout if not already there
       if (pathname !== '/') {
          router.push('/');
       }
     } catch (error) {
       console.error("Logout failed:", (error as AuthError).message);
-      // Optionally, set an error state or show a toast to the user
+      // Still attempt to clear local state even if Firebase logout fails for some reason
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
@@ -94,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isLoggedIn = !!user;
 
-  // Explicitly define the context value object with the correct type
+  // Define the context value object with the correct type
   const contextValue: AuthContextType = {
     user,
     isLoggedIn,
@@ -112,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 export function useAuth(): AuthContextType {
-  const context = useContext(AuthContext);
+  const context = React.useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
