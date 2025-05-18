@@ -14,12 +14,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, isValid, subYears, getYear, getMonth, getDate } from 'date-fns';
-import { AlertCircle, ImageUp, UserCircle } from "lucide-react";
-import Image from 'next/image';
+import { AlertCircle, UserCircle } from "lucide-react"; // Removed ImageUp
 import type { UserProfile } from '@/types/talkzi';
 
-const MAX_AVATAR_SIZE_MB = 2;
-const ALLOWED_AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp"];
+// Removed avatar constants
 const MIN_AGE = 16;
 
 export default function SignupPage() {
@@ -34,8 +32,7 @@ export default function SignupPage() {
   const [selectedYear, setSelectedYear] = useState<string | undefined>(undefined);
   const [dob, setDob] = useState<Date | undefined>(undefined);
 
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  // Removed avatarFile and avatarPreview states
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -83,28 +80,7 @@ export default function SignupPage() {
     return age;
   };
 
-  const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      const file = event.target.files[0];
-      if (file.size > MAX_AVATAR_SIZE_MB * 1024 * 1024) {
-        setError(`Image is too large. Max ${MAX_AVATAR_SIZE_MB}MB allowed.`);
-        setAvatarFile(null);
-        setAvatarPreview(null);
-        event.target.value = ""; 
-        return;
-      }
-      if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
-        setError("Invalid file type. Please upload a PNG, JPEG, or WEBP image.");
-        setAvatarFile(null);
-        setAvatarPreview(null);
-        event.target.value = "";
-        return;
-      }
-      setAvatarFile(file);
-      setAvatarPreview(URL.createObjectURL(file));
-      setError(null); 
-    }
-  };
+  // Removed handleAvatarChange function
 
   const handleSignup = async (event: FormEvent) => {
     event.preventDefault();
@@ -157,85 +133,26 @@ export default function SignupPage() {
     }
 
     if (signUpData.user) {
-      let avatarPublicUrl: string | null = null;
-      if (avatarFile) {
-        const fileExt = avatarFile.name.split('.').pop();
-        if (!fileExt || fileExt === avatarFile.name) { // More robust check for extension
-            setError("Invalid file type or name. Could not determine file extension. Please use standard extensions like .png, .jpg, .webp.");
-            setIsLoading(false);
-            toast({
-                title: "Avatar File Error",
-                description: "Invalid file name or missing extension. Please choose a valid image file.",
-                variant: "destructive",
-            });
-            return;
-        }
-        const fileName = `${crypto.randomUUID()}.${fileExt}`;
-        const filePath = `${signUpData.user.id}/${fileName}`; // Path: USER_ID/filename.jpg
-
-        console.log('Attempting to upload avatarFile:', avatarFile, 'Type:', typeof avatarFile, 'Instance of File:', avatarFile instanceof File);
-        console.log('Upload path:', filePath);
-        console.log('File ContentType:', avatarFile.type);
-        
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(filePath, avatarFile, { 
-            upsert: false,
-            contentType: avatarFile.type // Explicitly set content type
-          }); 
-
-        if (uploadError) {
-          console.error('Avatar upload error object raw:', uploadError);
-          const errorAsAny = uploadError as any;
-          console.error('uploadError.message:', errorAsAny.message);
-          console.error('uploadError.error:', errorAsAny.error);
-          console.error('uploadError.name:', errorAsAny.name);
-          console.error('uploadError.status (or statusCode):', errorAsAny.status || errorAsAny.statusCode);
-          console.error('uploadError.stack:', errorAsAny.stack);
-          try {
-            console.error('Stringified uploadError (all own props):', JSON.stringify(uploadError, Object.getOwnPropertyNames(uploadError), 2));
-          } catch (e) {
-            console.error('Could not stringify uploadError with Object.getOwnPropertyNames', e)
-          }
-          
-          const supabaseErrorMessage = errorAsAny.message || errorAsAny.error || `Raw Error: ${JSON.stringify(uploadError)}`;
-          
-          setError(`Avatar upload failed: ${supabaseErrorMessage}. Your account was created, but you can add a picture later.`);
-          toast({
-            title: "Avatar Upload Failed",
-            description: `Your account was created, but we couldn't upload your profile picture. ${supabaseErrorMessage}. You can try adding one later.`,
-            variant: "destructive", 
-          });
-          // We don't return here, try to save profile without avatar
-        } else {
-          const { data: urlData } = supabase.storage
-            .from('avatars')
-            .getPublicUrl(filePath);
-          avatarPublicUrl = urlData?.publicUrl || null;
-        }
-      }
-
+      // Removed avatar upload logic
       const profileData: UserProfile = {
         id: signUpData.user.id,
-        email: signUpData.user.email,
+        email: signUpData.user.email || undefined, // Ensure email is potentially undefined if not returned
         gender: gender,
         date_of_birth: format(dob, 'yyyy-MM-dd'),
-        avatar_url: avatarPublicUrl,
+        avatar_url: null, // Set avatar_url to null
       };
 
       const { error: profileError } = await supabase
         .from('profiles')
-        .insert(profileData);
+        .insert(profileData); // Changed from upsert to insert
 
       if (profileError) {
         setIsLoading(false);
-        // If profile save fails AFTER avatar upload, we might have an orphaned avatar.
-        // For now, we just show the error. More complex cleanup could be added.
-        console.error("Profile save error after potential avatar upload:", profileError);
+        console.error("Profile save error:", profileError);
         setError(`Account created, but failed to save profile: ${profileError.message}. Please contact support or try updating your profile later.`);
         toast({
           title: "Profile Save Failed",
-          description: `Your account was created (and avatar might be uploaded), but we couldn't save other profile details. ${profileError.message}`,
+          description: `Your account was created, but we couldn't save other profile details. ${profileError.message}`,
           variant: "destructive",
         });
         return;
@@ -279,41 +196,8 @@ export default function SignupPage() {
         )}
 
         <form onSubmit={handleSignup} className="space-y-6 bg-card p-6 sm:p-8 rounded-xl shadow-xl neumorphic-shadow-soft">
-          <div className="space-y-2">
-            <Label htmlFor="avatar-upload" className="block text-sm font-medium text-foreground mb-1">Profile Picture (Optional, Max {MAX_AVATAR_SIZE_MB}MB)</Label>
-            <div className="flex items-center space-x-4">
-              <div className="shrink-0">
-                {avatarPreview ? (
-                  <Image
-                    src={avatarPreview}
-                    alt="Avatar preview"
-                    width={64}
-                    height={64}
-                    className="h-16 w-16 rounded-full object-cover neumorphic-shadow-soft"
-                  />
-                ) : (
-                  <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center neumorphic-shadow-soft">
-                    <UserCircle className="h-10 w-10 text-muted-foreground" />
-                  </div>
-                )}
-              </div>
-              <label htmlFor="avatar-upload" className="flex-grow">
-                <div className="flex items-center justify-center w-full px-3 py-2 border-2 border-dashed rounded-md cursor-pointer border-input hover:border-primary neumorphic-shadow-inset-soft">
-                  <ImageUp className="h-6 w-6 text-muted-foreground mr-2" />
-                  <span className="text-sm text-muted-foreground">{avatarFile ? avatarFile.name : "Upload (PNG, JPG, WEBP)"}</span>
-                </div>
-                <Input
-                  id="avatar-upload"
-                  name="avatar"
-                  type="file"
-                  accept={ALLOWED_AVATAR_TYPES.join(",")}
-                  onChange={handleAvatarChange}
-                  className="sr-only"
-                />
-              </label>
-            </div>
-          </div>
-
+          {/* Removed Avatar Upload UI */}
+          
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -426,4 +310,3 @@ export default function SignupPage() {
     </div>
   );
 }
- 
