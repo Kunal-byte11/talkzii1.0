@@ -9,12 +9,13 @@ import { TypingIndicator } from './TypingIndicator';
 import { SubscriptionModal } from './SubscriptionModal';
 import { useChatCounter } from '@/hooks/useChatCounter';
 import { detectCrisis } from '@/ai/flows/crisis-detection';
-import { hinglishAICompanion } from '@/ai/flows/hinglish-ai-companion';
+import { hinglishAICompanion, type HinglishAICompanionInput } from '@/ai/flows/hinglish-ai-companion';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { AlertCircle, MessageSquareText } from 'lucide-react'; // Added MessageSquareText
+import { AlertCircle, MessageSquareText } from 'lucide-react';
 
 const CHAT_HISTORY_KEY = 'talkzi_chat_history';
+const AI_FRIEND_TYPE_KEY = 'talkzi_ai_friend_type';
 
 export function ChatInterface() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -23,17 +24,35 @@ export function ChatInterface() {
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [currentAiFriendType, setCurrentAiFriendType] = useState<string | undefined>(undefined);
 
-  // Load chat history from localStorage
+  // Load chat history and AI friend type from localStorage
   useEffect(() => {
+    let historyLoaded = false;
+    let friendTypeLoaded = false;
+
     try {
       const storedHistory = localStorage.getItem(CHAT_HISTORY_KEY);
       if (storedHistory) {
         setMessages(JSON.parse(storedHistory));
       }
+      historyLoaded = true;
     } catch (error) {
       console.error("Error loading chat history from localStorage", error);
     }
+
+    try {
+      const storedFriendType = localStorage.getItem(AI_FRIEND_TYPE_KEY);
+      if (storedFriendType) {
+        setCurrentAiFriendType(storedFriendType);
+      } else {
+        setCurrentAiFriendType(undefined); // Explicitly set to undefined if not found, for default persona
+      }
+      friendTypeLoaded = true;
+    } catch (error) {
+      console.error("Error loading AI friend type from localStorage", error);
+    }
+    // Consider if you need to handle partial load failures, for now, just log.
   }, []);
 
   // Save chat history to localStorage
@@ -85,7 +104,20 @@ export function ChatInterface() {
         return;
       }
 
-      const aiResponse = await hinglishAICompanion({ message: userInput });
+      const companionInput: HinglishAICompanionInput = { message: userInput };
+      if (currentAiFriendType && currentAiFriendType !== 'default') {
+        // Ensure the type matches the enum expected by the AI flow
+        const validPersonaTypes: HinglishAICompanionInput['aiFriendType'][] = ['female_best_friend', 'male_best_friend', 'topper_friend', 'filmy_friend'];
+        if (validPersonaTypes.includes(currentAiFriendType as any)) {
+           companionInput.aiFriendType = currentAiFriendType as HinglishAICompanionInput['aiFriendType'];
+        } else {
+          console.warn(`Invalid AI friend type stored: ${currentAiFriendType}. Falling back to default.`);
+        }
+      }
+      // If currentAiFriendType is 'default' or undefined or invalid, aiFriendType will not be set in companionInput,
+      // and the AI flow (hinglishAICompanion) will use its default persona logic.
+
+      const aiResponse = await hinglishAICompanion(companionInput);
       if (aiResponse.response) {
         addMessage(aiResponse.response, 'ai');
       } else {
@@ -102,7 +134,7 @@ export function ChatInterface() {
     } finally {
       setIsAiLoading(false);
     }
-  }, [isLimitReached, incrementChatCount, toast, isCounterLoading]);
+  }, [isLimitReached, incrementChatCount, toast, isCounterLoading, currentAiFriendType]);
 
   const handleSubscribe = () => {
     // Placeholder for actual subscription logic
@@ -111,7 +143,7 @@ export function ChatInterface() {
     setShowSubscriptionModal(false);
   };
   
-  if (isCounterLoading) {
+  if (isCounterLoading) { // Only show full page loader for counter loading
     return <div className="flex items-center justify-center h-full"><TypingIndicator /></div>;
   }
 
@@ -123,6 +155,7 @@ export function ChatInterface() {
             <div className="text-center text-muted-foreground py-10">
               <MessageSquareText className="mx-auto h-12 w-12 mb-4" />
               <p className="text-lg font-semibold">Start a conversation!</p>
+              <p>Your current AI persona is: <span className="font-semibold capitalize text-primary">{currentAiFriendType?.replace(/_/g, ' ') || 'Default'}</span>.</p>
               <p>Type your first message below.</p>
             </div>
           )}
@@ -149,4 +182,3 @@ export function ChatInterface() {
     </div>
   );
 }
-

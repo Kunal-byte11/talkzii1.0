@@ -1,3 +1,4 @@
+
 "use client"; // This page needs to be client-rendered for auth check
 
 import { useEffect } from 'react';
@@ -7,7 +8,7 @@ import { ChatInterface } from '@/components/talkzi/ChatInterface';
 import { Logo } from '@/components/talkzi/Logo';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Home } from 'lucide-react';
+import { Home, Cog } from 'lucide-react'; // Added Cog icon
 
 export default function ChatPage() {
   const { isLoggedIn, isLoading } = useAuth();
@@ -43,12 +44,20 @@ export default function ChatPage() {
           <Link href="/" passHref>
              <Logo className="h-8 w-auto" />
           </Link>
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/">
-              <Home className="h-5 w-5" />
-              <span className="sr-only">Home</span>
-            </Link>
-          </Button>
+          <div className="flex items-center space-x-1 sm:space-x-2">
+            <Button variant="ghost" size="icon" asChild title="Change AI Persona">
+              <Link href="/aipersona">
+                <Cog className="h-5 w-5" />
+                <span className="sr-only">Change AI Persona</span>
+              </Link>
+            </Button>
+            <Button variant="ghost" size="icon" asChild title="Home">
+              <Link href="/">
+                <Home className="h-5 w-5" />
+                <span className="sr-only">Home</span>
+              </Link>
+            </Button>
+          </div>
         </div>
       </header>
       <main className="flex-grow overflow-hidden">
