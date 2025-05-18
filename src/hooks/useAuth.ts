@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback, createContext, useContext, type ReactNode } from 'react';
+import React, { type ReactNode } from 'react'; // Explicit React import
 import type { User as FirebaseUser, AuthError } from 'firebase/auth';
 import { useRouter, usePathname } from 'next/navigation';
 import {
@@ -27,12 +27,12 @@ const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 // AuthProvider component
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<FirebaseUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = React.useState<FirebaseUser | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
+  React.useEffect(() => {
     const unsubscribe = onAuthStateChanged((firebaseUser: FirebaseUser | null) => {
       setUser(firebaseUser);
       setIsLoading(false);
@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const login = useCallback(async (email: string, password: string): Promise<FirebaseUser> => {
+  const login = React.useCallback(async (email: string, password: string): Promise<FirebaseUser> => {
     setIsLoading(true);
     try {
       const loggedInUser = await firebaseLogin(email, password);
@@ -55,21 +55,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const signup = useCallback(async (email: string, password: string): Promise<FirebaseUser> => {
+  const signup = React.useCallback(async (email: string, password: string): Promise<FirebaseUser> => {
     setIsLoading(true);
     try {
       const newUser = await firebaseSignUp(email, password);
       setUser(newUser);
       // Create a user profile in Firestore, but don't let this block signup success
-      if (newUser?.uid && newUser.email) { // Ensure email is not null for createUserProfile
-        createUserProfile(newUser.uid, newUser.email).catch(profileError => {
+      if (newUser?.uid) {
+        createUserProfile(newUser.uid, newUser.email ?? null).catch(profileError => {
           // Log profile creation error, but don't fail the signup for it
           console.error("Error creating user profile during signup:", profileError);
-        });
-      } else if (newUser?.uid) {
-        // Handle case where email might be null, though Firebase usually requires it
-         createUserProfile(newUser.uid, null).catch(profileError => {
-          console.error("Error creating user profile (null email) during signup:", profileError);
         });
       }
       return newUser;
@@ -81,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const logout = useCallback(async () => {
+  const logout = React.useCallback(async () => {
     setIsLoading(true);
     try {
       await firebaseLogout();
@@ -112,6 +107,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout,
   }), [user, isLoggedIn, isLoading, login, signup, logout]);
 
+  // Added console.log for debugging this persistent parsing issue.
+  // If this log appears, the issue is definitely in the JSX parsing of the return statement.
+  console.log("AuthProvider rendering. User:", user, "isLoading:", isLoading);
+
   return (
     <AuthContext.Provider value={contextValue}>
       {children}
@@ -127,4 +126,3 @@ export function useAuth(): AuthContextType {
   }
   return context;
 }
-
