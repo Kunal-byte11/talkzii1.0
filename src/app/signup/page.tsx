@@ -48,12 +48,20 @@ export default function SignupPage() {
         setError("Image is too large. Max 2MB allowed.");
         setAvatarFile(null);
         setAvatarPreview(null);
-        event.target.value = ""; // Reset file input
+        event.target.value = ""; 
+        return;
+      }
+      const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
+      if (!allowedTypes.includes(file.type)) {
+        setError("Invalid file type. Please upload a PNG, JPEG, or WEBP image.");
+        setAvatarFile(null);
+        setAvatarPreview(null);
+        event.target.value = "";
         return;
       }
       setAvatarFile(file);
       setAvatarPreview(URL.createObjectURL(file));
-      setError(null); // Clear previous file errors
+      setError(null); 
     }
   };
 
@@ -111,23 +119,34 @@ export default function SignupPage() {
       let avatarPublicUrl: string | null = null;
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`; // simple random name
-        const filePath = `public/${signUpData.user.id}/${fileName}`; // Store in user-specific folder
+        if (!fileExt) {
+            setError("Invalid file type or name. Could not determine file extension.");
+            setIsLoading(false);
+            // Potentially delete the created auth user or ask them to re-upload avatar later
+            // For now, just stop and show error
+            return;
+        }
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+        const filePath = `public/${signUpData.user.id}/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('avatars') // Ensure this bucket exists and has correct policies
+          .from('avatars')
           .upload(filePath, avatarFile, { upsert: true });
 
         if (uploadError) {
-          // Signup succeeded but avatar upload failed.
-          // Decide on UX: proceed without avatar, or show error and ask to retry?
-          // For now, proceed without avatar but log error and inform user.
-          console.error('Avatar upload error:', uploadError);
+          console.error('Avatar upload error object:', uploadError);
+          // Attempt to get more specific error details
+          const supabaseErrorMessage = (uploadError as any)?.message || (uploadError as any)?.error || JSON.stringify(uploadError);
+          console.error('Supabase specific error message:', supabaseErrorMessage);
+          
+          setError(`Avatar upload failed: ${supabaseErrorMessage}. Your account was created, but you can add a picture later.`);
           toast({
             title: "Avatar Upload Failed",
-            description: `Your account was created, but we couldn't upload your profile picture. ${uploadError.message}. You can try adding one later.`,
-            variant: "destructive", // Or "warning"
+            description: `Your account was created, but we couldn't upload your profile picture. Error: ${supabaseErrorMessage}. You can try adding one later.`,
+            variant: "destructive", 
           });
+          // Decide if you want to proceed without avatar or halt. 
+          // For now, we will proceed to save profile without avatar_url if upload failed.
         } else {
           const { data: urlData } = supabase.storage
             .from('avatars')
@@ -141,7 +160,7 @@ export default function SignupPage() {
         email: signUpData.user.email,
         gender: gender,
         date_of_birth: format(dob, 'yyyy-MM-dd'),
-        avatar_url: avatarPublicUrl,
+        avatar_url: avatarPublicUrl, // Will be null if upload failed or no avatar provided
       };
 
       const { error: profileError } = await supabase
@@ -150,10 +169,12 @@ export default function SignupPage() {
 
       if (profileError) {
         setIsLoading(false);
-        setError(`Account created, but failed to save profile: ${profileError.message}. Please contact support.`);
+        // If profile save fails after successful auth & potentially avatar upload, this is tricky.
+        // The user is authenticated, but their profile isn't fully set up.
+        setError(`Account created, but failed to save profile: ${profileError.message}. Please contact support or try updating your profile later.`);
         toast({
           title: "Profile Save Failed",
-          description: `Your account was created, but we couldn't save your profile details. ${profileError.message}`,
+          description: `Your account was created (and avatar might be uploaded), but we couldn't save other profile details. ${profileError.message}`,
           variant: "destructive",
         });
         return;
@@ -161,15 +182,14 @@ export default function SignupPage() {
 
       toast({
         title: "Signup Successful!",
-        description: "Welcome to Talkzi! Please check your email to verify your account (if enabled).",
+        description: "Welcome to Talkzi! Please check your email to verify your account (if email confirmation is enabled).",
       });
-      // Forcing a redirect to /login which should then pick up the session and redirect to /aipersona
       router.push('/login'); 
     } else {
-       setError("An unexpected error occurred during signup. Please try again.");
+       setError("An unexpected error occurred during signup. User data not found after sign up. Please try again.");
        toast({
         title: "Signup Failed",
-        description: "An unexpected error occurred. Please try again.",
+        description: "An unexpected error occurred (user data not available post-signup). Please try again.",
         variant: "destructive",
       });
     }
@@ -199,7 +219,7 @@ export default function SignupPage() {
 
         <form onSubmit={handleSignup} className="space-y-6 bg-card p-6 sm:p-8 rounded-xl shadow-xl neumorphic-shadow-soft">
           <div className="space-y-2">
-            <Label htmlFor="avatar-upload" className="block text-sm font-medium text-foreground mb-1">Profile Picture (Optional)</Label>
+            <Label htmlFor="avatar-upload" className="block text-sm font-medium text-foreground mb-1">Profile Picture (Optional, Max 2MB)</Label>
             <div className="flex items-center space-x-4">
               <div className="shrink-0">
                 {avatarPreview ? (
@@ -219,7 +239,7 @@ export default function SignupPage() {
               <label htmlFor="avatar-upload" className="flex-grow">
                 <div className="flex items-center justify-center w-full px-3 py-2 border-2 border-dashed rounded-md cursor-pointer border-input hover:border-primary neumorphic-shadow-inset-soft">
                   <ImageUp className="h-6 w-6 text-muted-foreground mr-2" />
-                  <span className="text-sm text-muted-foreground">{avatarFile ? avatarFile.name : "Upload an image"}</span>
+                  <span className="text-sm text-muted-foreground">{avatarFile ? avatarFile.name : "Upload (PNG, JPG, WEBP)"}</span>
                 </div>
                 <Input
                   id="avatar-upload"
@@ -254,6 +274,7 @@ export default function SignupPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="•••••••• (min. 6 characters)"
               required
+              minLength={6}
               className="neumorphic-shadow-inset-soft"
             />
           </div>
@@ -266,6 +287,7 @@ export default function SignupPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
               required
+              minLength={6}
               className="neumorphic-shadow-inset-soft"
             />
           </div>
@@ -311,7 +333,7 @@ export default function SignupPage() {
                   captionLayout="dropdown-buttons"
                   fromYear={1920}
                   toYear={new Date().getFullYear()}
-                  disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                  disabled={(date) => date > new Date(new Date().setFullYear(new Date().getFullYear() - 16)) || date < new Date("1900-01-01")}
                 />
               </PopoverContent>
             </Popover>
@@ -332,3 +354,6 @@ export default function SignupPage() {
     </div>
   );
 }
+
+
+    
