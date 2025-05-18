@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type FormEvent, type ChangeEvent } from 'react';
+import { useState, type FormEvent, type ChangeEvent, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -12,11 +12,14 @@ import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { format, isValid } from 'date-fns';
-import { AlertCircle, Calendar as CalendarIcon, ImageUp, UserCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { format, isValid, subYears, getYear, getMonth, getDate } from 'date-fns';
+import { AlertCircle, ImageUp, UserCircle } from "lucide-react";
 import Image from 'next/image';
+
+const MAX_AVATAR_SIZE_MB = 2;
+const ALLOWED_AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const MIN_AGE = 16;
 
 export default function SignupPage() {
   const router = useRouter();
@@ -24,12 +27,52 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [gender, setGender] = useState<string | undefined>(undefined);
+  
+  const [selectedDay, setSelectedDay] = useState<string | undefined>(undefined);
+  const [selectedMonth, setSelectedMonth] = useState<string | undefined>(undefined);
+  const [selectedYear, setSelectedYear] = useState<string | undefined>(undefined);
   const [dob, setDob] = useState<Date | undefined>(undefined);
+
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const currentYear = getYear(new Date());
+  const years = useMemo(() => 
+    Array.from({ length: 100 }, (_, i) => currentYear - MIN_AGE - i)
+    .filter(year => year >= currentYear - 100), // Ensure we don't go too far back
+    [currentYear]
+  );
+  const months = useMemo(() => [
+    { value: "1", label: "January" }, { value: "2", label: "February" },
+    { value: "3", label: "March" }, { value: "4", label: "April" },
+    { value: "5", label: "May" }, { value: "6", label: "June" },
+    { value: "7", label: "July" }, { value: "8", label: "August" },
+    { value: "9", label: "September" }, { value: "10", label: "October" },
+    { value: "11", label: "November" }, { value: "12", label: "December" },
+  ], []);
+  const days = useMemo(() => Array.from({ length: 31 }, (_, i) => (i + 1).toString()), []);
+
+  useEffect(() => {
+    if (selectedDay && selectedMonth && selectedYear) {
+      const day = parseInt(selectedDay, 10);
+      const month = parseInt(selectedMonth, 10); // Month is 1-12 from select
+      const year = parseInt(selectedYear, 10);
+      // For Date constructor, month is 0-indexed (0 for January, 11 for December)
+      const potentialDob = new Date(year, month - 1, day);
+       // Basic check to ensure constructed date matches selected parts, as new Date() can overflow
+      if (getDate(potentialDob) === day && getMonth(potentialDob) === month - 1 && getYear(potentialDob) === year) {
+        setDob(potentialDob);
+      } else {
+        setDob(undefined); // Invalid date constructed (e.g., Feb 30)
+      }
+    } else {
+      setDob(undefined);
+    }
+  }, [selectedDay, selectedMonth, selectedYear]);
+
 
   const calculateAge = (birthDate: Date): number => {
     const today = new Date();
@@ -44,15 +87,14 @@ export default function SignupPage() {
   const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
-      if (file.size > 2 * 1024 * 1024) { // Max 2MB
-        setError("Image is too large. Max 2MB allowed.");
+      if (file.size > MAX_AVATAR_SIZE_MB * 1024 * 1024) {
+        setError(`Image is too large. Max ${MAX_AVATAR_SIZE_MB}MB allowed.`);
         setAvatarFile(null);
         setAvatarPreview(null);
         event.target.value = ""; 
         return;
       }
-      const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
-      if (!allowedTypes.includes(file.type)) {
+      if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
         setError("Invalid file type. Please upload a PNG, JPEG, or WEBP image.");
         setAvatarFile(null);
         setAvatarPreview(null);
@@ -78,20 +120,20 @@ export default function SignupPage() {
       return;
     }
     if (!dob) {
-      setError("Please select your date of birth.");
+      setError("Please select a valid date of birth.");
       return;
     }
     if (!isValid(dob)) {
-      setError("Invalid date of birth.");
+      setError("Invalid date of birth selected. Please check day, month, and year.");
       return;
     }
 
     const age = calculateAge(dob);
-    if (age < 16) {
-      setError("You must be at least 16 years old to use Talkzi.");
+    if (age < MIN_AGE) {
+      setError(`You must be at least ${MIN_AGE} years old to use Talkzi.`);
       toast({
         title: "Age Restriction",
-        description: "You must be at least 16 years old to sign up.",
+        description: `You must be at least ${MIN_AGE} years old to sign up.`,
         variant: "destructive",
       });
       return;
@@ -122,8 +164,6 @@ export default function SignupPage() {
         if (!fileExt) {
             setError("Invalid file type or name. Could not determine file extension.");
             setIsLoading(false);
-            // Potentially delete the created auth user or ask them to re-upload avatar later
-            // For now, just stop and show error
             return;
         }
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
@@ -134,19 +174,15 @@ export default function SignupPage() {
           .upload(filePath, avatarFile, { upsert: true });
 
         if (uploadError) {
-          console.error('Avatar upload error object:', uploadError);
-          // Attempt to get more specific error details
           const supabaseErrorMessage = (uploadError as any)?.message || (uploadError as any)?.error || JSON.stringify(uploadError);
+          console.error('Avatar upload error object:', uploadError);
           console.error('Supabase specific error message:', supabaseErrorMessage);
-          
           setError(`Avatar upload failed: ${supabaseErrorMessage}. Your account was created, but you can add a picture later.`);
           toast({
             title: "Avatar Upload Failed",
             description: `Your account was created, but we couldn't upload your profile picture. Error: ${supabaseErrorMessage}. You can try adding one later.`,
             variant: "destructive", 
           });
-          // Decide if you want to proceed without avatar or halt. 
-          // For now, we will proceed to save profile without avatar_url if upload failed.
         } else {
           const { data: urlData } = supabase.storage
             .from('avatars')
@@ -160,7 +196,7 @@ export default function SignupPage() {
         email: signUpData.user.email,
         gender: gender,
         date_of_birth: format(dob, 'yyyy-MM-dd'),
-        avatar_url: avatarPublicUrl, // Will be null if upload failed or no avatar provided
+        avatar_url: avatarPublicUrl,
       };
 
       const { error: profileError } = await supabase
@@ -169,8 +205,6 @@ export default function SignupPage() {
 
       if (profileError) {
         setIsLoading(false);
-        // If profile save fails after successful auth & potentially avatar upload, this is tricky.
-        // The user is authenticated, but their profile isn't fully set up.
         setError(`Account created, but failed to save profile: ${profileError.message}. Please contact support or try updating your profile later.`);
         toast({
           title: "Profile Save Failed",
@@ -219,7 +253,7 @@ export default function SignupPage() {
 
         <form onSubmit={handleSignup} className="space-y-6 bg-card p-6 sm:p-8 rounded-xl shadow-xl neumorphic-shadow-soft">
           <div className="space-y-2">
-            <Label htmlFor="avatar-upload" className="block text-sm font-medium text-foreground mb-1">Profile Picture (Optional, Max 2MB)</Label>
+            <Label htmlFor="avatar-upload" className="block text-sm font-medium text-foreground mb-1">Profile Picture (Optional, Max {MAX_AVATAR_SIZE_MB}MB)</Label>
             <div className="flex items-center space-x-4">
               <div className="shrink-0">
                 {avatarPreview ? (
@@ -245,7 +279,7 @@ export default function SignupPage() {
                   id="avatar-upload"
                   name="avatar"
                   type="file"
-                  accept="image/png, image/jpeg, image/webp"
+                  accept={ALLOWED_AVATAR_TYPES.join(",")}
                   onChange={handleAvatarChange}
                   className="sr-only"
                 />
@@ -309,36 +343,47 @@ export default function SignupPage() {
               </div>
             </RadioGroup>
           </div>
-
+          
           <div className="space-y-2">
-            <Label htmlFor="dob">Date of Birth</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={`w-full justify-start text-left font-normal neumorphic-shadow-inset-soft ${
-                    !dob && "text-muted-foreground"
-                  }`}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dob ? format(dob, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={dob}
-                  onSelect={setDob}
-                  initialFocus
-                  captionLayout="dropdown-buttons"
-                  fromYear={1920}
-                  toYear={new Date().getFullYear()}
-                  disabled={(date) => date > new Date(new Date().setFullYear(new Date().getFullYear() - 16)) || date < new Date("1900-01-01")}
-                />
-              </PopoverContent>
-            </Popover>
-             <p className="text-xs text-muted-foreground">You must be at least 16 years old.</p>
+            <Label>Date of Birth</Label>
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              <div>
+                <Label htmlFor="dob-day" className="text-xs text-muted-foreground">Day</Label>
+                <Select value={selectedDay} onValueChange={setSelectedDay}>
+                  <SelectTrigger id="dob-day" className="neumorphic-shadow-inset-soft">
+                    <SelectValue placeholder="Day" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {days.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="dob-month" className="text-xs text-muted-foreground">Month</Label>
+                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                  <SelectTrigger id="dob-month" className="neumorphic-shadow-inset-soft">
+                    <SelectValue placeholder="Month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {months.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="dob-year" className="text-xs text-muted-foreground">Year</Label>
+                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                  <SelectTrigger id="dob-year" className="neumorphic-shadow-inset-soft">
+                    <SelectValue placeholder="Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">You must be at least {MIN_AGE} years old.</p>
           </div>
+
 
           <Button type="submit" disabled={isLoading} className="w-full gradient-button text-lg py-3 rounded-lg">
             {isLoading ? 'Creating Account...' : 'Create Account'}
@@ -354,6 +399,3 @@ export default function SignupPage() {
     </div>
   );
 }
-
-
-    
