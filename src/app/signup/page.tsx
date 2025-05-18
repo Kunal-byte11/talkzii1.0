@@ -165,23 +165,38 @@ export default function SignupPage() {
             setIsLoading(false);
             return;
         }
-        // Simplified file path: USER_ID/fileName (no 'public/' prefix here as per simpler RLS)
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+        // Simplified file path: USER_ID/fileName
         const filePath = `${signUpData.user.id}/${fileName}`;
 
-
+        console.log('Attempting to upload avatarFile:', avatarFile, 'Type:', typeof avatarFile, 'Instance of File:', avatarFile instanceof File);
+        console.log('Upload path:', filePath);
+        
         const { error: uploadError } = await supabase.storage
           .from('avatars') // Target 'avatars' bucket
-          .upload(filePath, avatarFile, { upsert: true });
+          .upload(filePath, avatarFile, { upsert: false }); // Changed upsert to false
 
         if (uploadError) {
-          const supabaseErrorMessage = (uploadError as any)?.message || (uploadError as any)?.error || JSON.stringify(uploadError);
-          console.error('Avatar upload error object:', uploadError);
-          console.error('Supabase specific error message:', supabaseErrorMessage);
+          console.error('Avatar upload error object raw:', uploadError);
+          const errorAsAny = uploadError as any;
+          console.error('uploadError.message:', errorAsAny.message);
+          console.error('uploadError.error:', errorAsAny.error);
+          console.error('uploadError.name:', errorAsAny.name);
+          console.error('uploadError.status (or statusCode):', errorAsAny.status || errorAsAny.statusCode);
+          console.error('uploadError.stack:', errorAsAny.stack);
+          try {
+            console.error('Stringified uploadError (all own props):', JSON.stringify(uploadError, Object.getOwnPropertyNames(uploadError), 2));
+          } catch (e) {
+            console.error('Could not stringify uploadError with Object.getOwnPropertyNames', e)
+          }
+
+
+          const supabaseErrorMessage = errorAsAny.message || errorAsAny.error || `Raw Error: ${JSON.stringify(uploadError)}`;
+          
           setError(`Avatar upload failed: ${supabaseErrorMessage}. Your account was created, but you can add a picture later.`);
           toast({
             title: "Avatar Upload Failed",
-            description: `Your account was created, but we couldn't upload your profile picture. Error: ${supabaseErrorMessage}. You can try adding one later.`,
+            description: `Your account was created, but we couldn't upload your profile picture. ${supabaseErrorMessage}. You can try adding one later.`,
             variant: "destructive", 
           });
           // We don't return here, try to save profile without avatar
@@ -201,10 +216,9 @@ export default function SignupPage() {
         avatar_url: avatarPublicUrl,
       };
 
-      // Using .insert() instead of .upsert() for clarity on new profile creation
       const { error: profileError } = await supabase
         .from('profiles')
-        .insert(profileData); // Changed from .upsert(profileData, { onConflict: 'id' })
+        .insert(profileData);
 
       if (profileError) {
         setIsLoading(false);
@@ -402,7 +416,3 @@ export default function SignupPage() {
     </div>
   );
 }
-
-    
-
-    
