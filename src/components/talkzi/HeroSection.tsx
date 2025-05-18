@@ -5,17 +5,22 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function HeroSection() {
   const router = useRouter();
+  const { user, isLoading } = useAuth();
 
   const handleStartChatting = () => {
-    router.push('/aipersona');
+    if (user) {
+      router.push('/aipersona');
+    } else {
+      router.push('/signup'); // Or '/login' if you prefer
+    }
   };
   
   return (
     <section className="relative flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] text-center p-4 sm:p-8 overflow-hidden">
-      {/* Animated Blobs Background (Simplified with CSS Gradients) */}
       <div className="absolute inset-0 z-0 opacity-50">
         <div className="absolute top-0 left-0 w-72 h-72 bg-primary rounded-full filter blur-3xl opacity-30 animate-blob"></div>
         <div className="absolute top-0 right-1/4 w-72 h-72 bg-accent rounded-full filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
@@ -66,9 +71,10 @@ export function HeroSection() {
         <Button
           size="lg"
           onClick={handleStartChatting}
+          disabled={isLoading}
           className="gradient-button font-semibold text-lg py-4 px-8 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
         >
-          Start Chatting Free
+          {isLoading ? "Loading..." : (user ? "Start Chatting" : "Sign Up & Chat Free")}
           <ArrowRight className="ml-2 h-5 w-5" />
         </Button>
         

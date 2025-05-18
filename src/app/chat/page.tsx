@@ -7,19 +7,30 @@ import { ChatInterface } from '@/components/talkzi/ChatInterface';
 import { Logo } from '@/components/talkzi/Logo';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Home, Cog } from 'lucide-react';
+import { Home, Cog, LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext'; // Use new Supabase Auth
 
 export default function ChatPage() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true); // General page loading state
+  const { user, isLoading: authLoading, signOut } = useAuth();
+  const [isPageLoading, setIsPageLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading or perform any non-auth setup
-    setIsLoading(false);
-  }, []);
+    if (!authLoading) {
+      if (!user) {
+        router.replace('/login'); // Redirect if not logged in
+      } else {
+        setIsPageLoading(false); // User is logged in, proceed to load chat
+      }
+    }
+  }, [user, authLoading, router]);
 
+  const handleSignOut = async () => {
+    await signOut();
+    // AuthProvider will handle redirect to /login
+  };
 
-  if (isLoading) {
+  if (authLoading || isPageLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
         <Logo className="h-12 w-auto mb-4 animate-pulse" />
@@ -48,6 +59,12 @@ export default function ChatPage() {
                 <span className="sr-only">Home</span>
               </Link>
             </Button>
+            {user && (
+              <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign Out">
+                <LogOut className="h-5 w-5" />
+                <span className="sr-only">Sign Out</span>
+              </Button>
+            )}
           </div>
         </div>
       </header>

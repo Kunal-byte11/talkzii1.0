@@ -1,7 +1,4 @@
 
-// FeedbackType is no longer needed as feedback feature is removed
-// export type FeedbackType = 'liked' | 'disliked' | null;
-
 export interface ChatMessage {
   id: string;
   text: string;
@@ -9,6 +6,14 @@ export interface ChatMessage {
   timestamp: number; // Use number (Date.now()) for easier serialization
   isLoading?: boolean; // Optional flag for AI messages being generated
   isCrisis?: boolean; // Optional flag for crisis messages
-  // feedback?: FeedbackType; // Removed as feedback mechanism is removed
-  // originalUserPromptForAiResponse?: string; // Removed as feedback mechanism is removed
+  // Feedback related properties removed
+}
+
+// User profile type for Supabase (example)
+export interface UserProfile {
+  id: string; // Supabase auth user ID
+  email?: string;
+  created_at?: string;
+  ai_persona_preference?: string | null;
+  // Add other profile fields as needed
 }
