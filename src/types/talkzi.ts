@@ -14,7 +14,9 @@ export interface UserProfile {
   email?: string;
   gender?: 'male' | 'female' | 'prefer_not_to_say' | string; // Allow string for flexibility
   date_of_birth?: string; // Store as YYYY-MM-DD string, matches DATE type in Supabase
+  avatar_url?: string | null; // URL to the profile picture in Supabase Storage
   created_at?: string;
   ai_persona_preference?: string | null;
   // Add other profile fields as needed
 }
+

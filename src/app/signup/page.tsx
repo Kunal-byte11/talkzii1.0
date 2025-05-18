@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format, isValid } from 'date-fns';
-import { AlertCircle, Calendar as CalendarIcon } from "lucide-react"; // Renamed to avoid conflict
+import { AlertCircle, Calendar as CalendarIcon, ImageUp, UserCircle } from "lucide-react";
+import Image from 'next/image';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -24,6 +25,8 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [gender, setGender] = useState<string | undefined>(undefined);
   const [dob, setDob] = useState<Date | undefined>(undefined);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -36,6 +39,22 @@ export default function SignupPage() {
       age--;
     }
     return age;
+  };
+
+  const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      if (file.size > 2 * 1024 * 1024) { // Max 2MB
+        setError("Image is too large. Max 2MB allowed.");
+        setAvatarFile(null);
+        setAvatarPreview(null);
+        event.target.value = ""; // Reset file input
+        return;
+      }
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+      setError(null); // Clear previous file errors
+    }
   };
 
   const handleSignup = async (event: FormEvent) => {
@@ -89,22 +108,48 @@ export default function SignupPage() {
     }
 
     if (signUpData.user) {
+      let avatarPublicUrl: string | null = null;
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`; // simple random name
+        const filePath = `public/${signUpData.user.id}/${fileName}`; // Store in user-specific folder
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars') // Ensure this bucket exists and has correct policies
+          .upload(filePath, avatarFile, { upsert: true });
+
+        if (uploadError) {
+          // Signup succeeded but avatar upload failed.
+          // Decide on UX: proceed without avatar, or show error and ask to retry?
+          // For now, proceed without avatar but log error and inform user.
+          console.error('Avatar upload error:', uploadError);
+          toast({
+            title: "Avatar Upload Failed",
+            description: `Your account was created, but we couldn't upload your profile picture. ${uploadError.message}. You can try adding one later.`,
+            variant: "destructive", // Or "warning"
+          });
+        } else {
+          const { data: urlData } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(filePath);
+          avatarPublicUrl = urlData?.publicUrl || null;
+        }
+      }
+
       const profileData = {
         id: signUpData.user.id,
         email: signUpData.user.email,
         gender: gender,
-        date_of_birth: format(dob, 'yyyy-MM-dd'), // Format for Supabase DATE type
+        date_of_birth: format(dob, 'yyyy-MM-dd'),
+        avatar_url: avatarPublicUrl,
       };
 
       const { error: profileError } = await supabase
         .from('profiles')
-        .upsert(profileData, { onConflict: 'id' }); // Use upsert to handle potential re-runs or existing stubs
+        .upsert(profileData, { onConflict: 'id' });
 
       if (profileError) {
         setIsLoading(false);
-        // User auth record was created, but profile failed.
-        // This is a tricky state. For now, show an error.
-        // Ideally, you might want to guide the user or have a cleanup mechanism.
         setError(`Account created, but failed to save profile: ${profileError.message}. Please contact support.`);
         toast({
           title: "Profile Save Failed",
@@ -116,9 +161,10 @@ export default function SignupPage() {
 
       toast({
         title: "Signup Successful!",
-        description: "Please check your email to verify your account (if enabled).",
+        description: "Welcome to Talkzi! Please check your email to verify your account (if enabled).",
       });
-      router.push('/login');
+      // Forcing a redirect to /login which should then pick up the session and redirect to /aipersona
+      router.push('/login'); 
     } else {
        setError("An unexpected error occurred during signup. Please try again.");
        toast({
@@ -151,7 +197,42 @@ export default function SignupPage() {
           </Alert>
         )}
 
-        <form onSubmit={handleSignup} className="space-y-6 bg-card p-8 rounded-xl shadow-xl neumorphic-shadow-soft">
+        <form onSubmit={handleSignup} className="space-y-6 bg-card p-6 sm:p-8 rounded-xl shadow-xl neumorphic-shadow-soft">
+          <div className="space-y-2">
+            <Label htmlFor="avatar-upload" className="block text-sm font-medium text-foreground mb-1">Profile Picture (Optional)</Label>
+            <div className="flex items-center space-x-4">
+              <div className="shrink-0">
+                {avatarPreview ? (
+                  <Image
+                    src={avatarPreview}
+                    alt="Avatar preview"
+                    width={64}
+                    height={64}
+                    className="h-16 w-16 rounded-full object-cover neumorphic-shadow-soft"
+                  />
+                ) : (
+                  <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center neumorphic-shadow-soft">
+                    <UserCircle className="h-10 w-10 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+              <label htmlFor="avatar-upload" className="flex-grow">
+                <div className="flex items-center justify-center w-full px-3 py-2 border-2 border-dashed rounded-md cursor-pointer border-input hover:border-primary neumorphic-shadow-inset-soft">
+                  <ImageUp className="h-6 w-6 text-muted-foreground mr-2" />
+                  <span className="text-sm text-muted-foreground">{avatarFile ? avatarFile.name : "Upload an image"}</span>
+                </div>
+                <Input
+                  id="avatar-upload"
+                  name="avatar"
+                  type="file"
+                  accept="image/png, image/jpeg, image/webp"
+                  onChange={handleAvatarChange}
+                  className="sr-only"
+                />
+              </label>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -191,7 +272,7 @@ export default function SignupPage() {
 
           <div className="space-y-2">
             <Label>Gender</Label>
-            <RadioGroup onValueChange={setGender} value={gender} className="flex space-x-4">
+            <RadioGroup onValueChange={setGender} value={gender} className="flex flex-wrap gap-x-4 gap-y-2">
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="male" id="male" />
                 <Label htmlFor="male">Male</Label>
@@ -221,7 +302,7 @@ export default function SignupPage() {
                   {dob ? format(dob, "PPP") : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
+              <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
                   selected={dob}
@@ -234,6 +315,7 @@ export default function SignupPage() {
                 />
               </PopoverContent>
             </Popover>
+             <p className="text-xs text-muted-foreground">You must be at least 16 years old.</p>
           </div>
 
           <Button type="submit" disabled={isLoading} className="w-full gradient-button text-lg py-3 rounded-lg">
