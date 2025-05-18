@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -11,7 +12,7 @@ import { detectCrisis } from '@/ai/flows/crisis-detection';
 import { hinglishAICompanion } from '@/ai/flows/hinglish-ai-companion';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, MessageSquareText } from 'lucide-react'; // Added MessageSquareText
 
 const CHAT_HISTORY_KEY = 'talkzi_chat_history';
 
@@ -148,3 +149,4 @@ export function ChatInterface() {
     </div>
   );
 }
+
