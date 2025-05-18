@@ -1,5 +1,5 @@
 
-"use client"; // This page needs to be client-rendered for auth check
+"use client";
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -8,34 +8,40 @@ import { ChatInterface } from '@/components/talkzi/ChatInterface';
 import { Logo } from '@/components/talkzi/Logo';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Home, Cog } from 'lucide-react'; // Added Cog icon
+import { Home, Cog, LogOut } from 'lucide-react';
 
 export default function ChatPage() {
-  const { isLoggedIn, isLoading } = useAuth();
+  const { user, isLoggedIn, isLoading, logout } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!isLoading && !isLoggedIn) {
-      router.replace('/'); // Redirect to homepage if not logged in
+      router.replace('/login'); // Redirect to login page if not logged in
     }
   }, [isLoggedIn, isLoading, router]);
 
-  if (isLoading || !isLoggedIn) {
+  const handleLogout = async () => {
+    await logout();
+    router.push('/');
+  };
+
+  if (isLoading || (!isLoading && !isLoggedIn)) { // Check both isLoading and !isLoggedIn after isLoading is false
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
         <Logo className="h-12 w-auto mb-4 animate-pulse" />
         {isLoading && <p className="text-muted-foreground">Loading...</p>}
-        {!isLoading && !isLoggedIn && (
+        {!isLoading && !isLoggedIn && ( // This condition ensures we only show login prompt after loading
           <>
             <p className="text-destructive text-center mb-4">Please log in to access the chat.</p>
-            <Button onClick={() => router.push('/')} className="gradient-button">
-              Go to Homepage to Login
+            <Button onClick={() => router.push('/login')} className="gradient-button">
+              Go to Login
             </Button>
           </>
         )}
       </div>
     );
   }
+
 
   return (
     <div className="flex flex-col h-screen">
@@ -57,6 +63,12 @@ export default function ChatPage() {
                 <span className="sr-only">Home</span>
               </Link>
             </Button>
+             {isLoggedIn && (
+              <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout">
+                <LogOut className="h-5 w-5" />
+                <span className="sr-only">Logout</span>
+              </Button>
+            )}
           </div>
         </div>
       </header>

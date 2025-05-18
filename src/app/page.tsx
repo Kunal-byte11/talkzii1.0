@@ -8,17 +8,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Logo } from '@/components/talkzi/Logo';
-import { Github, Twitter } from 'lucide-react';
+import { Github, Twitter, LogOut } from 'lucide-react'; // Added LogOut
 
 export default function HomePage() {
-  const { login, isLoggedIn, isLoading } = useAuth();
+  const { user, isLoggedIn, isLoading, logout } = useAuth(); // Use Firebase user object
   const router = useRouter();
 
-  const handleLoginAndGoToPersona = () => {
-    if (!isLoggedIn) {
-      login();
-    }
-    router.push('/aipersona');
+  const handleLogout = async () => {
+    await logout();
+    router.push('/'); // Ensure user is on homepage after logout
   };
 
   if (isLoading) {
@@ -36,11 +34,19 @@ export default function HomePage() {
           <Link href="/" passHref>
             <Logo className="h-8 w-auto" />
           </Link>
-          {isLoggedIn ? (
-            <Button variant="outline" onClick={() => router.push('/aipersona')}>Choose Persona & Chat</Button>
-          ) : (
-            <Button onClick={handleLoginAndGoToPersona} className="gradient-button">Login & Chat</Button>
-          )}
+          <div className="flex items-center space-x-2">
+            {isLoggedIn ? (
+              <>
+                <Button variant="outline" onClick={() => router.push('/aipersona')}>Choose Persona & Chat</Button>
+                <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout">
+                  <LogOut className="h-5 w-5" />
+                  <span className="sr-only">Logout</span>
+                </Button>
+              </>
+            ) : (
+              <Button onClick={() => router.push('/login')} className="gradient-button">Login / Sign Up</Button>
+            )}
+          </div>
         </div>
       </header>
 

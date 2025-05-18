@@ -1,22 +1,22 @@
 
 "use client";
 
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
-import { motion } from 'framer-motion'; // For simple animations
+import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 
 export function HeroSection() {
-  const { login, isLoggedIn } = useAuth();
+  const { isLoggedIn } = useAuth();
   const router = useRouter();
 
   const handleStartChatting = () => {
-    if (!isLoggedIn) {
-      login();
+    if (isLoggedIn) {
+      router.push('/aipersona');
+    } else {
+      router.push('/login'); // Redirect to login if not logged in
     }
-    router.push('/aipersona');
   };
   
   return (
