@@ -8,20 +8,22 @@ import {
   firebaseLogin,
   firebaseLogout,
   firebaseSignUp,
-  type User, // Firebase User type
+  type User,
   type AuthError
 } from '@/lib/firebase/auth';
 import { createUserProfile } from '@/lib/firebase/firestore';
 
-interface AuthContextType {
+// Define the shape of the context value
+type AuthContextType = {
   user: User | null;
   isLoggedIn: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<User>;
-  logout: () => Promise<void>;
   signup: (email: string, password: string) => Promise<User>;
-}
+  logout: () => Promise<void>;
+};
 
+// Create the context with an undefined initial value
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -35,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(firebaseUser);
       setIsLoading(false);
     });
+    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 
@@ -45,9 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(loggedInUser);
       return loggedInUser;
     } catch (error) {
-      setUser(null);
-      // Re-throw the error so it can be caught by the caller (e.g., in LoginPage)
-      throw error;
+      setUser(null); // Clear user on login failure
+      throw error as AuthError; // Re-throw for the component to handle
     } finally {
       setIsLoading(false);
     }
@@ -58,13 +60,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const newUser = await firebaseSignUp(email, password);
       // Ensure email is passed correctly; User type has email as string | null
-      await createUserProfile(newUser.uid, newUser.email);
+      // Create user profile in Firestore, but don't block on it
+      createUserProfile(newUser.uid, newUser.email ?? null).catch(profileError => {
+        console.error("Error creating user profile during signup:", profileError);
+        // Decide if this error should be surfaced to the user or just logged
+      });
       setUser(newUser);
       return newUser;
     } catch (error) {
-      setUser(null);
-      // Re-throw the error
-      throw error;
+      setUser(null); // Clear user on signup failure
+      throw error as AuthError; // Re-throw for the component to handle
     } finally {
       setIsLoading(false);
     }
@@ -80,10 +85,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
          router.push('/');
       }
     } catch (error) {
-      // It's good practice to let the user know if logout failed,
-      // but for now, console.error is fine.
       console.error("Logout failed:", (error as AuthError).message);
-      // Optionally, re-throw or set an error state to display in UI
+      // Optionally, set an error state or show a toast to the user
     } finally {
       setIsLoading(false);
     }
@@ -91,14 +94,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isLoggedIn = !!user;
 
-  // Explicitly define the context value object
+  // Explicitly define the context value object with the correct type
   const contextValue: AuthContextType = {
     user,
     isLoggedIn,
     isLoading,
     login,
+    signup,
     logout,
-    signup
   };
 
   return (
