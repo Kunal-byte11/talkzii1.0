@@ -160,21 +160,29 @@ export default function SignupPage() {
       let avatarPublicUrl: string | null = null;
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop();
-        if (!fileExt) {
-            setError("Invalid file type or name. Could not determine file extension.");
+        if (!fileExt || fileExt === avatarFile.name) { // More robust check for extension
+            setError("Invalid file type or name. Could not determine file extension. Please use standard extensions like .png, .jpg, .webp.");
             setIsLoading(false);
+            toast({
+                title: "Avatar File Error",
+                description: "Invalid file name or missing extension. Please choose a valid image file.",
+                variant: "destructive",
+            });
             return;
         }
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-        // Simplified file path: USER_ID/fileName
-        const filePath = `${signUpData.user.id}/${fileName}`;
+        const fileName = `${crypto.randomUUID()}.${fileExt}`;
+        const filePath = `${signUpData.user.id}/${fileName}`; // Path: USER_ID/filename.jpg
 
         console.log('Attempting to upload avatarFile:', avatarFile, 'Type:', typeof avatarFile, 'Instance of File:', avatarFile instanceof File);
         console.log('Upload path:', filePath);
+        console.log('File ContentType:', avatarFile.type);
         
         const { error: uploadError } = await supabase.storage
-          .from('avatars') // Target 'avatars' bucket
-          .upload(filePath, avatarFile, { upsert: false }); // Changed upsert to false
+          .from('avatars')
+          .upload(filePath, avatarFile, { 
+            upsert: false,
+            contentType: avatarFile.type // Explicitly set content type
+          }); 
 
         if (uploadError) {
           console.error('Avatar upload error object raw:', uploadError);
@@ -189,8 +197,7 @@ export default function SignupPage() {
           } catch (e) {
             console.error('Could not stringify uploadError with Object.getOwnPropertyNames', e)
           }
-
-
+          
           const supabaseErrorMessage = errorAsAny.message || errorAsAny.error || `Raw Error: ${JSON.stringify(uploadError)}`;
           
           setError(`Avatar upload failed: ${supabaseErrorMessage}. Your account was created, but you can add a picture later.`);
@@ -222,6 +229,9 @@ export default function SignupPage() {
 
       if (profileError) {
         setIsLoading(false);
+        // If profile save fails AFTER avatar upload, we might have an orphaned avatar.
+        // For now, we just show the error. More complex cleanup could be added.
+        console.error("Profile save error after potential avatar upload:", profileError);
         setError(`Account created, but failed to save profile: ${profileError.message}. Please contact support or try updating your profile later.`);
         toast({
           title: "Profile Save Failed",
@@ -416,3 +426,4 @@ export default function SignupPage() {
     </div>
   );
 }
+ 
