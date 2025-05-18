@@ -1,7 +1,8 @@
-// Firebase Studio: Attempt to fix persistent parsing error - v_final_attempt_env_issue_likely
+
+// Firebase Studio: Attempt to fix persistent parsing error - v_final_attempt_env_issue_likely_explicit_react
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
+import React from 'react'; // Explicitly import React
 import type { User as FirebaseUser, AuthError } from 'firebase/auth';
 import { useRouter, usePathname } from 'next/navigation';
 import {
@@ -26,13 +27,13 @@ type AuthContextType = {
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 // AuthProvider component
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<FirebaseUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = React.useState<FirebaseUser | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
+  React.useEffect(() => {
     const unsubscribe = onAuthStateChanged((firebaseUser: FirebaseUser | null) => {
       setUser(firebaseUser);
       setIsLoading(false);
@@ -41,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const login = useCallback(async (email: string, password: string): Promise<FirebaseUser> => {
+  const login = React.useCallback(async (email: string, password: string): Promise<FirebaseUser> => {
     setIsLoading(true);
     try {
       const loggedInUser = await firebaseLogin(email, password);
@@ -55,15 +56,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const signup = useCallback(async (email: string, password: string): Promise<FirebaseUser> => {
+  const signup = React.useCallback(async (email: string, password: string): Promise<FirebaseUser> => {
     setIsLoading(true);
     try {
       const newUser = await firebaseSignUp(email, password);
       setUser(newUser);
-      if (newUser?.uid) {
+      if (newUser?.uid && newUser.email) {
         // Ensure profile creation doesn't block signup flow if it fails
-        createUserProfile(newUser.uid, newUser.email ?? null).catch(profileError => {
+        createUserProfile(newUser.uid, newUser.email).catch(profileError => {
           console.error("Error creating user profile during signup:", profileError);
+        });
+      } else if (newUser?.uid) {
+        // Handle case where email might be null (though unlikely with email/password signup)
+         createUserProfile(newUser.uid, null).catch(profileError => {
+          console.error("Error creating user profile during signup (no email):", profileError);
         });
       }
       return newUser;
@@ -75,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const logout = useCallback(async () => {
+  const logout = React.useCallback(async () => {
     setIsLoading(true);
     try {
       await firebaseLogout();
@@ -95,20 +101,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isLoggedIn = !!user;
 
-  const contextValue = useMemo(() => {
-    return {
-      user,
-      isLoading,
-      isLoggedIn,
-      login,
-      signup,
-      logout,
-    };
-  }, [user, isLoading, isLoggedIn, login, signup, logout]);
+  // Defining contextValue directly without useMemo for this troubleshooting iteration
+  const contextValue: AuthContextType = {
+    user,
+    isLoading,
+    isLoggedIn,
+    login,
+    signup,
+    logout,
+  };
   
-  // If the error persists, the issue is almost certainly environmental.
-  // Please clean the .next cache and manually recreate this file.
-  // console.log("AuthProvider rendering. User:", user, "isLoading:", isLoading);
+  // If the error "Expected '>', got 'value'" persists on the <AuthContext.Provider> line below:
+  // 1. STOP your dev server.
+  // 2. DELETE the .next folder in your project.
+  // 3. Manually DELETE this file (src/hooks/useAuth.ts) from your project.
+  // 4. CREATE a new, empty file named useAuth.ts in src/hooks/.
+  // 5. PASTE this exact code (from the XML response) into the new file.
+  // 6. SAVE and RESTART your dev server.
+  // This error is almost certainly environmental (hidden characters, corrupted cache).
 
   return (
     <AuthContext.Provider value={contextValue}>
@@ -125,3 +135,4 @@ export function useAuth(): AuthContextType {
   }
   return context;
 }
+
