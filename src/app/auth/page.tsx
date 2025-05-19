@@ -17,14 +17,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, isValid, subYears, getYear, getMonth, getDate, parse } from 'date-fns';
 import { AlertCircle, UserCircle, Eye, EyeOff } from "lucide-react";
 import type { UserProfile } from '@/types/talkzi';
-import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
+import { useAuth } from '@/contexts/AuthContext';
 
 const MIN_AGE = 16;
 
 export default function AuthPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { session, isLoading: isAuthLoading } = useAuth(); // Get session and auth loading state
+  const { session, isLoading: isAuthLoading } = useAuth();
 
   // Common state
   const [email, setEmail] = useState('');
@@ -63,7 +63,6 @@ export default function AuthPage() {
       const day = parseInt(selectedDay, 10);
       const month = parseInt(selectedMonth, 10);
       const year = parseInt(selectedYear, 10);
-      // Ensure the date is potentially valid before parsing (e.g. day exists in month)
       const potentialDob = parse(`${year}-${month}-${day}`, 'yyyy-MM-dd', new Date());
       if (isValid(potentialDob) && getDate(potentialDob) === day && getMonth(potentialDob) === month - 1 && getYear(potentialDob) === year) {
         setDob(potentialDob);
@@ -75,10 +74,9 @@ export default function AuthPage() {
     }
   }, [selectedDay, selectedMonth, selectedYear]);
 
-  // Redirect if user is already logged in
   useEffect(() => {
     if (!isAuthLoading && session) {
-      router.push('/aipersona'); // Or your desired page after login
+      router.push('/aipersona');
     }
   }, [session, isAuthLoading, router]);
 
@@ -162,7 +160,6 @@ export default function AuthPage() {
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      // options: { data: { username: username.trim() } } // Username handled in profiles table
     });
 
     if (signUpError) {
@@ -177,6 +174,8 @@ export default function AuthPage() {
     }
 
     if (signUpData.user) {
+      console.log("User signed up successfully (from signUp response):", signUpData.user);
+
       const profileData: UserProfile = {
         id: signUpData.user.id,
         username: username.trim(),
@@ -184,9 +183,15 @@ export default function AuthPage() {
         gender: gender,
         date_of_birth: format(dob, 'yyyy-MM-dd'),
       };
-
-      console.log("User signed up successfully (from signUp response):", signUpData.user);
       console.log("Profile data to be inserted:", profileData);
+      
+      // Log current session before attempting profile insert
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error("Error fetching session before profile insert:", sessionError);
+      } else {
+        console.log("Session state before profile insert:", sessionData.session);
+      }
 
 
       const { error: profileError } = await supabase
@@ -451,3 +456,4 @@ export default function AuthPage() {
   );
 }
 
+    
