@@ -11,8 +11,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: UserProfile | null;
-  isLoading: boolean;
-  isLoadingProfile: boolean;
+  isLoading: boolean; // True if either auth state or profile is still loading
   signOut: () => Promise<void>;
 }
 
@@ -22,116 +21,122 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = React.useState<User | null>(null);
   const [session, setSession] = React.useState<Session | null>(null);
   const [profile, setProfile] = React.useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [isLoadingProfile, setIsLoadingProfile] = React.useState(true);
+  const [isAuthLoading, setIsAuthLoading] = React.useState(true); // Specifically for supabase.auth state
+  const [isProfileLoading, setIsProfileLoading] = React.useState(true); // Specifically for profile fetch
+
   const router = useRouter();
   const pathname = usePathname();
 
+  // Effect for initial session/profile load and setting up auth listener
   useEffect(() => {
-    setIsLoading(true);
-    setIsLoadingProfile(true);
+    setIsAuthLoading(true);
+    setIsProfileLoading(true);
+
+    const getInitialData = async () => {
+      const { data: { session: initialSession } } = await supabase.auth.getSession();
+      setSession(initialSession);
+      const currentUser = initialSession?.user ?? null;
+      setUser(currentUser);
+      setIsAuthLoading(false); // Initial auth check done
+
+      if (currentUser) {
+        const { data: userProfile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', currentUser.id)
+          .single();
+        if (error && error.code !== 'PGRST116') { // PGRST116: no rows found
+          console.error('Initial profile fetch error:', error);
+        }
+        setProfile(userProfile as UserProfile | null);
+      } else {
+        setProfile(null);
+      }
+      setIsProfileLoading(false); // Initial profile check done (or not needed)
+    };
+
+    getInitialData();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, sessionState: Session | null) => {
+        setIsAuthLoading(true); // Auth state is changing
         setSession(sessionState);
-        const currentUser = sessionState?.user ?? null;
-        setUser(currentUser);
-        setIsLoading(false); // Auth loading done
+        const newCurrentUser = sessionState?.user ?? null;
+        setUser(newCurrentUser);
+        setIsAuthLoading(false); // Auth state change processed
 
-        if (currentUser) {
-          setIsLoadingProfile(true); // Start profile loading
+        if (event === 'SIGNED_OUT' && user?.id) { // Check previous user for ID
+          try {
+            localStorage.removeItem(`talkzi_chat_history_${user.id}`);
+            localStorage.removeItem(`talkzi_ai_friend_type_${user.id}`);
+          } catch (e) {
+            console.error("Error clearing user-specific localStorage on sign out", e);
+          }
+        }
+        
+        if (newCurrentUser) {
+          setIsProfileLoading(true);
           const { data: userProfile, error } = await supabase
             .from('profiles')
             .select('*')
-            .eq('id', currentUser.id)
+            .eq('id', newCurrentUser.id)
             .single();
-
-          if (error && error.code !== 'PGRST116') { // PGRST116: no rows found, which is fine if profile not created yet
+          if (error && error.code !== 'PGRST116') {
             console.error('Error fetching profile on auth change:', error);
           }
           setProfile(userProfile as UserProfile | null);
-          setIsLoadingProfile(false); // Profile loading done
+          setIsProfileLoading(false);
         } else {
           setProfile(null);
-          setIsLoadingProfile(false); // No user, so profile loading "done"
-        }
-
-        const isAuthPage = pathname === '/auth';
-        // Pages requiring auth to access
-        const protectedPages = ['/chat', '/aipersona'];
-        const isProtectedPage = protectedPages.some(p => pathname === p || pathname.startsWith(p + '/'));
-
-
-        if (event === 'SIGNED_IN') {
-          if (isAuthPage) {
-            router.push('/aipersona');
-          }
-        } else if (event === 'SIGNED_OUT') {
-          // Clear user-specific localStorage on sign out
-          if (currentUser?.id) {
-            try {
-              localStorage.removeItem(`talkzi_chat_history_${currentUser.id}`);
-              localStorage.removeItem(`talkzi_ai_friend_type_${currentUser.id}`);
-            } catch (e) {
-              console.error("Error clearing user-specific localStorage on sign out", e);
-            }
-          }
-          if (isProtectedPage) {
-            router.push('/auth');
-          }
+          setIsProfileLoading(false); // No user, so profile loading "done"
         }
       }
     );
-    
-    // Check initial session state
-    const getInitialSession = async () => {
-        setIsLoading(true);
-        setIsLoadingProfile(true);
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        setSession(currentSession);
-        const currentUser = currentSession?.user ?? null;
-        setUser(currentUser);
-        setIsLoading(false); // Auth loading done
-
-        if (currentUser) {
-            const { data: userProfile, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', currentUser.id)
-                .single();
-            if (error && error.code !== 'PGRST116') { // PGRST116: no rows found
-                console.error('Initial profile fetch error:', error);
-            }
-            setProfile(userProfile as UserProfile | null);
-        } else {
-            setProfile(null);
-        }
-        setIsLoadingProfile(false); // Profile loading done
-    };
-    getInitialSession();
-
 
     return () => {
       authListener?.subscription.unsubscribe();
     };
-  }, [pathname, router]); // router and pathname are dependencies
+  }, []); // Empty dependency array: runs once on mount
+
+  // Effect for handling redirects based on auth state
+  useEffect(() => {
+    // Wait until initial auth loading is complete before attempting redirects
+    if (isAuthLoading) {
+      return;
+    }
+
+    const isAuthPage = pathname === '/auth';
+    const protectedPages = ['/chat', '/aipersona'];
+    const isProtectedPage = protectedPages.some(p => pathname === p || pathname.startsWith(p + '/'));
+
+    if (session) { // User is logged in
+      if (isAuthPage) {
+        router.push('/aipersona');
+      }
+    } else { // User is not logged in
+      if (isProtectedPage) {
+        router.push('/auth');
+      }
+    }
+  }, [session, pathname, router, isAuthLoading]); // Dependencies for redirect logic
 
   const signOut = async () => {
+    const currentUserId = user?.id; // Capture before sign out
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error("Error signing out: ", error);
     }
-    // onAuthStateChange will handle setting user/session/profile to null and redirecting
+    // onAuthStateChange will handle setting user/session/profile to null.
+    // The localStorage clearing is now inside onAuthStateChange for 'SIGNED_OUT'.
   };
 
   const contextValue = React.useMemo(() => ({
     user,
     session,
     profile,
-    isLoading: isLoading || isLoadingProfile, // Combined loading state for simplicity for consumers
-    isLoadingProfile, // Consumers can use this if they need to distinguish
+    isLoading: isAuthLoading || isProfileLoading, // Combined loading state
     signOut,
-  }), [user, session, profile, isLoading, isLoadingProfile]);
+  }), [user, session, profile, isAuthLoading, isProfileLoading]);
 
   return (
     <AuthContext.Provider value={contextValue}>
