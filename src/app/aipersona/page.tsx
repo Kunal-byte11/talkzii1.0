@@ -1,16 +1,18 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Logo } from '@/components/talkzi/Logo';
 import Link from 'next/link';
-import { Home, Bot, Users, Brain, Skull, LogOut, User as UserIcon } from 'lucide-react'; // Renamed User to UserIcon
+import { Home, Bot, Users, Brain, Skull, LogOut, User as UserIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { LoadingSpinner } from '@/components/talkzi/LoadingSpinner';
+import { AuthRequiredMessage } from '@/components/talkzi/AuthRequiredMessage';
 
 const personaOptions = [
   { value: 'default', label: 'Default Talkzi', description: 'Your general empathetic AI companion.', icon: Bot },
@@ -20,23 +22,25 @@ const personaOptions = [
   { value: 'toxic_friend', label: 'Toxic Friend (Kabir Singh Vibe)', description: 'Blunt, "tough love" advice, pushes for action.', icon: Skull },
 ];
 
-const getAIFriendTypeKey = (userId?: string) => userId ? `talkzi_ai_friend_type_${userId}` : 'talkzi_ai_friend_type_guest';
-
+const getAIFriendTypeKey = (userId: string) => `talkzi_ai_friend_type_${userId}`;
 
 export default function AIPersonaPage() {
   const router = useRouter();
   const { user, signOut, isLoading: isAuthLoading } = useAuth();
   const [selectedPersona, setSelectedPersona] = useState<string | undefined>(undefined);
-  const [isLocalStorageReady, setIsLocalStorageReady] = useState(false); // Used to ensure localStorage access is client-side
+  const [isPersonaLoading, setIsPersonaLoading] = useState(true);
   const { toast } = useToast();
-  
-  // AI_FRIEND_TYPE_KEY will update when user object changes (due to login/logout)
-  const AI_FRIEND_TYPE_KEY = getAIFriendTypeKey(user?.id);
+
+  const AI_FRIEND_TYPE_KEY = useMemo(() => {
+    if (user?.id) {
+      return getAIFriendTypeKey(user.id);
+    }
+    return null; // No key if no user
+  }, [user?.id]);
 
   useEffect(() => {
-    // This effect runs when AI_FRIEND_TYPE_KEY changes (i.e., user logs in/out or on initial load)
-    // or when auth state resolves after initial load.
-    if (!isAuthLoading && user) {
+    if (user && !isAuthLoading && AI_FRIEND_TYPE_KEY) {
+      setIsPersonaLoading(true);
       try {
         const savedPersona = localStorage.getItem(AI_FRIEND_TYPE_KEY);
         if (savedPersona && personaOptions.some(p => p.value === savedPersona)) {
@@ -48,17 +52,16 @@ export default function AIPersonaPage() {
         console.error("Error reading persona from localStorage", error);
         setSelectedPersona('default');
       }
-      setIsLocalStorageReady(true); // Indicate localStorage has been accessed
-    } else if (!isAuthLoading && !user) {
-      // User is not logged in, and auth state is resolved.
-      // AuthProvider should handle redirect. This page will show "Please log in".
-      setIsLocalStorageReady(true); // Still mark as ready to stop showing page loader.
+      setIsPersonaLoading(false);
+    } else if (!user && !isAuthLoading) {
+      // Not logged in, or auth state resolved to no user
+      setIsPersonaLoading(false); 
     }
+    // If isAuthLoading is true, we wait for it to resolve.
   }, [user, isAuthLoading, AI_FRIEND_TYPE_KEY]);
 
-
   const handleConfirm = () => {
-    if (selectedPersona && user) { 
+    if (selectedPersona && user && AI_FRIEND_TYPE_KEY) {
       try {
         if (selectedPersona === 'default') {
           localStorage.removeItem(AI_FRIEND_TYPE_KEY);
@@ -75,40 +78,32 @@ export default function AIPersonaPage() {
       }
       router.push('/chat');
     } else if (!user) {
-        toast({ title: "Not Logged In", description: "Please log in to save preferences and chat.", variant: "destructive"});
-        // AuthProvider should have already redirected, but as a fallback:
-        router.push('/auth');
+      toast({ title: "Not Logged In", description: "Please log in to save preferences and chat.", variant: "destructive" });
+      // AuthProvider should handle redirect, but this is a fallback message
     }
   };
-  
-  if (isAuthLoading || (!isLocalStorageReady && user)) { 
-    // Show loading if auth is loading OR if user is present but localStorage hasn't been checked yet
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
-        <Logo className="h-12 w-auto mb-4 animate-pulse" />
-        <p className="text-muted-foreground">Loading persona settings...</p>
-      </div>
-    );
+
+  if (isAuthLoading) {
+    return <LoadingSpinner message="Verifying authentication..." />;
   }
 
-  if (!user) { 
-     // This state should ideally be brief as AuthProvider should redirect.
-     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
-        <Logo className="h-12 w-auto mb-4" />
-        <p className="text-muted-foreground mb-4">Please log in to choose your AI Dost's vibe.</p>
-        <Button onClick={() => router.push('/auth')}>Go to Login</Button>
-      </div>
-    );
+  if (!user) {
+    // Auth is resolved, but no user. AuthProvider should redirect them.
+    // This message is a fallback or shown briefly during redirection.
+    return <AuthRequiredMessage message="You need to be logged in to choose a persona." actionButtonText="Go to Login" actionButtonPath="/auth" />;
   }
 
+  // User is present, and auth is resolved.
+  if (isPersonaLoading) {
+    return <LoadingSpinner message="Loading persona settings..." />;
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="sticky top-0 z-20 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 max-w-5xl mx-auto items-center justify-between px-4">
           <Link href="/" passHref>
-             <Logo className="h-8 w-auto" />
+            <Logo className="h-8 w-auto" />
           </Link>
           <div className="flex items-center space-x-1 sm:space-x-2">
             <Button variant="ghost" size="icon" asChild title="Home">
@@ -118,10 +113,10 @@ export default function AIPersonaPage() {
               </Link>
             </Button>
             {user && (
-                 <Button variant="ghost" size="icon" onClick={signOut} title="Logout">
-                    <LogOut className="h-5 w-5" />
-                    <span className="sr-only">Logout</span>
-                </Button>
+              <Button variant="ghost" size="icon" onClick={signOut} title="Logout">
+                <LogOut className="h-5 w-5" />
+                <span className="sr-only">Logout</span>
+              </Button>
             )}
           </div>
         </div>
@@ -129,8 +124,8 @@ export default function AIPersonaPage() {
 
       <main className="flex-grow container mx-auto px-4 py-8 sm:py-12 max-w-2xl">
         <div className="text-center mb-8 sm:mb-10">
-           <UserIcon className="mx-auto h-10 w-10 text-primary mb-2" />
-           <p className="text-sm text-muted-foreground mb-1">Logged in as: {user.email}</p>
+          <UserIcon className="mx-auto h-10 w-10 text-primary mb-2" />
+          <p className="text-sm text-muted-foreground mb-1">Logged in as: {user.email}</p>
           <h1 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent text-transparent bg-clip-text">
             Choose Your AI Dost's Vibe!
           </h1>
@@ -151,9 +146,8 @@ export default function AIPersonaPage() {
               <Label
                 key={persona.value}
                 htmlFor={`persona-${persona.value}`}
-                className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all duration-200 ease-in-out hover:shadow-lg focus-within:ring-2 focus-within:ring-primary focus-within:border-primary ${
-                  selectedPersona === persona.value ? 'ring-2 ring-primary border-primary shadow-xl bg-primary/5' : 'border-border bg-card hover:border-primary/50'
-                }`}
+                className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all duration-200 ease-in-out hover:shadow-lg focus-within:ring-2 focus-within:ring-primary focus-within:border-primary ${selectedPersona === persona.value ? 'ring-2 ring-primary border-primary shadow-xl bg-primary/5' : 'border-border bg-card hover:border-primary/50'
+                  }`}
               >
                 <RadioGroupItem value={persona.value} id={`persona-${persona.value}`} className="mr-4 h-5 w-5 border-muted-foreground data-[state=checked]:border-primary data-[state=checked]:text-primary" />
                 <IconComponent className={`h-7 w-7 mr-3 ${selectedPersona === persona.value ? 'text-primary' : 'text-muted-foreground'}`} />
@@ -168,14 +162,14 @@ export default function AIPersonaPage() {
 
         <Button
           onClick={handleConfirm}
-          disabled={!selectedPersona || isAuthLoading || !user} // isAuthLoading check is good here
+          disabled={!selectedPersona || isAuthLoading || !user || isPersonaLoading}
           className="w-full mt-8 sm:mt-10 gradient-button text-lg py-3 rounded-lg shadow-md hover:shadow-lg transition-shadow"
           aria-label="Confirm persona selection and start chatting"
         >
           Confirm & Chat
         </Button>
       </main>
-       <footer className="py-6 border-t">
+      <footer className="py-6 border-t">
         <div className="container mx-auto px-4 text-center text-xs text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} Talkzi. Change your AI's vibe anytime!</p>
         </div>
@@ -183,5 +177,3 @@ export default function AIPersonaPage() {
     </div>
   );
 }
-
-    
