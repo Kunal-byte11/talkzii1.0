@@ -7,7 +7,7 @@ import { Logo } from '@/components/talkzi/Logo';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Home, Cog, LogOut } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
+import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
 export default function ChatPage() {
@@ -17,14 +17,14 @@ export default function ChatPage() {
 
 
   useEffect(() => {
-    // Ensure this runs only on the client
+    // Ensure this runs only on the client for potential localStorage access in ChatInterface
     setIsClientReady(true);
-    if (!isAuthLoading && !user) {
-      router.push('/auth');
-    }
-  }, [user, isAuthLoading, router]);
+    // AuthProvider handles redirection if user is not authenticated and this page is protected.
+    // No explicit router.push('/auth') here.
+  }, []); // Empty dependency array: runs once on mount on client.
 
   if (isAuthLoading || !isClientReady) {
+    // Show loading if auth is still resolving or client hasn't marked itself ready
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
         <Logo className="h-12 w-auto mb-4 animate-pulse" />
@@ -33,7 +33,9 @@ export default function ChatPage() {
     );
   }
   
-  if (!user) { // Fallback redirect if somehow not caught by useEffect
+  if (!user) { 
+     // This state should ideally be brief as AuthProvider should redirect.
+     // If AuthProvider hasn't redirected yet, show a "please login" message.
      return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
         <Logo className="h-12 w-auto mb-4" />
@@ -79,3 +81,5 @@ export default function ChatPage() {
     </div>
   );
 }
+
+    

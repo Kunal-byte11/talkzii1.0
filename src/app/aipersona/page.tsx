@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Logo } from '@/components/talkzi/Logo';
 import Link from 'next/link';
-import { Home, Bot, Users, Brain, Skull, LogOut, User } from 'lucide-react'; // Replaced Clapperboard with Skull, or use Bot
+import { Home, Bot, Users, Brain, Skull, LogOut, User as UserIcon } from 'lucide-react'; // Renamed User to UserIcon
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -17,10 +17,9 @@ const personaOptions = [
   { value: 'female_best_friend', label: 'Female Best Friend', description: 'Supportive & bubbly like a trusted didi.', icon: Users },
   { value: 'male_best_friend', label: 'Male Best Friend', description: 'Chill & emotionally aware bro.', icon: Users },
   { value: 'topper_friend', label: 'Topper Friend', description: 'Helpful, kind, offers practical advice.', icon: Brain },
-  { value: 'toxic_friend', label: 'Toxic Friend (Kabir Singh Vibe)', description: 'Blunt, "tough love" advice, pushes for action.', icon: Skull }, // Changed from Filmy Friend
+  { value: 'toxic_friend', label: 'Toxic Friend (Kabir Singh Vibe)', description: 'Blunt, "tough love" advice, pushes for action.', icon: Skull },
 ];
 
-// Key will be user-specific if user is logged in
 const getAIFriendTypeKey = (userId?: string) => userId ? `talkzi_ai_friend_type_${userId}` : 'talkzi_ai_friend_type_guest';
 
 
@@ -28,14 +27,16 @@ export default function AIPersonaPage() {
   const router = useRouter();
   const { user, signOut, isLoading: isAuthLoading } = useAuth();
   const [selectedPersona, setSelectedPersona] = useState<string | undefined>(undefined);
-  const [isPageLoading, setIsPageLoading] = useState(true);
+  const [isLocalStorageReady, setIsLocalStorageReady] = useState(false); // Used to ensure localStorage access is client-side
   const { toast } = useToast();
+  
+  // AI_FRIEND_TYPE_KEY will update when user object changes (due to login/logout)
   const AI_FRIEND_TYPE_KEY = getAIFriendTypeKey(user?.id);
 
   useEffect(() => {
-    if (!isAuthLoading && !user) {
-      router.push('/auth'); 
-    } else if (user) {
+    // This effect runs when AI_FRIEND_TYPE_KEY changes (i.e., user logs in/out or on initial load)
+    // or when auth state resolves after initial load.
+    if (!isAuthLoading && user) {
       try {
         const savedPersona = localStorage.getItem(AI_FRIEND_TYPE_KEY);
         if (savedPersona && personaOptions.some(p => p.value === savedPersona)) {
@@ -47,11 +48,13 @@ export default function AIPersonaPage() {
         console.error("Error reading persona from localStorage", error);
         setSelectedPersona('default');
       }
-      setIsPageLoading(false);
+      setIsLocalStorageReady(true); // Indicate localStorage has been accessed
     } else if (!isAuthLoading && !user) {
-        setIsPageLoading(false);
+      // User is not logged in, and auth state is resolved.
+      // AuthProvider should handle redirect. This page will show "Please log in".
+      setIsLocalStorageReady(true); // Still mark as ready to stop showing page loader.
     }
-  }, [user, isAuthLoading, router, AI_FRIEND_TYPE_KEY]);
+  }, [user, isAuthLoading, AI_FRIEND_TYPE_KEY]);
 
 
   const handleConfirm = () => {
@@ -73,11 +76,13 @@ export default function AIPersonaPage() {
       router.push('/chat');
     } else if (!user) {
         toast({ title: "Not Logged In", description: "Please log in to save preferences and chat.", variant: "destructive"});
+        // AuthProvider should have already redirected, but as a fallback:
         router.push('/auth');
     }
   };
   
-  if (isAuthLoading || (isPageLoading && user)) { 
+  if (isAuthLoading || (!isLocalStorageReady && user)) { 
+    // Show loading if auth is loading OR if user is present but localStorage hasn't been checked yet
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
         <Logo className="h-12 w-auto mb-4 animate-pulse" />
@@ -87,6 +92,7 @@ export default function AIPersonaPage() {
   }
 
   if (!user) { 
+     // This state should ideally be brief as AuthProvider should redirect.
      return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
         <Logo className="h-12 w-auto mb-4" />
@@ -123,7 +129,7 @@ export default function AIPersonaPage() {
 
       <main className="flex-grow container mx-auto px-4 py-8 sm:py-12 max-w-2xl">
         <div className="text-center mb-8 sm:mb-10">
-           <User className="mx-auto h-10 w-10 text-primary mb-2" />
+           <UserIcon className="mx-auto h-10 w-10 text-primary mb-2" />
            <p className="text-sm text-muted-foreground mb-1">Logged in as: {user.email}</p>
           <h1 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent text-transparent bg-clip-text">
             Choose Your AI Dost's Vibe!
@@ -162,7 +168,7 @@ export default function AIPersonaPage() {
 
         <Button
           onClick={handleConfirm}
-          disabled={!selectedPersona || isPageLoading || !user}
+          disabled={!selectedPersona || isAuthLoading || !user} // isAuthLoading check is good here
           className="w-full mt-8 sm:mt-10 gradient-button text-lg py-3 rounded-lg shadow-md hover:shadow-lg transition-shadow"
           aria-label="Confirm persona selection and start chatting"
         >
@@ -177,3 +183,5 @@ export default function AIPersonaPage() {
     </div>
   );
 }
+
+    
