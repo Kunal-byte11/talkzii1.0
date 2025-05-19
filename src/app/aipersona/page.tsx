@@ -8,8 +8,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Logo } from '@/components/talkzi/Logo';
 import Link from 'next/link';
-import { Home, Bot, Users, Brain, Clapperboard } from 'lucide-react';
+import { Home, Bot, Users, Brain, Clapperboard, LogOut, User } from 'lucide-react'; // Added User icon
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
 
 const personaOptions = [
   { value: 'default', label: 'Default Talkzi', description: 'Your general empathetic AI companion.', icon: Bot },
@@ -19,32 +20,43 @@ const personaOptions = [
   { value: 'filmy_friend', label: 'Filmy Friend', description: 'Dramatic, expressive, Bollywood style!', icon: Clapperboard },
 ];
 
-const AI_FRIEND_TYPE_KEY = 'talkzi_ai_friend_type'; // Generic key
+// Key will be user-specific if user is logged in
+const getAIFriendTypeKey = (userId?: string) => userId ? `talkzi_ai_friend_type_${userId}` : 'talkzi_ai_friend_type_guest';
+
 
 export default function AIPersonaPage() {
   const router = useRouter();
+  const { user, signOut, isLoading: isAuthLoading } = useAuth();
   const [selectedPersona, setSelectedPersona] = useState<string | undefined>(undefined);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const { toast } = useToast();
+  const AI_FRIEND_TYPE_KEY = getAIFriendTypeKey(user?.id);
 
   useEffect(() => {
-    try {
-      const savedPersona = localStorage.getItem(AI_FRIEND_TYPE_KEY);
-      if (savedPersona && personaOptions.some(p => p.value === savedPersona)) {
-        setSelectedPersona(savedPersona);
-      } else {
-        setSelectedPersona('default'); // Default if nothing stored or invalid
+    if (!isAuthLoading && !user) {
+      router.push('/auth'); // Redirect to auth if not logged in and auth check complete
+    } else if (user) {
+      try {
+        const savedPersona = localStorage.getItem(AI_FRIEND_TYPE_KEY);
+        if (savedPersona && personaOptions.some(p => p.value === savedPersona)) {
+          setSelectedPersona(savedPersona);
+        } else {
+          setSelectedPersona('default');
+        }
+      } catch (error) {
+        console.error("Error reading persona from localStorage", error);
+        setSelectedPersona('default');
       }
-    } catch (error) {
-      console.error("Error reading persona from localStorage", error);
-      setSelectedPersona('default');
+      setIsPageLoading(false);
+    } else if (!isAuthLoading && !user) {
+        // Handled by redirect above, but as a fallback for initial state
+        setIsPageLoading(false);
     }
-    setIsPageLoading(false);
-  }, []);
+  }, [user, isAuthLoading, router, AI_FRIEND_TYPE_KEY]);
 
 
   const handleConfirm = () => {
-    if (selectedPersona) {
+    if (selectedPersona && user) { // Ensure user exists before saving/navigating
       try {
         if (selectedPersona === 'default') {
           localStorage.removeItem(AI_FRIEND_TYPE_KEY);
@@ -60,10 +72,13 @@ export default function AIPersonaPage() {
         });
       }
       router.push('/chat');
+    } else if (!user) {
+        toast({ title: "Not Logged In", description: "Please log in to save preferences and chat.", variant: "destructive"});
+        router.push('/auth');
     }
   };
   
-  if (isPageLoading) {
+  if (isAuthLoading || (isPageLoading && user)) { // Show loading if auth is loading or page is loading for a user
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
         <Logo className="h-12 w-auto mb-4 animate-pulse" />
@@ -72,6 +87,17 @@ export default function AIPersonaPage() {
     );
   }
 
+  if (!user) { // If done loading and still no user, show message or could be handled by redirect entirely
+     return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
+        <Logo className="h-12 w-auto mb-4" />
+        <p className="text-muted-foreground mb-4">Please log in to choose your AI Dost's vibe.</p>
+        <Button onClick={() => router.push('/auth')}>Go to Login</Button>
+      </div>
+    );
+  }
+
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="sticky top-0 z-20 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -79,19 +105,27 @@ export default function AIPersonaPage() {
           <Link href="/" passHref>
              <Logo className="h-8 w-auto" />
           </Link>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 sm:space-x-2">
             <Button variant="ghost" size="icon" asChild title="Home">
               <Link href="/">
                 <Home className="h-5 w-5" />
                 <span className="sr-only">Home</span>
               </Link>
             </Button>
+            {user && (
+                 <Button variant="ghost" size="icon" onClick={signOut} title="Logout">
+                    <LogOut className="h-5 w-5" />
+                    <span className="sr-only">Logout</span>
+                </Button>
+            )}
           </div>
         </div>
       </header>
 
       <main className="flex-grow container mx-auto px-4 py-8 sm:py-12 max-w-2xl">
         <div className="text-center mb-8 sm:mb-10">
+           <User className="mx-auto h-10 w-10 text-primary mb-2" />
+           <p className="text-sm text-muted-foreground mb-1">Logged in as: {user.email}</p>
           <h1 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent text-transparent bg-clip-text">
             Choose Your AI Dost's Vibe!
           </h1>
@@ -129,7 +163,7 @@ export default function AIPersonaPage() {
 
         <Button
           onClick={handleConfirm}
-          disabled={!selectedPersona || isPageLoading}
+          disabled={!selectedPersona || isPageLoading || !user}
           className="w-full mt-8 sm:mt-10 gradient-button text-lg py-3 rounded-lg shadow-md hover:shadow-lg transition-shadow"
           aria-label="Confirm persona selection and start chatting"
         >

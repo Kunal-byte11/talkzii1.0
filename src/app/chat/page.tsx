@@ -6,18 +6,25 @@ import { ChatInterface } from '@/components/talkzi/ChatInterface';
 import { Logo } from '@/components/talkzi/Logo';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Home, Cog } from 'lucide-react';
+import { Home, Cog, LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
+import { useRouter } from 'next/navigation';
 
 export default function ChatPage() {
-  const [isPageLoading, setIsPageLoading] = useState(true); // Can be removed if no async ops needed before chat loads
+  const { user, signOut, isLoading: isAuthLoading } = useAuth();
+  const router = useRouter();
+  const [isClientReady, setIsClientReady] = useState(false);
+
 
   useEffect(() => {
-    // If there were any checks (e.g., for a valid persona selection, etc.)
-    // they would go here. For now, we can just set loading to false.
-    setIsPageLoading(false);
-  }, []);
+    // Ensure this runs only on the client
+    setIsClientReady(true);
+    if (!isAuthLoading && !user) {
+      router.push('/auth');
+    }
+  }, [user, isAuthLoading, router]);
 
-  if (isPageLoading) {
+  if (isAuthLoading || !isClientReady) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
         <Logo className="h-12 w-auto mb-4 animate-pulse" />
@@ -25,6 +32,17 @@ export default function ChatPage() {
       </div>
     );
   }
+  
+  if (!user) { // Fallback redirect if somehow not caught by useEffect
+     return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
+        <Logo className="h-12 w-auto mb-4" />
+        <p className="text-muted-foreground mb-4">Please log in to chat.</p>
+        <Button onClick={() => router.push('/auth')}>Go to Login</Button>
+      </div>
+    );
+  }
+
 
   return (
     <div className="flex flex-col h-screen">
@@ -46,6 +64,12 @@ export default function ChatPage() {
                 <span className="sr-only">Home</span>
               </Link>
             </Button>
+             {user && (
+                 <Button variant="ghost" size="icon" onClick={signOut} title="Logout">
+                    <LogOut className="h-5 w-5" />
+                    <span className="sr-only">Logout</span>
+                </Button>
+            )}
           </div>
         </div>
       </header>

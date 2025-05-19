@@ -2,12 +2,20 @@
 export interface ChatMessage {
   id: string;
   text: string;
-  sender: 'user' | 'ai' | 'system'; // 'system' for crisis or info messages
-  timestamp: number; // Use number (Date.now()) for easier serialization
-  isLoading?: boolean; // Optional flag for AI messages being generated
-  isCrisis?: boolean; // Optional flag for crisis messages
+  sender: 'user' | 'ai' | 'system';
+  timestamp: number;
+  isLoading?: boolean;
+  isCrisis?: boolean;
 }
 
-// UserProfile type is no longer needed as auth features are removed.
-// If you decide to add user-specific features without full auth later,
-// you might re-introduce a simplified profile/preferences type.
+export interface UserProfile {
+  id: string; // Should match Supabase auth user ID (UUID)
+  username?: string; // Added username
+  email?: string;
+  gender?: 'male' | 'female' | 'prefer_not_to_say'; // Allow prefer_not_to_say
+  date_of_birth?: string; // Store as 'YYYY-MM-DD' string
+  avatar_url?: string | null;
+  // Add other profile fields as needed
+  created_at?: string;
+  updated_at?: string;
+}

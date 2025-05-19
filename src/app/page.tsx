@@ -6,11 +6,21 @@ import { ConversationPreviewCarousel } from '@/components/talkzi/ConversationPre
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Logo } from '@/components/talkzi/Logo';
-import { Github, MessageSquare } from 'lucide-react';
+import { Github, MessageSquare, LogIn, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
 
 export default function HomePage() {
   const router = useRouter();
+  const { user, signOut, isLoading } = useAuth(); // Use the auth context
+
+  const handleStartChatting = () => {
+    if (user) {
+      router.push('/aipersona');
+    } else {
+      router.push('/auth'); // Redirect to new auth page
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -20,9 +30,20 @@ export default function HomePage() {
             <Logo className="h-8 w-auto" />
           </Link>
           <div className="flex items-center space-x-2">
-            <Button onClick={() => router.push('/aipersona')} className="gradient-button">
+            <Button onClick={handleStartChatting} className="gradient-button">
               <MessageSquare className="mr-2 h-4 w-4"/> Start Chatting
             </Button>
+            {!isLoading && (
+              user ? (
+                <Button variant="outline" onClick={signOut}>
+                  <LogOut className="mr-2 h-4 w-4" /> Logout
+                </Button>
+              ) : (
+                <Button variant="outline" onClick={() => router.push('/auth')}>
+                  <LogIn className="mr-2 h-4 w-4" /> Login / Sign Up
+                </Button>
+              )
+            )}
           </div>
         </div>
       </header>

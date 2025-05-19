@@ -5,12 +5,18 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
 
 export function HeroSection() {
   const router = useRouter();
+  const { user } = useAuth(); // Get user from context
 
   const handleStartChatting = () => {
-    router.push('/aipersona');
+    if (user) {
+      router.push('/aipersona');
+    } else {
+      router.push('/auth'); // Redirect to new auth page
+    }
   };
   
   return (

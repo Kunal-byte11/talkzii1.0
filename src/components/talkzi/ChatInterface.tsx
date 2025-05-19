@@ -7,17 +7,20 @@ import { MessageBubble } from './MessageBubble';
 import { ChatInputBar } from './ChatInputBar';
 import { TypingIndicator } from './TypingIndicator';
 import { SubscriptionModal } from './SubscriptionModal';
-import { useChatCounter } from '@/hooks/useChatCounter';
+import { useChatCounter } from '@/hooks/useChatCounter'; // Stays generic for now
 import { detectCrisis } from '@/ai/flows/crisis-detection';
 import { hinglishAICompanion, type HinglishAICompanionInput } from '@/ai/flows/hinglish-ai-companion';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertCircle, MessageSquareText } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
 
-const CHAT_HISTORY_KEY = 'talkzi_chat_history';
-const AI_FRIEND_TYPE_KEY = 'talkzi_ai_friend_type';
+// Keys will be user-specific if user is logged in
+const getChatHistoryKey = (userId?: string) => userId ? `talkzi_chat_history_${userId}` : 'talkzi_chat_history_guest';
+const getAIFriendTypeKey = (userId?: string) => userId ? `talkzi_ai_friend_type_${userId}` : 'talkzi_ai_friend_type_guest';
 
 export function ChatInterface() {
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const { chatCount, incrementChatCount, isLimitReached, isLoading: isCounterLoading } = useChatCounter();
@@ -25,15 +28,44 @@ export function ChatInterface() {
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [currentAiFriendType, setCurrentAiFriendType] = useState<string | undefined>(undefined);
+  const [localStorageKeys, setLocalStorageKeys] = useState({
+    chatHistory: getChatHistoryKey(),
+    aiFriendType: getAIFriendTypeKey(),
+  });
+
+  useEffect(() => {
+    if (!isAuthLoading && user?.id) {
+      setLocalStorageKeys({
+        chatHistory: getChatHistoryKey(user.id),
+        aiFriendType: getAIFriendTypeKey(user.id),
+      });
+    } else if (!isAuthLoading && !user) {
+      // Use guest keys if not logged in
+      setLocalStorageKeys({
+        chatHistory: getChatHistoryKey(),
+        aiFriendType: getAIFriendTypeKey(),
+      });
+    }
+  }, [user, isAuthLoading]);
+
 
   // Load chat history and AI friend type from localStorage
   useEffect(() => {
+    // Only run if keys are set (i.e., after user auth state is determined)
+    if (localStorageKeys.chatHistory === 'talkzi_chat_history_guest' && !user) { // default keys before auth check
+        // Potentially wait or ensure keys are user specific before loading if user exists
+    }
+
+    // Do not load if keys are still default and auth is loading
+    if (isAuthLoading && localStorageKeys.chatHistory.endsWith('_guest')) return;
+
+
     try {
-      const storedHistory = localStorage.getItem(CHAT_HISTORY_KEY);
+      const storedHistory = localStorage.getItem(localStorageKeys.chatHistory);
       if (storedHistory) {
         setMessages(JSON.parse(storedHistory));
       } else {
-        setMessages([]);
+        setMessages([]); // Initialize with empty messages if no history
       }
     } catch (error) {
       console.error("Error loading chat history from localStorage", error);
@@ -41,24 +73,28 @@ export function ChatInterface() {
     }
 
     try {
-      const storedFriendType = localStorage.getItem(AI_FRIEND_TYPE_KEY);
+      const storedFriendType = localStorage.getItem(localStorageKeys.aiFriendType);
       setCurrentAiFriendType(storedFriendType || undefined);
     } catch (error) {
       console.error("Error loading AI friend type from localStorage", error);
       setCurrentAiFriendType(undefined);
     }
-    // Removed initial scroll from here; will be handled by the dedicated scroll useEffect
-  }, []);
+  }, [localStorageKeys, isAuthLoading]); // Rerun when keys change or auth loading finishes
 
   // Save chat history to localStorage
   useEffect(() => {
-    if (messages.length === 0 && localStorage.getItem(CHAT_HISTORY_KEY) === null) return;
+    // Only save if user context is established (keys are not guest or auth is not loading)
+    if (isAuthLoading && localStorageKeys.chatHistory.endsWith('_guest')) return;
+
+    // Avoid saving empty array on initial load if there was nothing in localStorage
+    if (messages.length === 0 && localStorage.getItem(localStorageKeys.chatHistory) === null) return;
+    
     try {
-      localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(messages));
+      localStorage.setItem(localStorageKeys.chatHistory, JSON.stringify(messages));
     } catch (error) {
       console.error("Error saving chat history to localStorage", error);
     }
-  }, [messages]);
+  }, [messages, localStorageKeys.chatHistory, isAuthLoading]);
 
   // Scroll to bottom when new messages are added or AI starts loading
    useEffect(() => {
@@ -84,20 +120,25 @@ export function ChatInterface() {
   };
 
   const handleSendMessage = useCallback(async (userInput: string) => {
+    if (!user && !isAuthLoading) { // Check if user is not logged in and auth has been checked
+      toast({ title: "Login Required", description: "Please log in to chat.", variant: "destructive"});
+      // Optionally redirect to login: router.push('/auth');
+      return;
+    }
+    
     if (isLimitReached && !isCounterLoading) {
       setShowSubscriptionModal(true);
       return;
     }
 
     addMessage(userInput, 'user');
-    incrementChatCount();
+    if (user) incrementChatCount(); // Only increment if logged in, or adjust logic for guest counts
     setIsAiLoading(true);
 
     try {
+      // Crisis detection can remain generic
       const crisisResponse = await detectCrisis({ message: userInput });
       if (crisisResponse.isCrisis && crisisResponse.response) {
-        // This part should now be effectively disabled by changes in crisis-detection.ts
-        // but kept for structural integrity if crisis-detection logic changes again.
         addMessage(crisisResponse.response, 'system', true);
         setIsAiLoading(false);
         return;
@@ -105,7 +146,8 @@ export function ChatInterface() {
 
       const companionInput: HinglishAICompanionInput = { message: userInput };
       try {
-        const storedFriendType = localStorage.getItem(AI_FRIEND_TYPE_KEY);
+        // Use the stateful localStorageKeys.aiFriendType which is user-specific
+        const storedFriendType = localStorage.getItem(localStorageKeys.aiFriendType);
         if (storedFriendType && storedFriendType !== 'default') {
           const validPersonaTypes: HinglishAICompanionInput['aiFriendType'][] = ['female_best_friend', 'male_best_friend', 'topper_friend', 'filmy_friend'];
           if (validPersonaTypes.includes(storedFriendType as any)) {
@@ -135,14 +177,14 @@ export function ChatInterface() {
     } finally {
       setIsAiLoading(false);
     }
-  }, [isLimitReached, incrementChatCount, toast, isCounterLoading]); // Added isCounterLoading
+  }, [user, isAuthLoading, isLimitReached, incrementChatCount, toast, isCounterLoading, localStorageKeys.aiFriendType]);
 
   const handleSubscribe = () => {
     toast({ title: "Subscribed!", description: "Welcome to Talkzi Premium! (This is a demo)" });
     setShowSubscriptionModal(false);
   };
   
-  if (isCounterLoading) { 
+  if (isAuthLoading || isCounterLoading) { 
     return <div className="flex items-center justify-center h-full"><TypingIndicator /> <p>Loading chat state...</p></div>;
   }
 
