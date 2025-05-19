@@ -1,14 +1,18 @@
 
+"use client";
+
 import type { ChatMessage } from '@/types/talkzi';
 import { cn } from '@/lib/utils';
 import { Bot, User, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
+import React from 'react'; // Import React
 
 interface MessageBubbleProps {
   message: ChatMessage;
 }
 
-export function MessageBubble({ message }: MessageBubbleProps) {
+// Wrap MessageBubble with React.memo
+const MessageBubbleComponent = ({ message }: MessageBubbleProps) => {
   const isUser = message.sender === 'user';
   const isSystem = message.sender === 'system';
   const isCrisis = message.isCrisis;
@@ -55,4 +59,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       </div>
     </div>
   );
-}
+};
+
+export const MessageBubble = React.memo(MessageBubbleComponent);
+MessageBubble.displayName = 'MessageBubble';
