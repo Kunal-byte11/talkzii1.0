@@ -1,23 +1,22 @@
 
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from 'react';
+import React, { useEffect, useState, useMemo, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { useRouter, usePathname } from 'next/navigation';
-import type { UserProfile } from '@/types/talkzi'; // Assuming UserProfile might be extended
+import type { UserProfile } from '@/types/talkzi';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  profile: UserProfile | null; // Added profile state
+  profile: UserProfile | null;
   isLoading: boolean;
-  isLoadingProfile: boolean; // Added for profile loading
+  isLoadingProfile: boolean;
   signOut: () => Promise<void>;
-  // Login and signup are handled on the /auth page directly using supabase client
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -37,31 +36,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setSession(sessionState);
         const currentUser = sessionState?.user ?? null;
         setUser(currentUser);
-        setIsLoading(false);
+        setIsLoading(false); // Auth loading done
 
         if (currentUser) {
-          // Fetch profile when user is available
+          setIsLoadingProfile(true); // Start profile loading
           const { data: userProfile, error } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', currentUser.id)
             .single();
 
-          if (error && error.code !== 'PGRST116') { // PGRST116: no rows found, which is fine if profile not created yet
-            console.error('Error fetching profile:', error);
+          if (error && error.code !== 'PGRST116') {
+            console.error('Error fetching profile on auth change:', error);
           }
           setProfile(userProfile as UserProfile | null);
+          setIsLoadingProfile(false); // Profile loading done
         } else {
-          setProfile(null); // Clear profile if no user
+          setProfile(null);
+          setIsLoadingProfile(false); // No user, so profile loading "done"
         }
-        setIsLoadingProfile(false);
 
         const isAuthPage = pathname === '/auth';
-        const isProtectedPage = pathname === '/chat' || pathname === '/aipersona';
+        // Pages requiring auth to access
+        const protectedPages = ['/chat', '/aipersona'];
+        const isProtectedPage = protectedPages.some(p => pathname === p || pathname.startsWith(p + '/'));
+
 
         if (event === 'SIGNED_IN') {
           if (isAuthPage) {
-            router.push('/aipersona'); // Or wherever you want to redirect after login
+            router.push('/aipersona');
           }
         } else if (event === 'SIGNED_OUT') {
           if (isProtectedPage) {
@@ -71,13 +74,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     );
 
-    // Initial session and profile check
     const getInitialSession = async () => {
+        setIsLoading(true);
+        setIsLoadingProfile(true);
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         setSession(currentSession);
         const currentUser = currentSession?.user ?? null;
         setUser(currentUser);
-        setIsLoading(false);
+        setIsLoading(false); // Auth loading done
 
         if (currentUser) {
             const { data: userProfile, error } = await supabase
@@ -85,14 +89,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 .select('*')
                 .eq('id', currentUser.id)
                 .single();
-            if (error && error.code !== 'PGRST116') {
+            if (error && error.code !== 'PGRST116') { // PGRST116: no rows found
                 console.error('Initial profile fetch error:', error);
             }
             setProfile(userProfile as UserProfile | null);
         } else {
             setProfile(null);
         }
-        setIsLoadingProfile(false);
+        setIsLoadingProfile(false); // Profile loading done
     };
     getInitialSession();
 
@@ -100,21 +104,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => {
       authListener?.subscription.unsubscribe();
     };
-  }, [pathname, router]);
+  }, [pathname, router]); // router and pathname are dependencies
 
   const signOut = async () => {
-    setIsLoading(true);
+    setIsLoading(true); // Indicate loading during sign out
     await supabase.auth.signOut();
     // onAuthStateChange will handle setting user/session/profile to null and redirecting
-    // No need to manually set isLoading to false here, onAuthStateChange will do it.
+    // setIsLoading(false) will be handled by onAuthStateChange implicitly
   };
 
   const contextValue = useMemo(() => ({
     user,
     session,
     profile,
-    isLoading: isLoading || isLoadingProfile, // Combined loading state
-    isLoadingProfile,
+    isLoading: isLoading || isLoadingProfile, // Combined loading state for simplicity for consumers
+    isLoadingProfile, // Consumers can use this if they need to distinguish
     signOut,
   }), [user, session, profile, isLoading, isLoadingProfile]);
 
@@ -126,9 +130,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 };
 
 export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
+  const context = React.useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useAuth must be used within an AuthProvider. Check component tree and ensure AuthProvider is an ancestor.');
   }
   return context;
 };
+
+```
