@@ -23,7 +23,7 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const { chatCount, incrementChatCount, isLimitReached, isLoading: isCounterLoading } = useChatCounter();
-  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false); // Modal can still be shown by other means if needed
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [currentAiFriendType, setCurrentAiFriendType] = useState<string | undefined>(undefined);
@@ -110,19 +110,21 @@ export function ChatInterface() {
       return;
     }
     
-    if (isLimitReached && !isCounterLoading && user) { // Limit only applies to logged-in users
-      setShowSubscriptionModal(true);
-      return;
-    }
+    // Temporarily bypass limit check for early app stage
+    // if (isLimitReached && !isCounterLoading && user) { 
+    //   setShowSubscriptionModal(true);
+    //   return;
+    // }
 
     addMessage(userInput, 'user');
-    if (user) incrementChatCount();
+    if (user) incrementChatCount(); // Still count messages
     setIsAiLoading(true);
 
     try {
       const crisisResponse = await detectCrisis({ message: userInput });
       if (crisisResponse.isCrisis && crisisResponse.response) {
-        addMessage(crisisResponse.response, 'system', true);
+        // This crisis response is now an empty string and isCrisis is false, so this block is unlikely to be hit with current crisis-detection.ts
+        addMessage(crisisResponse.response, 'system', true); 
         setIsAiLoading(false);
         return;
       }
@@ -163,14 +165,17 @@ export function ChatInterface() {
     } finally {
       setIsAiLoading(false);
     }
-  }, [user, profile, isAuthLoading, isLimitReached, incrementChatCount, toast, isCounterLoading, localStorageKeys.aiFriendType]);
+  }, [user, profile, isAuthLoading, incrementChatCount, toast, localStorageKeys.aiFriendType]); // Removed isLimitReached and isCounterLoading from deps for this part
 
   const handleSubscribe = () => {
+    // This function can be called if the modal is triggered by other means
     toast({ title: "Subscribed!", description: "Welcome to Talkzi Premium! (This is a demo)" });
     setShowSubscriptionModal(false);
+    // Potentially reset chat counter or grant "premium" status if you had a local state for it
   };
   
-  if ((isAuthLoading && !user) || isCounterLoading) { 
+  if ((isAuthLoading && !user) || (isCounterLoading && user)) { 
+    // Show loading if auth is loading for a non-user, or if counter is loading for a user
     return <div className="flex flex-col items-center justify-center h-full"><TypingIndicator /> <p className="ml-2 text-sm text-muted-foreground">Loading chat state...</p></div>;
   }
 
@@ -195,14 +200,15 @@ export function ChatInterface() {
           {isAiLoading && <TypingIndicator />}
         </div>
       </ScrollArea>
-      {isLimitReached && user && ( // Only show if limit reached AND user is logged in
+      {/* Temporarily remove the "limit reached" UI for early app stage */}
+      {/* {isLimitReached && user && (
          <div className="p-3 border-t bg-amber-50 border-amber-200 text-amber-700 text-sm flex items-center justify-center space-x-2">
             <AlertCircle className="h-5 w-5" />
             <span>You've reached your free message limit. </span>
             <button onClick={() => setShowSubscriptionModal(true)} className="font-semibold underline hover:text-amber-800">Upgrade to Premium</button>
             <span>.</span>
          </div>
-      )}
+      )} */}
       <ChatInputBar onSendMessage={handleSendMessage} isLoading={isAiLoading} />
       <SubscriptionModal
         isOpen={showSubscriptionModal}
