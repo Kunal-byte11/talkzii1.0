@@ -6,16 +6,16 @@ import type { ChatMessage } from '@/types/talkzi';
 import { MessageBubble } from './MessageBubble';
 import { ChatInputBar } from './ChatInputBar';
 import { TypingIndicator } from './TypingIndicator';
-import { SubscriptionModal } from './SubscriptionModal'; 
-import { useChatCounter } from '@/hooks/useChatCounter'; 
+import { SubscriptionModal } from './SubscriptionModal';
+import { useChatCounter } from '@/hooks/useChatCounter';
 import { detectCrisis } from '@/ai/flows/crisis-detection';
 import { hinglishAICompanion, type HinglishAICompanionInput } from '@/ai/flows/hinglish-ai-companion';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertCircle, MessageSquareText } from 'lucide-react';
 
-const CHAT_HISTORY_KEY = 'talkzi_chat_history'; // Generic key
-const AI_FRIEND_TYPE_KEY = 'talkzi_ai_friend_type'; // Generic key
+const CHAT_HISTORY_KEY = 'talkzi_chat_history';
+const AI_FRIEND_TYPE_KEY = 'talkzi_ai_friend_type';
 
 export function ChatInterface() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -33,7 +33,7 @@ export function ChatInterface() {
       if (storedHistory) {
         setMessages(JSON.parse(storedHistory));
       } else {
-        setMessages([]); // Initialize with an empty array if no history
+        setMessages([]);
       }
     } catch (error) {
       console.error("Error loading chat history from localStorage", error);
@@ -45,20 +45,13 @@ export function ChatInterface() {
       setCurrentAiFriendType(storedFriendType || undefined);
     } catch (error) {
       console.error("Error loading AI friend type from localStorage", error);
-      setCurrentAiFriendType(undefined); // Default to undefined if error or not found
+      setCurrentAiFriendType(undefined);
     }
-
-    if (messages.length > 0 && scrollAreaRef.current) {
-      const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
-      if (viewport) {
-          viewport.scrollTop = viewport.scrollHeight;
-      }
-    }
-  }, []); // Empty dependency array: runs once on mount
+    // Removed initial scroll from here; will be handled by the dedicated scroll useEffect
+  }, []);
 
   // Save chat history to localStorage
   useEffect(() => {
-    // Avoid saving empty initial array unless it's explicitly being cleared
     if (messages.length === 0 && localStorage.getItem(CHAT_HISTORY_KEY) === null) return;
     try {
       localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(messages));
@@ -72,10 +65,12 @@ export function ChatInterface() {
     if (scrollAreaRef.current) {
       const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
       if (viewport) {
-        viewport.scrollTop = viewport.scrollHeight;
+        requestAnimationFrame(() => {
+          viewport.scrollTop = viewport.scrollHeight;
+        });
       }
     }
-  }, [messages, isAiLoading]); // Trigger on messages change and AI loading state
+  }, [messages, isAiLoading]);
 
   const addMessage = (text: string, sender: ChatMessage['sender'], isCrisisMsg: boolean = false) => {
     const newMessage: ChatMessage = {
@@ -101,6 +96,8 @@ export function ChatInterface() {
     try {
       const crisisResponse = await detectCrisis({ message: userInput });
       if (crisisResponse.isCrisis && crisisResponse.response) {
+        // This part should now be effectively disabled by changes in crisis-detection.ts
+        // but kept for structural integrity if crisis-detection logic changes again.
         addMessage(crisisResponse.response, 'system', true);
         setIsAiLoading(false);
         return;
@@ -138,7 +135,7 @@ export function ChatInterface() {
     } finally {
       setIsAiLoading(false);
     }
-  }, [isLimitReached, incrementChatCount, toast, isCounterLoading]);
+  }, [isLimitReached, incrementChatCount, toast, isCounterLoading]); // Added isCounterLoading
 
   const handleSubscribe = () => {
     toast({ title: "Subscribed!", description: "Welcome to Talkzi Premium! (This is a demo)" });
