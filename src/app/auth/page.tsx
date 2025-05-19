@@ -164,7 +164,7 @@ export default function AuthPage() {
       password,
       options: {
         data: {
-          username: username.trim(), // You can pass additional metadata here if needed
+          username: username.trim(), // Supabase auth user metadata (optional)
         }
       }
     });
@@ -181,14 +181,18 @@ export default function AuthPage() {
     }
 
     if (signUpData.user) {
+      // Ensure required fields for UserProfile are present
       const profileData: UserProfile = {
         id: signUpData.user.id,
         username: username.trim(),
-        email: signUpData.user.email, // Ensure email is potentially undefined if not returned
+        email: signUpData.user.email || '', // Provide a fallback if email might be undefined
         gender: gender,
         date_of_birth: format(dob, 'yyyy-MM-dd'),
-        avatar_url: null, // No avatar upload in this version
       };
+
+      console.log("User signed up successfully:", signUpData.user);
+      console.log("Profile data to be inserted:", profileData);
+
 
       const { error: profileError } = await supabase
         .from('profiles')
@@ -201,15 +205,13 @@ export default function AuthPage() {
         console.error('Supabase profile save error details:', profileErrorAsAny.details);
         console.error('Supabase profile save error hint:', profileErrorAsAny.hint);
         console.error('Stringified profileError (all own props):', JSON.stringify(profileError, Object.getOwnPropertyNames(profileError), 2));
-
+        
         setError(`Account created, but failed to save profile: ${profileError.message}. Please contact support or try updating your profile later.`);
         toast({
           title: "Profile Save Failed",
           description: `Your account was created, but we couldn't save other profile details. ${profileError.message}`,
           variant: "destructive",
         });
-        // Note: User is signed up in Supabase Auth, but profile creation failed.
-        // You might want to handle this more gracefully, e.g., by trying to delete the auth user or guiding them.
         return;
       }
 
@@ -217,10 +219,7 @@ export default function AuthPage() {
         title: "Signup Successful!",
         description: "Welcome to Talkzi! Please check your email if confirmation is required.",
       });
-      // Redirect to login or directly to app. For now, AuthProvider will handle Signed_IN
-      // Or explicitly redirect if needed after profile creation is successful.
-      // router.push('/aipersona'); // Or login page to prompt login
-      // For now, rely on onAuthStateChange to redirect after user state is updated
+      // AuthProvider will handle redirect after SIGNED_IN event
     } else {
        setError("An unexpected error occurred during signup. User data not found after sign up. Please try again.");
        toast({
@@ -399,10 +398,6 @@ export default function AuthPage() {
                       <RadioGroupItem value="female" id="female" />
                       <Label htmlFor="female" className="font-normal">Female</Label>
                     </div>
-                     {/* <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="prefer_not_to_say" id="prefer_not_to_say" />
-                      <Label htmlFor="prefer_not_to_say" className="font-normal">Prefer not to say</Label>
-                    </div> */}
                   </RadioGroup>
                 </div>
                 
@@ -458,3 +453,4 @@ export default function AuthPage() {
     </div>
   );
 }
+
