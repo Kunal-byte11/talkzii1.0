@@ -125,22 +125,32 @@ export default function AuthPage() {
 
     if (!username.trim()) {
       setError("Username is required.");
+      toast({ title: "Validation Error", description: "Username is required.", variant: "destructive" });
+      return;
+    }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      toast({ title: "Validation Error", description: "Password must be at least 6 characters long.", variant: "destructive" });
       return;
     }
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
+      toast({ title: "Validation Error", description: "Passwords do not match.", variant: "destructive" });
       return;
     }
     if (!gender) {
       setError("Please select your gender.");
+      toast({ title: "Validation Error", description: "Please select your gender.", variant: "destructive" });
       return;
     }
     if (!dob) {
       setError("Please select a valid date of birth.");
+      toast({ title: "Validation Error", description: "Please select a valid date of birth.", variant: "destructive" });
       return;
     }
     if (!isValid(dob)) {
       setError("Invalid date of birth selected. Please check day, month, and year.");
+      toast({ title: "Validation Error", description: "Invalid date of birth selected.", variant: "destructive" });
       return;
     }
 
@@ -160,6 +170,7 @@ export default function AuthPage() {
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
+      // We removed options: { data: { username: username.trim() } } as username is handled in profiles table
     });
 
     if (signUpError) {
@@ -179,20 +190,18 @@ export default function AuthPage() {
       const profileData: UserProfile = {
         id: signUpData.user.id,
         username: username.trim(),
-        email: signUpData.user.email || '', 
+        email: signUpData.user.email || '', // Safer handling for email
         gender: gender,
         date_of_birth: format(dob, 'yyyy-MM-dd'),
       };
       console.log("Profile data to be inserted:", profileData);
       
-      // Log current session before attempting profile insert
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) {
-        console.error("Error fetching session before profile insert:", sessionError);
+      const { data: sessionDataBeforeProfileInsert, error: sessionErrorBeforeProfileInsert } = await supabase.auth.getSession();
+      if (sessionErrorBeforeProfileInsert) {
+        console.error("Error fetching session before profile insert:", sessionErrorBeforeProfileInsert);
       } else {
-        console.log("Session state before profile insert:", sessionData.session);
+        console.log("Session state before profile insert:", sessionDataBeforeProfileInsert.session);
       }
-
 
       const { error: profileError } = await supabase
         .from('profiles')
@@ -201,27 +210,37 @@ export default function AuthPage() {
       if (profileError) {
         setIsLoading(false);
         console.error("Profile save error raw:", profileError);
-        const profileErrorAsAny = profileError as any;
-        console.error('Supabase profile save error (message):', profileErrorAsAny.message);
-        console.error('Supabase profile save error (details):', profileErrorAsAny.details);
-        console.error('Supabase profile save error (code):', profileErrorAsAny.code);
-        console.error('Supabase profile save error (hint):', profileErrorAsAny.hint);
+        const profileErrorAsAny = profileError as any; // Type assertion to access potential properties
+        const detailedMessage = profileErrorAsAny.message || 'Unknown error';
+        const details = profileErrorAsAny.details || 'No additional details';
+        const code = profileErrorAsAny.code || 'No code';
+        const hint = profileErrorAsAny.hint || 'No hint';
+        console.error('Supabase profile save error (message):', detailedMessage);
+        console.error('Supabase profile save error (details):', details);
+        console.error('Supabase profile save error (code):', code);
+        console.error('Supabase profile save error (hint):', hint);
         console.error('Stringified profileError (all own props):', JSON.stringify(profileError, Object.getOwnPropertyNames(profileError), 2));
         
-        setError(`Account created, but failed to save profile: ${profileErrorAsAny.message || 'Please check console for details.'}. Please contact support or try updating your profile later.`);
+        setError(`Account created, but failed to save profile: ${detailedMessage}. Please contact support or try updating your profile later.`);
         toast({
           title: "Profile Save Failed",
-          description: `Your account was created, but we couldn't save other profile details. ${profileErrorAsAny.message || 'Details in console.'}`,
+          description: `Your account was created, but we couldn't save other profile details. ${detailedMessage}`,
           variant: "destructive",
         });
-        return;
+        // It's important to NOT automatically sign out the user here or delete the auth user.
+        // The user account IS created. The profile part failed.
+        // The AuthProvider will still pick up the session for the newly created auth user.
+        // They will be redirected to /aipersona. They just won't have a profile record yet.
+        // This needs to be handled gracefully in areas that expect a profile (e.g., ChatInterface fetching gender).
+        return; 
       }
 
       toast({
         title: "Signup Successful!",
         description: "Welcome to Talkzi! Please check your email if confirmation is required.",
       });
-      // AuthProvider will handle redirect after SIGNED_IN event
+      // AuthProvider will handle redirect after SIGNED_IN event which should trigger after signup.
+      // No explicit router.push here needed as AuthContext handles it.
     } else {
        setError("An unexpected error occurred during signup. User data not found after sign up. Please try again.");
        toast({
@@ -455,5 +474,3 @@ export default function AuthPage() {
     </div>
   );
 }
-
-    
