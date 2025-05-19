@@ -7,6 +7,12 @@ import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { useRouter, usePathname } from 'next/navigation';
 import type { UserProfile } from '@/types/talkzi';
 
+// IMPORTANT: If you see "useAuth must be used within an AuthProvider"
+// AND you've confirmed AuthProvider wraps your layout:
+// 1. Delete your .next folder
+// 2. Restart your dev server.
+// This often resolves stubborn parsing/caching issues.
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -21,54 +27,77 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = React.useState<User | null>(null);
   const [session, setSession] = React.useState<Session | null>(null);
   const [profile, setProfile] = React.useState<UserProfile | null>(null);
-  const [isAuthLoading, setIsAuthLoading] = React.useState(true); // Specifically for supabase.auth state
-  const [isProfileLoading, setIsProfileLoading] = React.useState(true); // Specifically for profile fetch
+  const [isAuthLoading, setIsAuthLoading] = React.useState(true);
+  const [isProfileLoading, setIsProfileLoading] = React.useState(true);
 
   const router = useRouter();
   const pathname = usePathname();
 
-  // Effect for initial session/profile load and setting up auth listener
   useEffect(() => {
-    setIsAuthLoading(true);
-    setIsProfileLoading(true);
-
     const getInitialData = async () => {
-      const { data: { session: initialSession } } = await supabase.auth.getSession();
-      setSession(initialSession);
-      const currentUser = initialSession?.user ?? null;
-      setUser(currentUser);
-      setIsAuthLoading(false); // Initial auth check done
+      setIsAuthLoading(true);
+      setIsProfileLoading(true); // Start profile loading assuming we might find a user
 
-      if (currentUser) {
-        const { data: userProfile, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', currentUser.id)
-          .single();
-        if (error && error.code !== 'PGRST116') { // PGRST116: no rows found
-          console.error('Initial profile fetch error:', error);
+      try {
+        const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error("Error fetching initial session:", sessionError.message);
+          // If there's any error fetching the session (e.g., invalid token), treat as logged out.
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setIsAuthLoading(false);
+          setIsProfileLoading(false); // No user, so profile loading is done.
+          return; // Exit early
         }
-        setProfile(userProfile as UserProfile | null);
-      } else {
+
+        setSession(initialSession);
+        const currentUser = initialSession?.user ?? null;
+        setUser(currentUser);
+        setIsAuthLoading(false); // Initial auth check done
+
+        if (currentUser) {
+          const { data: userProfile, error: profileFetchError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', currentUser.id)
+            .single();
+          if (profileFetchError && profileFetchError.code !== 'PGRST116') { // PGRST116: no rows found
+            console.error('Initial profile fetch error:', profileFetchError);
+          }
+          setProfile(userProfile as UserProfile | null);
+        } else {
+          setProfile(null);
+        }
+        setIsProfileLoading(false); // Initial profile check done (or not needed)
+      } catch (e: unknown) {
+        const error = e as Error;
+        console.error("Critical error during initial data fetch (AuthProvider):", error.message, e);
+        // If a critical error occurs, ensure user is in a logged-out state within the app
+        setSession(null);
+        setUser(null);
         setProfile(null);
+        setIsAuthLoading(false);
+        setIsProfileLoading(false);
       }
-      setIsProfileLoading(false); // Initial profile check done (or not needed)
     };
 
     getInitialData();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, sessionState: Session | null) => {
-        setIsAuthLoading(true); // Auth state is changing
+        setIsAuthLoading(true); // Mark as loading since auth state is changing
         setSession(sessionState);
         const newCurrentUser = sessionState?.user ?? null;
         setUser(newCurrentUser);
-        setIsAuthLoading(false); // Auth state change processed
 
-        if (event === 'SIGNED_OUT' && user?.id) { // Check previous user for ID
+        const signingOutUserId = user?.id; // Capture previous user's ID for localStorage cleanup
+
+        if (event === 'SIGNED_OUT' && signingOutUserId) {
           try {
-            localStorage.removeItem(`talkzi_chat_history_${user.id}`);
-            localStorage.removeItem(`talkzi_ai_friend_type_${user.id}`);
+            localStorage.removeItem(`talkzi_chat_history_${signingOutUserId}`);
+            localStorage.removeItem(`talkzi_ai_friend_type_${signingOutUserId}`);
           } catch (e) {
             console.error("Error clearing user-specific localStorage on sign out", e);
           }
@@ -76,13 +105,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         if (newCurrentUser) {
           setIsProfileLoading(true);
-          const { data: userProfile, error } = await supabase
+          const { data: userProfile, error: profileError } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', newCurrentUser.id)
             .single();
-          if (error && error.code !== 'PGRST116') {
-            console.error('Error fetching profile on auth change:', error);
+          if (profileError && profileError.code !== 'PGRST116') {
+            console.error('Error fetching profile on auth change:', profileError);
           }
           setProfile(userProfile as UserProfile | null);
           setIsProfileLoading(false);
@@ -90,6 +119,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setProfile(null);
           setIsProfileLoading(false); // No user, so profile loading "done"
         }
+        setIsAuthLoading(false); // Auth state change and any profile fetching processed
       }
     );
 
@@ -98,11 +128,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   }, []); // Empty dependency array: runs once on mount
 
-  // Effect for handling redirects based on auth state
   useEffect(() => {
-    // Wait until initial auth loading is complete before attempting redirects
     if (isAuthLoading) {
-      return;
+      return; // Don't attempt redirects while initial auth state is still being determined
     }
 
     const isAuthPage = pathname === '/auth';
@@ -118,23 +146,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         router.push('/auth');
       }
     }
-  }, [session, pathname, router, isAuthLoading]); // Dependencies for redirect logic
+  }, [session, pathname, router, isAuthLoading]);
 
   const signOut = async () => {
-    const currentUserId = user?.id; // Capture before sign out
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error("Error signing out: ", error);
     }
-    // onAuthStateChange will handle setting user/session/profile to null.
-    // The localStorage clearing is now inside onAuthStateChange for 'SIGNED_OUT'.
+    // onAuthStateChange will handle setting user/session/profile to null
+    // and clearing relevant user-specific localStorage items.
   };
 
-  const contextValue = React.useMemo(() => ({
+  const contextValue = useMemo(() => ({
     user,
     session,
     profile,
-    isLoading: isAuthLoading || isProfileLoading, // Combined loading state
+    isLoading: isAuthLoading || isProfileLoading,
     signOut,
   }), [user, session, profile, isAuthLoading, isProfileLoading]);
 
