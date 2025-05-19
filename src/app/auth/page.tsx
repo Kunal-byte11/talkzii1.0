@@ -162,11 +162,7 @@ export default function AuthPage() {
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          username: username.trim(), // Supabase auth user metadata (optional)
-        }
-      }
+      // options: { data: { username: username.trim() } } // Username handled in profiles table
     });
 
     if (signUpError) {
@@ -181,16 +177,15 @@ export default function AuthPage() {
     }
 
     if (signUpData.user) {
-      // Ensure required fields for UserProfile are present
       const profileData: UserProfile = {
         id: signUpData.user.id,
         username: username.trim(),
-        email: signUpData.user.email || '', // Provide a fallback if email might be undefined
+        email: signUpData.user.email || '', 
         gender: gender,
         date_of_birth: format(dob, 'yyyy-MM-dd'),
       };
 
-      console.log("User signed up successfully:", signUpData.user);
+      console.log("User signed up successfully (from signUp response):", signUpData.user);
       console.log("Profile data to be inserted:", profileData);
 
 
@@ -202,14 +197,16 @@ export default function AuthPage() {
         setIsLoading(false);
         console.error("Profile save error raw:", profileError);
         const profileErrorAsAny = profileError as any;
-        console.error('Supabase profile save error details:', profileErrorAsAny.details);
-        console.error('Supabase profile save error hint:', profileErrorAsAny.hint);
+        console.error('Supabase profile save error (message):', profileErrorAsAny.message);
+        console.error('Supabase profile save error (details):', profileErrorAsAny.details);
+        console.error('Supabase profile save error (code):', profileErrorAsAny.code);
+        console.error('Supabase profile save error (hint):', profileErrorAsAny.hint);
         console.error('Stringified profileError (all own props):', JSON.stringify(profileError, Object.getOwnPropertyNames(profileError), 2));
         
-        setError(`Account created, but failed to save profile: ${profileError.message}. Please contact support or try updating your profile later.`);
+        setError(`Account created, but failed to save profile: ${profileErrorAsAny.message || 'Please check console for details.'}. Please contact support or try updating your profile later.`);
         toast({
           title: "Profile Save Failed",
-          description: `Your account was created, but we couldn't save other profile details. ${profileError.message}`,
+          description: `Your account was created, but we couldn't save other profile details. ${profileErrorAsAny.message || 'Details in console.'}`,
           variant: "destructive",
         });
         return;
