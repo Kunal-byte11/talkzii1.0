@@ -8,15 +8,6 @@ export interface ChatMessage {
   isCrisis?: boolean; // Optional flag for crisis messages
 }
 
-// User profile type for Supabase
-export interface UserProfile {
-  id: string; // Supabase auth user ID
-  email?: string;
-  gender?: 'male' | 'female' | 'prefer_not_to_say' | string; // Allow string for flexibility
-  date_of_birth?: string; // Store as YYYY-MM-DD string, matches DATE type in Supabase
-  avatar_url?: string | null; // URL to the profile picture in Supabase Storage
-  created_at?: string;
-  ai_persona_preference?: string | null;
-  // Add other profile fields as needed
-}
-
+// UserProfile type is no longer needed as auth features are removed.
+// If you decide to add user-specific features without full auth later,
+// you might re-introduce a simplified profile/preferences type.

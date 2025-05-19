@@ -5,18 +5,12 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
 
 export function HeroSection() {
   const router = useRouter();
-  const { user, isLoading } = useAuth();
 
   const handleStartChatting = () => {
-    if (user) {
-      router.push('/aipersona');
-    } else {
-      router.push('/signup'); // Or '/login' if you prefer
-    }
+    router.push('/aipersona');
   };
   
   return (
@@ -71,10 +65,9 @@ export function HeroSection() {
         <Button
           size="lg"
           onClick={handleStartChatting}
-          disabled={isLoading}
           className="gradient-button font-semibold text-lg py-4 px-8 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
         >
-          {isLoading ? "Loading..." : (user ? "Start Chatting" : "Sign Up & Chat Free")}
+          Start Chatting
           <ArrowRight className="ml-2 h-5 w-5" />
         </Button>
         

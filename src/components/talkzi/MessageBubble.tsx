@@ -18,11 +18,11 @@ export function MessageBubble({ message }: MessageBubbleProps) {
     ? 'bg-primary text-primary-foreground'
     : isCrisis 
     ? 'bg-destructive/80 text-destructive-foreground' 
-    : 'bg-muted text-muted-foreground'; // Changed from bg-card to bg-muted for AI
+    : 'bg-muted text-muted-foreground';
   
   const borderRadiusClass = isUser 
-    ? 'rounded-t-2xl rounded-bl-2xl' // User bubble
-    : 'rounded-t-2xl rounded-br-2xl'; // AI/System bubble
+    ? 'rounded-t-2xl rounded-bl-2xl'
+    : 'rounded-t-2xl rounded-br-2xl';
 
   const Icon = isUser ? User : isCrisis ? AlertTriangle : Bot;
 
@@ -52,7 +52,6 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         <p>
           {format(new Date(message.timestamp), 'p')}
         </p>
-        {/* Feedback UI (thumbs up/down) removed */}
       </div>
     </div>
   );

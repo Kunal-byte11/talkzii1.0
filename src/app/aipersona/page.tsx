@@ -8,8 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Logo } from '@/components/talkzi/Logo';
 import Link from 'next/link';
-import { Home, Bot, Users, Brain, Clapperboard, LogOut } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext'; // Use new Supabase auth
+import { Home, Bot, Users, Brain, Clapperboard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const personaOptions = [
@@ -20,74 +19,51 @@ const personaOptions = [
   { value: 'filmy_friend', label: 'Filmy Friend', description: 'Dramatic, expressive, Bollywood style!', icon: Clapperboard },
 ];
 
-const AI_FRIEND_TYPE_KEY_PREFIX = 'talkzi_ai_friend_type_'; // Prefix for user-specific key
+const AI_FRIEND_TYPE_KEY = 'talkzi_ai_friend_type'; // Generic key
 
 export default function AIPersonaPage() {
   const router = useRouter();
-  const { user, isLoading: authLoading, signOut } = useAuth();
   const [selectedPersona, setSelectedPersona] = useState<string | undefined>(undefined);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const { toast } = useToast();
 
-  const getPersonaStorageKey = () => user ? `${AI_FRIEND_TYPE_KEY_PREFIX}${user.id}` : null;
-
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.replace('/login'); // Redirect if not logged in
-    } else if (user) {
-      try {
-        const storageKey = getPersonaStorageKey();
-        if (storageKey) {
-          const savedPersona = localStorage.getItem(storageKey);
-          if (savedPersona && personaOptions.some(p => p.value === savedPersona)) {
-            setSelectedPersona(savedPersona);
-          } else {
-            setSelectedPersona('default'); // Default if nothing stored or invalid
-          }
-        } else {
-           setSelectedPersona('default');
-        }
-      } catch (error) {
-        console.error("Error reading persona from localStorage", error);
-        setSelectedPersona('default');
+    try {
+      const savedPersona = localStorage.getItem(AI_FRIEND_TYPE_KEY);
+      if (savedPersona && personaOptions.some(p => p.value === savedPersona)) {
+        setSelectedPersona(savedPersona);
+      } else {
+        setSelectedPersona('default'); // Default if nothing stored or invalid
       }
-      setIsPageLoading(false);
+    } catch (error) {
+      console.error("Error reading persona from localStorage", error);
+      setSelectedPersona('default');
     }
-  }, [user, authLoading, router]);
+    setIsPageLoading(false);
+  }, []);
 
 
   const handleConfirm = () => {
-    if (selectedPersona && user) {
-      const storageKey = getPersonaStorageKey();
-      if (storageKey) {
-        try {
-          if (selectedPersona === 'default') {
-            localStorage.removeItem(storageKey);
-          } else {
-            localStorage.setItem(storageKey, selectedPersona);
-          }
-        } catch (error) {
-          console.error("Error saving persona to localStorage", error);
-          toast({
-            title: "Error",
-            description: "Could not save your persona preference.",
-            variant: "destructive"
-          });
+    if (selectedPersona) {
+      try {
+        if (selectedPersona === 'default') {
+          localStorage.removeItem(AI_FRIEND_TYPE_KEY);
+        } else {
+          localStorage.setItem(AI_FRIEND_TYPE_KEY, selectedPersona);
         }
+      } catch (error) {
+        console.error("Error saving persona to localStorage", error);
+        toast({
+          title: "Error",
+          description: "Could not save your persona preference.",
+          variant: "destructive"
+        });
       }
       router.push('/chat');
-    } else if (!user) {
-       router.push('/login');
     }
   };
   
-  const handleSignOut = async () => {
-    await signOut();
-    // AuthProvider will handle redirect to /login
-  };
-
-
-  if (authLoading || isPageLoading) {
+  if (isPageLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
         <Logo className="h-12 w-auto mb-4 animate-pulse" />
@@ -95,7 +71,6 @@ export default function AIPersonaPage() {
       </div>
     );
   }
-
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -111,12 +86,6 @@ export default function AIPersonaPage() {
                 <span className="sr-only">Home</span>
               </Link>
             </Button>
-             {user && (
-              <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign Out">
-                <LogOut className="h-5 w-5" />
-                <span className="sr-only">Sign Out</span>
-              </Button>
-            )}
           </div>
         </div>
       </header>
@@ -160,7 +129,7 @@ export default function AIPersonaPage() {
 
         <Button
           onClick={handleConfirm}
-          disabled={!selectedPersona || authLoading || isPageLoading}
+          disabled={!selectedPersona || isPageLoading}
           className="w-full mt-8 sm:mt-10 gradient-button text-lg py-3 rounded-lg shadow-md hover:shadow-lg transition-shadow"
           aria-label="Confirm persona selection and start chatting"
         >
