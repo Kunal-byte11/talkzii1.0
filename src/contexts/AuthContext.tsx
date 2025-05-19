@@ -19,11 +19,11 @@ interface AuthContextType {
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [user, setUser] = React.useState<User | null>(null);
+  const [session, setSession] = React.useState<Session | null>(null);
+  const [profile, setProfile] = React.useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [isLoadingProfile, setIsLoadingProfile] = React.useState(true);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             .eq('id', currentUser.id)
             .single();
 
-          if (error && error.code !== 'PGRST116') {
+          if (error && error.code !== 'PGRST116') { // PGRST116: no rows found, which is fine if profile not created yet
             console.error('Error fetching profile on auth change:', error);
           }
           setProfile(userProfile as UserProfile | null);
@@ -67,13 +67,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             router.push('/aipersona');
           }
         } else if (event === 'SIGNED_OUT') {
+          // Clear user-specific localStorage on sign out
+          if (currentUser?.id) {
+            try {
+              localStorage.removeItem(`talkzi_chat_history_${currentUser.id}`);
+              localStorage.removeItem(`talkzi_ai_friend_type_${currentUser.id}`);
+            } catch (e) {
+              console.error("Error clearing user-specific localStorage on sign out", e);
+            }
+          }
           if (isProtectedPage) {
             router.push('/auth');
           }
         }
       }
     );
-
+    
+    // Check initial session state
     const getInitialSession = async () => {
         setIsLoading(true);
         setIsLoadingProfile(true);
@@ -107,13 +117,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [pathname, router]); // router and pathname are dependencies
 
   const signOut = async () => {
-    setIsLoading(true); // Indicate loading during sign out
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Error signing out: ", error);
+    }
     // onAuthStateChange will handle setting user/session/profile to null and redirecting
-    // setIsLoading(false) will be handled by onAuthStateChange implicitly
   };
 
-  const contextValue = useMemo(() => ({
+  const contextValue = React.useMemo(() => ({
     user,
     session,
     profile,
@@ -136,5 +147,3 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
-
-```
