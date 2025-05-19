@@ -7,7 +7,7 @@ import { MessageBubble } from './MessageBubble';
 import { ChatInputBar } from './ChatInputBar';
 import { TypingIndicator } from './TypingIndicator';
 import { SubscriptionModal } from './SubscriptionModal';
-import { useChatCounter } from '@/hooks/useChatCounter';
+// import { useChatCounter } from '@/hooks/useChatCounter'; // Temporarily disabled for free use
 import { detectCrisis } from '@/ai/flows/crisis-detection';
 import { hinglishAICompanion, type HinglishAICompanionInput } from '@/ai/flows/hinglish-ai-companion';
 import { useToast } from '@/hooks/use-toast';
@@ -22,8 +22,8 @@ export function ChatInterface() {
   const { user, profile, isLoading: isAuthLoading } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const { chatCount, incrementChatCount, isLimitReached, isLoading: isCounterLoading } = useChatCounter();
-  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false); // Modal can still be shown by other means if needed
+  // const { chatCount, incrementChatCount, isLimitReached, isLoading: isCounterLoading } = useChatCounter(); // Temporarily disabled
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [currentAiFriendType, setCurrentAiFriendType] = useState<string | undefined>(undefined);
@@ -48,7 +48,14 @@ export function ChatInterface() {
 
 
   useEffect(() => {
-    if (isAuthLoading && localStorageKeys.chatHistory.endsWith('_guest')) return;
+    // Only load from localStorage if keys are set (i.e., auth state is determined)
+    if (localStorageKeys.chatHistory === getChatHistoryKey() && localStorageKeys.aiFriendType === getAIFriendTypeKey() && !user && !isAuthLoading) {
+      // Guest user, keys are generic
+    } else if (!localStorageKeys.chatHistory.endsWith('_guest') && !user && isAuthLoading) {
+      // Still loading auth, and keys aren't guest keys yet, so wait.
+      return;
+    }
+
 
     try {
       const storedHistory = localStorage.getItem(localStorageKeys.chatHistory);
@@ -69,18 +76,23 @@ export function ChatInterface() {
       console.error("Error loading AI friend type from localStorage", error);
       setCurrentAiFriendType(undefined);
     }
-  }, [localStorageKeys, isAuthLoading]);
+  }, [localStorageKeys, user, isAuthLoading]); // Added user and isAuthLoading
 
   useEffect(() => {
-    if (isAuthLoading && localStorageKeys.chatHistory.endsWith('_guest')) return;
-    if (messages.length === 0 && !localStorage.getItem(localStorageKeys.chatHistory)) return;
+    if (localStorageKeys.chatHistory === getChatHistoryKey() && !user && !isAuthLoading) {
+       // Guest user, allow saving
+    } else if (!localStorageKeys.chatHistory.endsWith('_guest') && !user && isAuthLoading) {
+      // Still loading auth for a potential user, don't save yet if keys are not generic
+      return;
+    }
+    if (messages.length === 0 && !localStorage.getItem(localStorageKeys.chatHistory)) return; // Don't save empty if nothing was loaded
     
     try {
       localStorage.setItem(localStorageKeys.chatHistory, JSON.stringify(messages));
     } catch (error) {
       console.error("Error saving chat history to localStorage", error);
     }
-  }, [messages, localStorageKeys.chatHistory, isAuthLoading]);
+  }, [messages, localStorageKeys.chatHistory, user, isAuthLoading]); // Added user and isAuthLoading
 
    useEffect(() => {
     if (scrollAreaRef.current) {
@@ -107,6 +119,7 @@ export function ChatInterface() {
   const handleSendMessage = useCallback(async (userInput: string) => {
     if (!user && !isAuthLoading) {
       toast({ title: "Login Required", description: "Please log in to chat.", variant: "destructive"});
+      // Optionally, you could allow guest chatting here if desired, but current flow requires login
       return;
     }
     
@@ -117,13 +130,14 @@ export function ChatInterface() {
     // }
 
     addMessage(userInput, 'user');
-    if (user) incrementChatCount(); // Still count messages
+    // if (user) incrementChatCount(); // Still count messages if counter is re-enabled
     setIsAiLoading(true);
 
     try {
+      // The crisis-detection flow is now very passive and unlikely to return isCrisis: true.
+      // The primary crisis handling is built into hinglishAICompanion prompt.
       const crisisResponse = await detectCrisis({ message: userInput });
       if (crisisResponse.isCrisis && crisisResponse.response) {
-        // This crisis response is now an empty string and isCrisis is false, so this block is unlikely to be hit with current crisis-detection.ts
         addMessage(crisisResponse.response, 'system', true); 
         setIsAiLoading(false);
         return;
@@ -131,6 +145,7 @@ export function ChatInterface() {
 
       const companionInput: HinglishAICompanionInput = { message: userInput };
       
+      // Pass user gender if available
       const userGender = profile?.gender as 'male' | 'female' | undefined;
       if (userGender === 'male' || userGender === 'female') {
         companionInput.userGender = userGender;
@@ -139,7 +154,7 @@ export function ChatInterface() {
       try {
         const storedFriendType = localStorage.getItem(localStorageKeys.aiFriendType);
         if (storedFriendType && storedFriendType !== 'default') {
-          const validPersonaTypes: HinglishAICompanionInput['aiFriendType'][] = ['female_best_friend', 'male_best_friend', 'topper_friend', 'filmy_friend'];
+          const validPersonaTypes: HinglishAICompanionInput['aiFriendType'][] = ['female_best_friend', 'male_best_friend', 'topper_friend', 'toxic_friend']; // Updated
           if (validPersonaTypes.includes(storedFriendType as any)) {
              companionInput.aiFriendType = storedFriendType as HinglishAICompanionInput['aiFriendType'];
           }
@@ -165,17 +180,18 @@ export function ChatInterface() {
     } finally {
       setIsAiLoading(false);
     }
-  }, [user, profile, isAuthLoading, incrementChatCount, toast, localStorageKeys.aiFriendType]); // Removed isLimitReached and isCounterLoading from deps for this part
+  }, [user, profile, isAuthLoading, toast, localStorageKeys.aiFriendType]); // Removed isLimitReached, isCounterLoading, incrementChatCount for now
 
   const handleSubscribe = () => {
-    // This function can be called if the modal is triggered by other means
     toast({ title: "Subscribed!", description: "Welcome to Talkzi Premium! (This is a demo)" });
     setShowSubscriptionModal(false);
-    // Potentially reset chat counter or grant "premium" status if you had a local state for it
   };
   
-  if ((isAuthLoading && !user) || (isCounterLoading && user)) { 
-    // Show loading if auth is loading for a non-user, or if counter is loading for a user
+  // Show loading if auth is loading OR if keys are not yet synced with auth state
+  const stillInitializing = isAuthLoading || (user && localStorageKeys.chatHistory.endsWith('_guest'));
+  // const counterStillLoading = user ? isCounterLoading : false; // Only consider counter loading if user exists
+
+  if (stillInitializing /*|| counterStillLoading*/) { 
     return <div className="flex flex-col items-center justify-center h-full"><TypingIndicator /> <p className="ml-2 text-sm text-muted-foreground">Loading chat state...</p></div>;
   }
 
@@ -187,7 +203,7 @@ export function ChatInterface() {
             <div className="text-center text-muted-foreground py-10">
               <MessageSquareText className="mx-auto h-12 w-12 mb-4" />
               <p className="text-lg font-semibold">Start a conversation!</p>
-              {user && profile && (
+              {user && profile?.gender && (
                 <p>Your gender is set to: <span className="font-semibold capitalize text-primary">{profile.gender}</span>.</p>
               )}
               <p>Your current AI persona is: <span className="font-semibold capitalize text-primary">{currentAiFriendType?.replace(/_/g, ' ') || 'Default'}</span>.</p>
@@ -200,15 +216,17 @@ export function ChatInterface() {
           {isAiLoading && <TypingIndicator />}
         </div>
       </ScrollArea>
-      {/* Temporarily remove the "limit reached" UI for early app stage */}
-      {/* {isLimitReached && user && (
+      {/* 
+      // Temporarily remove the "limit reached" UI for early app stage
+      {isLimitReached && user && (
          <div className="p-3 border-t bg-amber-50 border-amber-200 text-amber-700 text-sm flex items-center justify-center space-x-2">
             <AlertCircle className="h-5 w-5" />
             <span>You've reached your free message limit. </span>
             <button onClick={() => setShowSubscriptionModal(true)} className="font-semibold underline hover:text-amber-800">Upgrade to Premium</button>
             <span>.</span>
          </div>
-      )} */}
+      )} 
+      */}
       <ChatInputBar onSendMessage={handleSendMessage} isLoading={isAiLoading} />
       <SubscriptionModal
         isOpen={showSubscriptionModal}
@@ -218,4 +236,3 @@ export function ChatInterface() {
     </div>
   );
 }
-

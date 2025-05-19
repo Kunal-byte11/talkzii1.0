@@ -8,16 +8,16 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Logo } from '@/components/talkzi/Logo';
 import Link from 'next/link';
-import { Home, Bot, Users, Brain, Clapperboard, LogOut, User } from 'lucide-react'; // Added User icon
+import { Home, Bot, Users, Brain, Skull, LogOut, User } from 'lucide-react'; // Replaced Clapperboard with Skull, or use Bot
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
+import { useAuth } from '@/contexts/AuthContext';
 
 const personaOptions = [
   { value: 'default', label: 'Default Talkzi', description: 'Your general empathetic AI companion.', icon: Bot },
   { value: 'female_best_friend', label: 'Female Best Friend', description: 'Supportive & bubbly like a trusted didi.', icon: Users },
   { value: 'male_best_friend', label: 'Male Best Friend', description: 'Chill & emotionally aware bro.', icon: Users },
   { value: 'topper_friend', label: 'Topper Friend', description: 'Helpful, kind, offers practical advice.', icon: Brain },
-  { value: 'filmy_friend', label: 'Filmy Friend', description: 'Dramatic, expressive, Bollywood style!', icon: Clapperboard },
+  { value: 'toxic_friend', label: 'Toxic Friend (Kabir Singh Vibe)', description: 'Blunt, "tough love" advice, pushes for action.', icon: Skull }, // Changed from Filmy Friend
 ];
 
 // Key will be user-specific if user is logged in
@@ -34,7 +34,7 @@ export default function AIPersonaPage() {
 
   useEffect(() => {
     if (!isAuthLoading && !user) {
-      router.push('/auth'); // Redirect to auth if not logged in and auth check complete
+      router.push('/auth'); 
     } else if (user) {
       try {
         const savedPersona = localStorage.getItem(AI_FRIEND_TYPE_KEY);
@@ -49,14 +49,13 @@ export default function AIPersonaPage() {
       }
       setIsPageLoading(false);
     } else if (!isAuthLoading && !user) {
-        // Handled by redirect above, but as a fallback for initial state
         setIsPageLoading(false);
     }
   }, [user, isAuthLoading, router, AI_FRIEND_TYPE_KEY]);
 
 
   const handleConfirm = () => {
-    if (selectedPersona && user) { // Ensure user exists before saving/navigating
+    if (selectedPersona && user) { 
       try {
         if (selectedPersona === 'default') {
           localStorage.removeItem(AI_FRIEND_TYPE_KEY);
@@ -78,7 +77,7 @@ export default function AIPersonaPage() {
     }
   };
   
-  if (isAuthLoading || (isPageLoading && user)) { // Show loading if auth is loading or page is loading for a user
+  if (isAuthLoading || (isPageLoading && user)) { 
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
         <Logo className="h-12 w-auto mb-4 animate-pulse" />
@@ -87,7 +86,7 @@ export default function AIPersonaPage() {
     );
   }
 
-  if (!user) { // If done loading and still no user, show message or could be handled by redirect entirely
+  if (!user) { 
      return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
         <Logo className="h-12 w-auto mb-4" />
