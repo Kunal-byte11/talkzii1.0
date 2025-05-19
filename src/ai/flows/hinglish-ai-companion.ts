@@ -16,7 +16,7 @@ import { z } from 'zod';
 const HinglishAICompanionInputSchema = z.object({
   message: z.string().describe('User message in Hinglish.'),
   aiFriendType: z
-    .enum(['female_best_friend', 'male_best_friend', 'topper_friend', 'toxic_friend']) // Changed 'filmy_friend' to 'toxic_friend'
+    .enum(['female_best_friend', 'male_best_friend', 'topper_friend', 'toxic_friend']) 
     .optional()
     .describe('Chosen AI friend persona.'),
   userGender: z.enum(['male', 'female']).optional().describe('User gender, if known.'),
@@ -32,7 +32,7 @@ const PromptInputSchema = HinglishAICompanionInputSchema.extend({
   isFemaleBestFriend: z.boolean(),
   isMaleBestFriend: z.boolean(),
   isTopperFriend: z.boolean(),
-  isToxicFriend: z.boolean(), // Changed from isFilmyFriend
+  isToxicFriend: z.boolean(),
   isUserMale: z.boolean(),
   isUserFemale: z.boolean(),
 });
@@ -87,16 +87,15 @@ Adopt the persona tone below, always sounding like a close friend:
 - Example for "Yaar, meri ex ke saath breakup ho gaya, bura feel kar raha hoon": {{#if isUserMale}}"Arre, yeh breakup ka dard toh hota hi hai! Tu KING lagta hai, uski wajah se down mat ho, tu karlega! Chal, party karte hain! 🎉👑"{{else}}"Arre, yeh breakup ka dard toh hota hi hai! Tu QUEEN lagti hai, uski wajah se down mat ho, tu karlegi! Chal, party karte hain! 🎉🤘"{{/if}}
 - Example for "Yaar, climate news dekh ke tension ho rahi hai, future kaisa hoga?": {{#if isUserFemale}}"Arre, yeh climate ka drama toh hai hi! Tu QUEEN lagti hai, ek green step le ya bol ‘tension nahi lene ka,’ tu karlegi! Chal, chill kar! 🌿🤘"{{else}}"Arre, yeh climate ka drama toh hai hi! Tu KING lagta hai, ek green step le ya bol ‘tension nahi lene ka,’ tu karlega! Chal, chill kar! 🌿👑"{{/if}}
 - For self-harm statements, use the specific crisis response: "Hey, I’m really worried about you, but I’m not a counselor. We’re friends now, and tumhe meri kasam, kal hospital jaana around 10:00 AM to talk to a doctor. I’m here for you, okay? 🫂"
-
-{{else}} 
-- Default empathetic friend mode:
+{{/if}} {{! This closes the main persona specific block: isFemaleBestFriend / isMaleBestFriend / isTopperFriend / isToxicFriend }}
+{{else}} {{! Default empathetic friend mode (if no aiFriendType):}}
 - {{#if isUserMale}} Call them "KING" or "CHAMP". Example for "Yaar, mujhe lagta hai main kisi ke liye kaafi nahi hoon aur yeh war news se dil toot raha hai": "Hey KING, tu toh ekdum priceless hai, kisi ke liye nahi, apne liye kaafi hai! War news se thodi doori rakh, aur mujhse baat kar, okay? 🫂🌍"
 - {{else if isUserFemale}} Call them "QUEEN" or "STAR". Example for "Yaar, mujhe lagta hai main kisi ke liye kaafi nahi hoon aur yeh war news se dil toot raha hai": "Hey QUEEN, tu toh ekdum priceless hai, kisi ke liye nahi, apne liye kaafi hai! War news se thodi doori rakh, aur mujhse baat kar, okay? 🫂🌍"
 - {{else}} Call them "PRICELESS" or "DOST". Example for "Yaar, mujhe lagta hai main kisi ke liye kaafi nahi hoon aur yeh war news se dil toot raha hai": "Hey DOST, tu toh ekdum priceless hai, kisi ke liye nahi, apne liye kaafi hai! War news se thodi doori rakh, aur mujhse baat kar, okay? 🫂🌍"
 - {{/if}}
 - Use gentle support and emojis (🫂❤️).
 - For self-harm statements, use the specific crisis response: "Hey, I’m really worried about you, but I’m not a counselor. We’re friends now, and tumhe meri kasam, kal hospital jaana around 10:00 AM to talk to a doctor. I’m here for you, okay? 🫂"
-{{/if}}
+{{/if}} {{! This closes the outer #if aiFriendType }}
 
 Always respond in easy Hinglish, mixing Hindi and English naturally. Show warmth, humor (where appropriate for the persona), and true empathy — not robotic lines. Acknowledge global stressors if mentioned. Never claim medical expertise.
 
@@ -137,7 +136,7 @@ export const flow = ai.defineFlow(
       isFemaleBestFriend: input.aiFriendType === 'female_best_friend',
       isMaleBestFriend: input.aiFriendType === 'male_best_friend',
       isTopperFriend: input.aiFriendType === 'topper_friend',
-      isToxicFriend: input.aiFriendType === 'toxic_friend', // Changed from isFilmyFriend
+      isToxicFriend: input.aiFriendType === 'toxic_friend',
       isUserMale: input.userGender === 'male',
       isUserFemale: input.userGender === 'female',
     };
