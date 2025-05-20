@@ -36,26 +36,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const getInitialData = async () => {
       setIsAuthLoading(true);
-      setIsProfileLoading(true); // Start profile loading assuming we might find a user
+      setIsProfileLoading(true);
 
       try {
         const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
-          console.error("Error fetching initial session:", sessionError.message);
-          // If there's any error fetching the session (e.g., invalid token), treat as logged out.
+          console.error("Error fetching initial session:", sessionError.message, sessionError);
+          // If the error is related to invalid tokens, try to sign out to clear Supabase's local state
+          if (sessionError.message.includes("Invalid Refresh Token") || sessionError.message.includes("Refresh Token Not Found") || sessionError.message.includes("invalid_grant")) {
+            console.warn("Invalid token detected during initial session fetch, attempting to sign out to clear state.");
+            await supabase.auth.signOut(); // This will trigger onAuthStateChange with SIGNED_OUT
+            // onAuthStateChange will handle setting user/session to null and loading states.
+            // Setting states here as well for immediate effect on this initial load path.
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+            setIsAuthLoading(false);
+            setIsProfileLoading(false);
+            return;
+          }
+          // For other session errors, just treat as logged out.
           setSession(null);
           setUser(null);
           setProfile(null);
           setIsAuthLoading(false);
-          setIsProfileLoading(false); // No user, so profile loading is done.
-          return; // Exit early
+          setIsProfileLoading(false);
+          return;
         }
 
         setSession(initialSession);
         const currentUser = initialSession?.user ?? null;
         setUser(currentUser);
-        setIsAuthLoading(false); // Initial auth check done
+        setIsAuthLoading(false); 
 
         if (currentUser) {
           const { data: userProfile, error: profileFetchError } = await supabase
@@ -63,18 +76,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             .select('*')
             .eq('id', currentUser.id)
             .single();
-          if (profileFetchError && profileFetchError.code !== 'PGRST116') { // PGRST116: no rows found
+          if (profileFetchError && profileFetchError.code !== 'PGRST116') { 
             console.error('Initial profile fetch error:', profileFetchError);
           }
           setProfile(userProfile as UserProfile | null);
         } else {
           setProfile(null);
         }
-        setIsProfileLoading(false); // Initial profile check done (or not needed)
+        setIsProfileLoading(false);
       } catch (e: unknown) {
         const error = e as Error;
         console.error("Critical error during initial data fetch (AuthProvider):", error.message, e);
-        // If a critical error occurs, ensure user is in a logged-out state within the app
         setSession(null);
         setUser(null);
         setProfile(null);
@@ -87,20 +99,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, sessionState: Session | null) => {
-        setIsAuthLoading(true); // Mark as loading since auth state is changing
+        setIsAuthLoading(true); 
         setSession(sessionState);
         const newCurrentUser = sessionState?.user ?? null;
+        const oldUser = user; 
         setUser(newCurrentUser);
 
-        const signingOutUserId = user?.id; // Capture previous user's ID for localStorage cleanup
-
-        if (event === 'SIGNED_OUT' && signingOutUserId) {
-          try {
-            localStorage.removeItem(`talkzi_chat_history_${signingOutUserId}`);
-            localStorage.removeItem(`talkzi_ai_friend_type_${signingOutUserId}`);
-          } catch (e) {
-            console.error("Error clearing user-specific localStorage on sign out", e);
+        if (event === 'SIGNED_OUT') {
+          console.log('User signed out. Clearing profile and setting loading to false.');
+          if (oldUser?.id) { 
+            try {
+              localStorage.removeItem(`talkzi_chat_history_${oldUser.id}`);
+              localStorage.removeItem(`talkzi_ai_friend_type_${oldUser.id}`);
+            } catch (e) {
+              console.error("Error clearing user-specific localStorage on sign out", e);
+            }
           }
+          setProfile(null);
+          setIsProfileLoading(false); 
+          setIsAuthLoading(false); 
+          return; 
         }
         
         if (newCurrentUser) {
@@ -115,33 +133,37 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
           setProfile(userProfile as UserProfile | null);
           setIsProfileLoading(false);
-        } else {
+        } else { 
           setProfile(null);
-          setIsProfileLoading(false); // No user, so profile loading "done"
+          setIsProfileLoading(false); 
         }
-        setIsAuthLoading(false); // Auth state change and any profile fetching processed
+        setIsAuthLoading(false); 
       }
     );
 
     return () => {
       authListener?.subscription.unsubscribe();
     };
-  }, []); // Empty dependency array: runs once on mount
+  }, []); 
 
   useEffect(() => {
     if (isAuthLoading) {
-      return; // Don't attempt redirects while initial auth state is still being determined
+      return; 
     }
 
     const isAuthPage = pathname === '/auth';
+    // Consider /login and /signup as auth pages if they exist as separate routes
+    const allAuthPages = ['/auth', '/login', '/signup'];
+    const currentIsAuthPage = allAuthPages.includes(pathname);
+
     const protectedPages = ['/chat', '/aipersona'];
     const isProtectedPage = protectedPages.some(p => pathname === p || pathname.startsWith(p + '/'));
 
-    if (session) { // User is logged in
-      if (isAuthPage) {
+    if (session) { 
+      if (currentIsAuthPage) {
         router.push('/aipersona');
       }
-    } else { // User is not logged in
+    } else { 
       if (isProtectedPage) {
         router.push('/auth');
       }
