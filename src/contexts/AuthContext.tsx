@@ -1,17 +1,17 @@
 
 "use client";
 
-import React, { useEffect, useState, useMemo, type ReactNode, useContext } from 'react';
-import { supabase } from '@/lib/supabase/client';
-import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
-import { useRouter, usePathname } from 'next/navigation';
-import type { UserProfile } from '@/types/talkzi';
-
 // IMPORTANT: If you see "useAuth must be used within an AuthProvider"
 // AND you've confirmed AuthProvider wraps your layout:
 // 1. Delete your .next folder
 // 2. Restart your dev server.
 // This often resolves stubborn parsing/caching issues.
+
+import React, { useEffect, useState, useMemo, type ReactNode, useContext } from 'react';
+import { supabase } from '@/lib/supabase/client';
+import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
+import { useRouter, usePathname } from 'next/navigation';
+import type { UserProfile } from '@/types/talkzi';
 
 interface AuthContextType {
   user: User | null;
@@ -35,7 +35,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     const getInitialData = async () => {
-      // Initial state is already loading=true
+      setIsAuthLoading(true);
+      setIsProfileLoading(true);
       try {
         const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
 
@@ -43,38 +44,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           console.error("Error fetching initial session:", sessionError.message, sessionError);
           if (sessionError.message.includes("Invalid Refresh Token") || sessionError.message.includes("Refresh Token Not Found") || sessionError.message.includes("invalid_grant")) {
             console.warn("Invalid token detected during initial session fetch, attempting to sign out to clear state.");
-            await supabase.auth.signOut(); // This will trigger onAuthStateChange with SIGNED_OUT
-            setSession(null);
-            setUser(null);
-            setProfile(null);
-            setIsAuthLoading(false);
-            setIsProfileLoading(false);
-            return; // Exit early
+            await supabase.auth.signOut();
           }
-          // For other session errors, just treat as logged out.
           setSession(null);
           setUser(null);
           setProfile(null);
-        } else { // No sessionError
+        } else {
           setSession(initialSession);
           const currentUser = initialSession?.user ?? null;
           setUser(currentUser);
 
           if (currentUser) {
-            setIsProfileLoading(true); // Explicitly set for clarity before fetch
             const { data: userProfile, error: profileFetchError } = await supabase
               .from('profiles')
               .select('*')
               .eq('id', currentUser.id)
               .single();
-            if (profileFetchError && profileFetchError.code !== 'PGRST116') { 
+            if (profileFetchError && profileFetchError.code !== 'PGRST116') {
               console.error('Initial profile fetch error:', profileFetchError);
             }
             setProfile(userProfile as UserProfile | null);
-            // setIsProfileLoading(false) will be handled in finally
           } else {
             setProfile(null);
-            // setIsProfileLoading(false) will be handled in finally
           }
         }
       } catch (e: unknown) {
@@ -93,26 +84,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, sessionState: Session | null) => {
-        setIsAuthLoading(true); 
+        console.log("Auth State Change Event:", event, sessionState);
+        setIsAuthLoading(true);
         setSession(sessionState);
         const newCurrentUser = sessionState?.user ?? null;
-        const oldUser = user; 
+        const oldUserId = user?.id;
         setUser(newCurrentUser);
 
         if (event === 'SIGNED_OUT') {
           console.log('User signed out. Clearing profile and setting loading to false.');
-          if (oldUser?.id) { 
+          if (oldUserId) {
             try {
-              localStorage.removeItem(`talkzi_chat_history_${oldUser.id}`);
-              localStorage.removeItem(`talkzi_ai_friend_type_${oldUser.id}`);
+              localStorage.removeItem(`talkzi_chat_history_${oldUserId}`);
+              localStorage.removeItem(`talkzi_ai_friend_type_${oldUserId}`);
             } catch (e) {
               console.error("Error clearing user-specific localStorage on sign out", e);
             }
           }
           setProfile(null);
-          setIsProfileLoading(false); 
-          setIsAuthLoading(false); 
-          return; 
+          setIsProfileLoading(false);
+          setIsAuthLoading(false); // Ensure auth loading is false on sign out
+          return;
         }
         
         if (newCurrentUser) {
@@ -122,7 +114,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             .select('*')
             .eq('id', newCurrentUser.id)
             .single();
-          if (profileError && profileError.code !== 'PGRST116') {
+
+          if (profileError && profileError.code !== 'PGRST116') { // PGRST116: 0 rows found (no profile yet)
             console.error('Error fetching profile on auth change:', profileError);
           }
           setProfile(userProfile as UserProfile | null);
@@ -146,36 +139,38 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return; 
     }
 
-    const allAuthPages = ['/auth']; // Login and Signup are now tabs on /auth
-    const currentIsAuthPage = allAuthPages.includes(pathname);
+    const authPages = ['/auth']; // Login and Signup are now tabs on /auth
+    const currentIsAuthPage = authPages.includes(pathname);
 
-    const protectedPages = ['/chat', '/aipersona'];
-    const isProtectedPage = protectedPages.some(p => pathname === p || pathname.startsWith(p + '/'));
+    // /aipersona is protected. /chat allows guests.
+    const protectedPagesRequiringLogin = ['/aipersona']; 
+    const isStrictlyProtectedPage = protectedPagesRequiringLogin.some(p => pathname === p || pathname.startsWith(p + '/'));
 
     if (session) { // User is logged in (and profile should be resolved or null)
       if (currentIsAuthPage) {
-        router.push('/aipersona'); // Send logged-in users away from auth pages
+        router.push('/aipersona'); // Send logged-in users away from auth pages to persona selection
       }
     } else { // User is not logged in (session is null)
-      if (isProtectedPage) {
-        router.push('/auth'); // Send logged-out users on protected pages to auth page
+      if (isStrictlyProtectedPage) { // If on a page that *always* requires login (like /aipersona)
+        router.push('/auth'); 
       }
+      // Guests are allowed on /chat, so no redirect from there if !session
     }
-  }, [session, pathname, router, isAuthLoading, isProfileLoading]); // Added isProfileLoading
+  }, [session, pathname, router, isAuthLoading, isProfileLoading]);
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error("Error signing out: ", error);
     }
-    // onAuthStateChange will handle setting user/session/profile to null
+    // onAuthStateChange will handle setting user/session/profile to null and UI updates
   };
 
   const contextValue = useMemo(() => ({
     user,
     session,
     profile,
-    isLoading: isAuthLoading || isProfileLoading,
+    isLoading: isAuthLoading || (user ? isProfileLoading : false), // Profile is only loading if there's a user
     signOut,
   }), [user, session, profile, isAuthLoading, isProfileLoading]);
 
@@ -189,7 +184,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 export const useAuth = (): AuthContextType => {
   const context = React.useContext(AuthContext);
   if (context === undefined) {
-    // This error message helps diagnose if AuthProvider is missing in the component tree.
     throw new Error('useAuth must be used within an AuthProvider. Check component tree and ensure AuthProvider is an ancestor, especially in layout files.');
   }
   return context;
