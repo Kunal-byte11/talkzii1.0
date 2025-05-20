@@ -12,7 +12,7 @@ import { detectCrisis } from '@/ai/flows/crisis-detection';
 import { hinglishAICompanion, type HinglishAICompanionInput } from '@/ai/flows/hinglish-ai-companion';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { AlertCircle, MessageSquareText, User } from 'lucide-react';
+import { MessageSquareText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 
@@ -46,13 +46,19 @@ export function ChatInterface() {
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [currentAiFriendType, setCurrentAiFriendType] = useState<string | undefined>('default');
-  
+  const [isClientSide, setIsClientSide] = useState(false); // For client-side checks
+
   const [localStorageKeys, setLocalStorageKeys] = useState({
     chatHistory: getChatHistoryKey(user?.id),
     aiFriendType: getAIFriendTypeKey(user?.id),
   });
 
   useEffect(() => {
+    setIsClientSide(true); // Component has mounted, safe to use client-side APIs
+  }, []);
+
+  useEffect(() => {
+    // Update localStorage keys when user logs in or out
     setLocalStorageKeys({
       chatHistory: getChatHistoryKey(user?.id),
       aiFriendType: getAIFriendTypeKey(user?.id),
@@ -61,28 +67,32 @@ export function ChatInterface() {
 
 
   useEffect(() => {
-    // This effect handles loading from localStorage based on whether a user is logged in or not.
-    // It relies on localStorageKeys being updated by the previous effect when `user` changes.
-    if (isAuthLoading) return; // Wait for auth state to resolve
+    // Load data from localStorage
+    if (isAuthLoading || !isClientSide) {
+      // Wait for auth state to resolve and component to be client-side
+      return;
+    }
 
+    // Load chat history
     try {
       const storedHistory = localStorage.getItem(localStorageKeys.chatHistory);
       if (storedHistory) {
         setMessages(JSON.parse(storedHistory));
       } else {
-        setMessages([]);
+        setMessages([]); // Important: clear messages if nothing is stored for the current key
       }
     } catch (error) {
       console.error("Error loading chat history from localStorage", error);
       setMessages([]);
     }
 
+    // Load or set AI friend type
     if (!user) { // Guest user
       setCurrentAiFriendType('default');
-      // Clear any guest persona setting to ensure fresh default if the user was previously logged in and set one
-      try { 
-        localStorage.removeItem(getAIFriendTypeKey()); // remove generic key
-      } catch(e){ console.error("Error clearing guest AI friend type", e);}
+      try {
+        // Ensure guest persona is default, clear any specific persona that might have been set as guest
+        localStorage.removeItem(getAIFriendTypeKey());
+      } catch (e) { console.error("Error clearing guest AI friend type", e); }
     } else { // Logged-in user
       try {
         const storedFriendType = localStorage.getItem(localStorageKeys.aiFriendType);
@@ -92,20 +102,22 @@ export function ChatInterface() {
         setCurrentAiFriendType('default');
       }
     }
-  }, [localStorageKeys, isAuthLoading, user]);
+  }, [localStorageKeys, isAuthLoading, isClientSide, user]);
 
+  // Save chat history to localStorage
   useEffect(() => {
-    if (isAuthLoading) return; // Don't save while auth is resolving to prevent potential overwrites
-
-    if (messages.length === 0 && !localStorage.getItem(localStorageKeys.chatHistory)) {
+    if (isAuthLoading || !isClientSide) {
+      // Don't save if auth is loading or not yet client-side
       return;
     }
+    // This effect runs when `messages` or `localStorageKeys.chatHistory` changes.
+    // It's fine to save an empty array if messages become empty (e.g., user clears history if that feature existed).
     try {
       localStorage.setItem(localStorageKeys.chatHistory, JSON.stringify(messages));
     } catch (error) {
       console.error("Error saving chat history to localStorage", error);
     }
-  }, [messages, localStorageKeys.chatHistory, isAuthLoading]);
+  }, [messages, localStorageKeys.chatHistory, isAuthLoading, isClientSide]);
 
    useEffect(() => {
     if (scrollAreaRef.current) {
@@ -165,9 +177,7 @@ export function ChatInterface() {
           personaForAI = storedPersona as HinglishAICompanionInput['aiFriendType'];
         }
       }
-      // For guests, personaForAI remains 'default'
-
-      setCurrentAiFriendType(personaForAI); // Update UI state for persona
+      // For guests, personaForAI remains 'default' as setCurrentAiFriendType handles this
 
       if (personaForAI !== 'default') {
           const validPersonaTypes: HinglishAICompanionInput['aiFriendType'][] = ['female_best_friend', 'male_best_friend', 'topper_friend', 'toxic_friend'];
@@ -175,7 +185,6 @@ export function ChatInterface() {
              companionInput.aiFriendType = personaForAI as HinglishAICompanionInput['aiFriendType'];
           }
       }
-      // If personaForAI is 'default', aiFriendType is not set in companionInput, so AI uses its default.
 
 
       const aiResponse = await hinglishAICompanion(companionInput);
@@ -195,7 +204,7 @@ export function ChatInterface() {
     } finally {
       setIsAiLoading(false);
     }
-  }, [user, profile, toast, messages]);
+  }, [user, profile, toast, currentAiFriendType]); // Added currentAiFriendType dependency
 
   const handleFeedback = useCallback(async (messageId: string, feedbackType: 'liked' | 'disliked') => {
     if (!user) {
@@ -207,7 +216,7 @@ export function ChatInterface() {
     let aiResponseText = "";
     let finalFeedback: 'liked' | 'disliked' | null = feedbackType;
     let personaForFeedback = currentAiFriendType || 'default';
-     if (!user) { // Ensure persona is default for guests if somehow this function is called
+     if (!user) { 
         personaForFeedback = 'default';
     }
 
@@ -217,14 +226,14 @@ export function ChatInterface() {
         if (msg.id === messageId && msg.sender === 'ai') {
           userPromptForThisAi = msg.userPromptText || "";
           aiResponseText = msg.text;
-          finalFeedback = msg.feedback === feedbackType ? null : feedbackType;
+          finalFeedback = msg.feedback === feedbackType ? null : feedbackType; // Toggle feedback
           return { ...msg, feedback: finalFeedback };
         }
         return msg;
       })
     );
 
-    if (finalFeedback && userPromptForThisAi && aiResponseText) {
+    if (finalFeedback && userPromptForThisAi && aiResponseText) { // Only save if feedback is set (not null)
       await saveMessageFeedbackToSupabase({
         message_id: messageId,
         user_id: user.id,
@@ -234,6 +243,8 @@ export function ChatInterface() {
         ai_persona: personaForFeedback,
       });
     }
+    // If finalFeedback is null (toggled off), we might want to send a 'delete' or 'nullify' to Supabase,
+    // but current logic only saves if feedback is explicitly 'liked' or 'disliked'. This is fine for now.
   }, [user, toast, currentAiFriendType]);
 
 
@@ -242,16 +253,13 @@ export function ChatInterface() {
     setShowSubscriptionModal(false);
   };
 
-  // Combined loading state for initial auth check and client readiness for localStorage
-  const stillInitializing = isAuthLoading || (localStorageKeys.chatHistory === getChatHistoryKey() && messages.length === 0 && typeof window !== 'undefined' && !localStorage.getItem(localStorageKeys.chatHistory) && !user );
-
-
-  if (stillInitializing) {
+  // Loading UI:
+  if (isAuthLoading || !isClientSide) {
     return <div className="flex flex-col items-center justify-center h-full"><TypingIndicator /> <p className="ml-2 text-sm text-muted-foreground">Loading chat state...</p></div>;
   }
   
   const personaDisplayForGuest = "Default Talkzi";
-  const personaDisplayForUser = currentAiFriendType?.replace(/_/g, ' ') || 'Default Talkzi';
+  const personaDisplayForUser = currentAiFriendType?.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || 'Default Talkzi';
 
 
   return (
@@ -292,3 +300,4 @@ export function ChatInterface() {
     </div>
   );
 }
+
