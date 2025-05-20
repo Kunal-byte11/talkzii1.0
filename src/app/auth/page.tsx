@@ -170,7 +170,6 @@ export default function AuthPage() {
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      // We removed options: { data: { username: username.trim() } } as username is handled in profiles table
     });
 
     if (signUpError) {
@@ -190,7 +189,7 @@ export default function AuthPage() {
       const profileData: UserProfile = {
         id: signUpData.user.id,
         username: username.trim(),
-        email: signUpData.user.email || '', // Safer handling for email
+        email: signUpData.user.email || '',
         gender: gender,
         date_of_birth: format(dob, 'yyyy-MM-dd'),
       };
@@ -210,7 +209,7 @@ export default function AuthPage() {
       if (profileError) {
         setIsLoading(false);
         console.error("Profile save error raw:", profileError);
-        const profileErrorAsAny = profileError as any; // Type assertion to access potential properties
+        const profileErrorAsAny = profileError as any;
         const detailedMessage = profileErrorAsAny.message || 'Unknown error';
         const details = profileErrorAsAny.details || 'No additional details';
         const code = profileErrorAsAny.code || 'No code';
@@ -227,11 +226,6 @@ export default function AuthPage() {
           description: `Your account was created, but we couldn't save other profile details. ${detailedMessage}`,
           variant: "destructive",
         });
-        // It's important to NOT automatically sign out the user here or delete the auth user.
-        // The user account IS created. The profile part failed.
-        // The AuthProvider will still pick up the session for the newly created auth user.
-        // They will be redirected to /aipersona. They just won't have a profile record yet.
-        // This needs to be handled gracefully in areas that expect a profile (e.g., ChatInterface fetching gender).
         return; 
       }
 
@@ -239,8 +233,6 @@ export default function AuthPage() {
         title: "Signup Successful!",
         description: "Welcome to Talkzi! Please check your email if confirmation is required.",
       });
-      // AuthProvider will handle redirect after SIGNED_IN event which should trigger after signup.
-      // No explicit router.push here needed as AuthContext handles it.
     } else {
        setError("An unexpected error occurred during signup. User data not found after sign up. Please try again.");
        toast({
@@ -467,7 +459,17 @@ export default function AuthPage() {
             </div>
           </TabsContent>
         </Tabs>
-        <p className="text-center text-sm text-muted-foreground">
+
+        <div className="text-center text-sm text-muted-foreground mt-4">
+          <p>
+            Or,{' '}
+            <Link href="/chat" className="font-semibold text-primary hover:underline">
+              Continue as Guest & Chat with Default Persona
+            </Link>
+          </p>
+        </div>
+
+        <p className="text-center text-sm text-muted-foreground mt-6">
           By signing up, you agree to our (non-existent) Terms of Service.
         </p>
       </div>

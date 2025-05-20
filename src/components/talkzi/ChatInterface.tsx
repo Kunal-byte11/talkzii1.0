@@ -12,14 +12,13 @@ import { detectCrisis } from '@/ai/flows/crisis-detection';
 import { hinglishAICompanion, type HinglishAICompanionInput } from '@/ai/flows/hinglish-ai-companion';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { AlertCircle, MessageSquareText } from 'lucide-react';
+import { AlertCircle, MessageSquareText, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase/client'; // Import Supabase client
+import { supabase } from '@/lib/supabase/client';
 
 const getChatHistoryKey = (userId?: string) => userId ? `talkzi_chat_history_${userId}` : 'talkzi_chat_history_guest';
 const getAIFriendTypeKey = (userId?: string) => userId ? `talkzi_ai_friend_type_${userId}` : 'talkzi_ai_friend_type_guest';
 
-// Function to save feedback to Supabase (we'll define its content later)
 async function saveMessageFeedbackToSupabase(feedbackData: {
   message_id: string;
   user_id: string;
@@ -28,15 +27,10 @@ async function saveMessageFeedbackToSupabase(feedbackData: {
   feedback: 'liked' | 'disliked';
   ai_persona?: string;
 }) {
-  // console.log("Attempting to save feedback to Supabase:", feedbackData);
   try {
     const { error } = await supabase.from('message_feedback').insert(feedbackData);
     if (error) {
       console.error("Error saving message feedback to Supabase:", error);
-      // Optionally, inform the user via toast if saving fails, though this might be too noisy.
-      // For now, primarily log it.
-    } else {
-      // console.log("Feedback saved to Supabase successfully.");
     }
   } catch (e) {
     console.error("Exception while saving message feedback:", e);
@@ -51,82 +45,67 @@ export function ChatInterface() {
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const [currentAiFriendType, setCurrentAiFriendType] = useState<string | undefined>(undefined);
+  const [currentAiFriendType, setCurrentAiFriendType] = useState<string | undefined>('default');
+  
   const [localStorageKeys, setLocalStorageKeys] = useState({
-    chatHistory: getChatHistoryKey(),
-    aiFriendType: getAIFriendTypeKey(),
+    chatHistory: getChatHistoryKey(user?.id),
+    aiFriendType: getAIFriendTypeKey(user?.id),
   });
 
   useEffect(() => {
-    if (!isAuthLoading && user?.id) {
-      setLocalStorageKeys({
-        chatHistory: getChatHistoryKey(user.id),
-        aiFriendType: getAIFriendTypeKey(user.id),
-      });
-    } else if (!isAuthLoading && !user) {
-      setLocalStorageKeys({
-        chatHistory: getChatHistoryKey(), // Generic key for guest/logged out
-        aiFriendType: getAIFriendTypeKey(), // Generic key for guest/logged out
-      });
-    }
-  }, [user, isAuthLoading]);
+    setLocalStorageKeys({
+      chatHistory: getChatHistoryKey(user?.id),
+      aiFriendType: getAIFriendTypeKey(user?.id),
+    });
+  }, [user]);
 
 
   useEffect(() => {
-    if (localStorageKeys.chatHistory === getChatHistoryKey() && !user && !isAuthLoading) {
-      // Guest user state, keys are generic - proceed to load
-    } else if (localStorageKeys.chatHistory.endsWith('_guest') && user && !isAuthLoading) {
-      // User just logged in, keys might still be guest ones - they will update in the next effect cycle.
-      // Or, the keys have just updated from guest to user-specific.
-      // In this case, we should load from the new user-specific keys.
-    } else if (!localStorageKeys.chatHistory.endsWith('_guest') && !user && isAuthLoading) {
-      // Still loading auth for a potential user, and keys aren't guest keys yet, so wait.
-      return;
-    }
-
+    // This effect handles loading from localStorage based on whether a user is logged in or not.
+    // It relies on localStorageKeys being updated by the previous effect when `user` changes.
+    if (isAuthLoading) return; // Wait for auth state to resolve
 
     try {
       const storedHistory = localStorage.getItem(localStorageKeys.chatHistory);
       if (storedHistory) {
         setMessages(JSON.parse(storedHistory));
       } else {
-        setMessages([]); // No history or initial load
+        setMessages([]);
       }
     } catch (error) {
       console.error("Error loading chat history from localStorage", error);
       setMessages([]);
     }
 
-    try {
-      const storedFriendType = localStorage.getItem(localStorageKeys.aiFriendType);
-      setCurrentAiFriendType(storedFriendType || 'default'); // Default to 'default' if nothing is stored
-    } catch (error) {
-      console.error("Error loading AI friend type from localStorage", error);
+    if (!user) { // Guest user
       setCurrentAiFriendType('default');
+      // Clear any guest persona setting to ensure fresh default if the user was previously logged in and set one
+      try { 
+        localStorage.removeItem(getAIFriendTypeKey()); // remove generic key
+      } catch(e){ console.error("Error clearing guest AI friend type", e);}
+    } else { // Logged-in user
+      try {
+        const storedFriendType = localStorage.getItem(localStorageKeys.aiFriendType);
+        setCurrentAiFriendType(storedFriendType || 'default');
+      } catch (error) {
+        console.error("Error loading AI friend type from localStorage", error);
+        setCurrentAiFriendType('default');
+      }
     }
-  }, [localStorageKeys, user, isAuthLoading]);
+  }, [localStorageKeys, isAuthLoading, user]);
 
   useEffect(() => {
-    // Save messages to localStorage whenever they change, if keys are ready
-    if (localStorageKeys.chatHistory === getChatHistoryKey() && !user && !isAuthLoading) {
-      // Guest user state, keys are generic - allow saving
-    } else if (!localStorageKeys.chatHistory.endsWith('_guest') && !user && isAuthLoading) {
-      // Still loading auth for a potential user, don't save yet if keys are not generic
-      return;
-    }
-     if (messages.length === 0 && !localStorage.getItem(localStorageKeys.chatHistory)) {
-      // Don't save an empty array if there was no pre-existing history.
-      // This prevents overwriting a logged-in user's history with an empty array
-      // if they log out and then log back in before any new messages are sent as guest.
-      return;
-    }
+    if (isAuthLoading) return; // Don't save while auth is resolving to prevent potential overwrites
 
+    if (messages.length === 0 && !localStorage.getItem(localStorageKeys.chatHistory)) {
+      return;
+    }
     try {
       localStorage.setItem(localStorageKeys.chatHistory, JSON.stringify(messages));
     } catch (error) {
       console.error("Error saving chat history to localStorage", error);
     }
-  }, [messages, localStorageKeys.chatHistory, user, isAuthLoading]);
+  }, [messages, localStorageKeys.chatHistory, isAuthLoading]);
 
    useEffect(() => {
     if (scrollAreaRef.current) {
@@ -149,14 +128,10 @@ export function ChatInterface() {
       ...options,
     };
     setMessages(prev => [...prev, newMessage]);
-    return newMessage; // Return the new message object, useful for getting its ID
+    return newMessage;
   };
 
   const handleSendMessage = useCallback(async (userInput: string) => {
-    if (!user && !isAuthLoading) { // Ensure auth state is resolved before blocking
-      toast({ title: "Login Required", description: "Please log in to chat.", variant: "destructive"});
-      return;
-    }
     if (!userInput.trim()) return;
 
     const userMessage = addMessage(userInput, 'user');
@@ -171,19 +146,37 @@ export function ChatInterface() {
       }
 
       const companionInput: HinglishAICompanionInput = { message: userInput };
-      const userGender = profile?.gender as 'male' | 'female' | undefined;
-      if (userGender === 'male' || userGender === 'female') {
-        companionInput.userGender = userGender;
-      }
-
-      const personaToUse = localStorage.getItem(localStorageKeys.aiFriendType) || 'default';
-      if (personaToUse && personaToUse !== 'default') {
-        const validPersonaTypes: HinglishAICompanionInput['aiFriendType'][] = ['female_best_friend', 'male_best_friend', 'topper_friend', 'toxic_friend'];
-        if (validPersonaTypes.includes(personaToUse as any)) {
-           companionInput.aiFriendType = personaToUse as HinglishAICompanionInput['aiFriendType'];
+      
+      let activeUserGender: 'male' | 'female' | undefined = undefined;
+      if (user && profile?.gender) {
+        const userGender = profile.gender as 'male' | 'female' | undefined;
+        if (userGender === 'male' || userGender === 'female') {
+          activeUserGender = userGender;
         }
       }
-      setCurrentAiFriendType(personaToUse); // Update current persona for display
+      if (activeUserGender) {
+        companionInput.userGender = activeUserGender;
+      }
+      
+      let personaForAI: HinglishAICompanionInput['aiFriendType'] | 'default' = 'default';
+      if (user) { // Only consider stored persona if user is logged in
+        const storedPersona = localStorage.getItem(getAIFriendTypeKey(user.id));
+        if (storedPersona && storedPersona !== 'default') {
+          personaForAI = storedPersona as HinglishAICompanionInput['aiFriendType'];
+        }
+      }
+      // For guests, personaForAI remains 'default'
+
+      setCurrentAiFriendType(personaForAI); // Update UI state for persona
+
+      if (personaForAI !== 'default') {
+          const validPersonaTypes: HinglishAICompanionInput['aiFriendType'][] = ['female_best_friend', 'male_best_friend', 'topper_friend', 'toxic_friend'];
+          if (validPersonaTypes.includes(personaForAI as any)) {
+             companionInput.aiFriendType = personaForAI as HinglishAICompanionInput['aiFriendType'];
+          }
+      }
+      // If personaForAI is 'default', aiFriendType is not set in companionInput, so AI uses its default.
+
 
       const aiResponse = await hinglishAICompanion(companionInput);
       if (aiResponse.response) {
@@ -202,7 +195,7 @@ export function ChatInterface() {
     } finally {
       setIsAiLoading(false);
     }
-  }, [user, profile, isAuthLoading, toast, localStorageKeys.aiFriendType, messages]); // Added messages to deps for userPromptText
+  }, [user, profile, toast, messages]);
 
   const handleFeedback = useCallback(async (messageId: string, feedbackType: 'liked' | 'disliked') => {
     if (!user) {
@@ -213,13 +206,17 @@ export function ChatInterface() {
     let userPromptForThisAi = "";
     let aiResponseText = "";
     let finalFeedback: 'liked' | 'disliked' | null = feedbackType;
+    let personaForFeedback = currentAiFriendType || 'default';
+     if (!user) { // Ensure persona is default for guests if somehow this function is called
+        personaForFeedback = 'default';
+    }
+
 
     setMessages(prevMessages =>
       prevMessages.map(msg => {
         if (msg.id === messageId && msg.sender === 'ai') {
           userPromptForThisAi = msg.userPromptText || "";
           aiResponseText = msg.text;
-          // Toggle feedback: if same feedback clicked again, remove it. Otherwise, set new feedback.
           finalFeedback = msg.feedback === feedbackType ? null : feedbackType;
           return { ...msg, feedback: finalFeedback };
         }
@@ -227,18 +224,16 @@ export function ChatInterface() {
       })
     );
 
-    if (finalFeedback && userPromptForThisAi && aiResponseText) { // Only save if feedback is being set (not cleared)
+    if (finalFeedback && userPromptForThisAi && aiResponseText) {
       await saveMessageFeedbackToSupabase({
         message_id: messageId,
         user_id: user.id,
         ai_response_text: aiResponseText,
         user_prompt_text: userPromptForThisAi,
         feedback: finalFeedback,
-        ai_persona: currentAiFriendType || 'default',
+        ai_persona: personaForFeedback,
       });
     }
-    // If feedback is cleared (finalFeedback is null), we might want to delete the record from Supabase,
-    // or just update it. For simplicity now, it only saves when feedback is actively set.
   }, [user, toast, currentAiFriendType]);
 
 
@@ -247,14 +242,17 @@ export function ChatInterface() {
     setShowSubscriptionModal(false);
   };
 
-  const stillInitializing = isAuthLoading || (user && localStorageKeys.chatHistory.endsWith('_guest')) || (!user && localStorageKeys.chatHistory.endsWith('_guest') && messages.length === 0 && !localStorage.getItem(localStorageKeys.chatHistory));
+  // Combined loading state for initial auth check and client readiness for localStorage
+  const stillInitializing = isAuthLoading || (localStorageKeys.chatHistory === getChatHistoryKey() && messages.length === 0 && typeof window !== 'undefined' && !localStorage.getItem(localStorageKeys.chatHistory) && !user );
 
 
   if (stillInitializing) {
     return <div className="flex flex-col items-center justify-center h-full"><TypingIndicator /> <p className="ml-2 text-sm text-muted-foreground">Loading chat state...</p></div>;
   }
+  
+  const personaDisplayForGuest = "Default Talkzi";
+  const personaDisplayForUser = currentAiFriendType?.replace(/_/g, ' ') || 'Default Talkzi';
 
-  const personaDisplay = currentAiFriendType?.replace(/_/g, ' ') || 'Default';
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -264,10 +262,18 @@ export function ChatInterface() {
             <div className="text-center text-muted-foreground py-10">
               <MessageSquareText className="mx-auto h-12 w-12 mb-4 text-primary/70" />
               <p className="text-lg font-semibold">Start a conversation!</p>
+              {!user && (
+                <>
+                  <p className="text-sm">You're chatting as a guest.</p>
+                  <p className="text-sm">AI Persona: <span className="font-semibold capitalize text-primary">{personaDisplayForGuest}</span>.</p>
+                </>
+              )}
               {user && profile?.gender && (
                 <p className="text-sm">Your gender is set to: <span className="font-semibold capitalize text-primary">{profile.gender}</span>.</p>
               )}
-              <p className="text-sm">AI Persona: <span className="font-semibold capitalize text-primary">{personaDisplay}</span>.</p>
+              {user && (
+                <p className="text-sm">AI Persona: <span className="font-semibold capitalize text-primary">{personaDisplayForUser}</span>.</p>
+              )}
               <p className="text-sm">Type your first message below.</p>
             </div>
           )}
