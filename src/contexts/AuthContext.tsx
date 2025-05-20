@@ -33,6 +33,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const router = useRouter();
   const pathname = usePathname();
 
+  // Effect for initial data load and auth state listener
   useEffect(() => {
     const getInitialData = async () => {
       setIsAuthLoading(true);
@@ -44,7 +45,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           console.error("Error fetching initial session:", sessionError.message, sessionError);
           if (sessionError.message.includes("Invalid Refresh Token") || sessionError.message.includes("Refresh Token Not Found") || sessionError.message.includes("invalid_grant")) {
             console.warn("Invalid token detected during initial session fetch, attempting to sign out to clear state.");
-            await supabase.auth.signOut();
+            await supabase.auth.signOut(); // Attempt to clear bad token
           }
           setSession(null);
           setUser(null);
@@ -60,7 +61,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               .select('*')
               .eq('id', currentUser.id)
               .single();
-            if (profileFetchError && profileFetchError.code !== 'PGRST116') {
+            if (profileFetchError && profileFetchError.code !== 'PGRST116') { // PGRST116: 0 rows found
               console.error('Initial profile fetch error:', profileFetchError);
             }
             setProfile(userProfile as UserProfile | null);
@@ -69,6 +70,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         }
       } catch (e: unknown) {
+        // Catch any unexpected errors during the initial fetch
         const error = e as Error;
         console.error("Critical error during initial data fetch (AuthProvider):", error.message, e);
         setSession(null);
@@ -85,16 +87,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, sessionState: Session | null) => {
         console.log("Auth State Change Event:", event, sessionState);
-        setIsAuthLoading(true);
+        setIsAuthLoading(true); // Start loading on any auth change
         setSession(sessionState);
         const newCurrentUser = sessionState?.user ?? null;
-        const oldUserId = user?.id;
+        const oldUserId = user?.id; // Capture old user ID before updating
         setUser(newCurrentUser);
 
         if (event === 'SIGNED_OUT') {
           console.log('User signed out. Clearing profile and setting loading to false.');
           if (oldUserId) {
             try {
+              // Clear user-specific localStorage items
               localStorage.removeItem(`talkzi_chat_history_${oldUserId}`);
               localStorage.removeItem(`talkzi_ai_friend_type_${oldUserId}`);
             } catch (e) {
@@ -102,11 +105,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
           }
           setProfile(null);
-          setIsProfileLoading(false);
-          setIsAuthLoading(false); // Ensure auth loading is false on sign out
-          return;
+          setIsProfileLoading(false); // Profile is definitely not loading
+          setIsAuthLoading(false); // Auth state is now resolved to signed out
+          return; // Exit early after handling sign out
         }
         
+        // For SIGNED_IN or TOKEN_REFRESHED events, or if user is now present
         if (newCurrentUser) {
           setIsProfileLoading(true);
           const { data: userProfile, error: profileError } = await supabase
@@ -121,28 +125,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setProfile(userProfile as UserProfile | null);
           setIsProfileLoading(false);
         } else { 
+          // If no user (e.g., token expired and couldn't refresh, or initial state with no session)
           setProfile(null);
           setIsProfileLoading(false); 
         }
-        setIsAuthLoading(false); 
+        setIsAuthLoading(false); // Auth state is now resolved
       }
     );
 
     return () => {
       authListener?.subscription.unsubscribe();
     };
-  }, []); // Empty dependency array: runs once on mount
+  }, []); // Empty dependency array ensures this effect runs once on mount
 
+  // Effect for handling navigation based on auth state
   useEffect(() => {
     // Wait for both auth and profile loading to complete before making redirect decisions
+    // If there's a session, also wait for profile to be resolved (or confirmed null)
     if (isAuthLoading || (session && isProfileLoading)) {
       return; 
     }
 
-    const authPages = ['/auth']; // Login and Signup are now tabs on /auth
+    const authPages = ['/auth']; 
     const currentIsAuthPage = authPages.includes(pathname);
 
-    // /aipersona is protected. /chat allows guests.
     const protectedPagesRequiringLogin = ['/aipersona']; 
     const isStrictlyProtectedPage = protectedPagesRequiringLogin.some(p => pathname === p || pathname.startsWith(p + '/'));
 
@@ -152,11 +158,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     } else { // User is not logged in (session is null)
       if (isStrictlyProtectedPage) { // If on a page that *always* requires login (like /aipersona)
+        // Guests are not allowed on /aipersona, so redirect to /auth
         router.push('/auth'); 
       }
-      // Guests are allowed on /chat, so no redirect from there if !session
+      // Guests ARE allowed on /chat, so no redirect from there if !session
     }
-  }, [session, pathname, router, isAuthLoading, isProfileLoading]);
+  }, [session, pathname, router, isAuthLoading, isProfileLoading]); // Dependencies for navigation logic
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -166,11 +173,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // onAuthStateChange will handle setting user/session/profile to null and UI updates
   };
 
+  // Memoize the context value to prevent unnecessary re-renders of consumers
   const contextValue = useMemo(() => ({
     user,
     session,
     profile,
-    isLoading: isAuthLoading || (user ? isProfileLoading : false), // Profile is only loading if there's a user
+    isLoading: isAuthLoading || (user ? isProfileLoading : false), // Overall loading state
     signOut,
   }), [user, session, profile, isAuthLoading, isProfileLoading]);
 
