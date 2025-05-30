@@ -34,7 +34,6 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   // Signup specific state
-  const [username, setUsername] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [gender, setGender] = useState<UserProfile['gender'] | undefined>(undefined);
   const [selectedDay, setSelectedDay] = useState<string | undefined>(undefined);
@@ -123,11 +122,6 @@ export default function AuthPage() {
     event.preventDefault();
     setError(null);
 
-    if (!username.trim()) {
-      setError("Username is required.");
-      toast({ title: "Validation Error", description: "Username is required.", variant: "destructive" });
-      return;
-    }
     if (password.length < 6) {
       setError("Password must be at least 6 characters long.");
       toast({ title: "Validation Error", description: "Password must be at least 6 characters long.", variant: "destructive" });
@@ -185,10 +179,13 @@ export default function AuthPage() {
 
     if (signUpData.user) {
       console.log("User signed up successfully (from signUp response):", signUpData.user);
+      
+      const emailPrefix = email.split('@')[0];
+      const generatedUsername = emailPrefix || `user${Date.now().toString().slice(-6)}`;
 
       const profileData: UserProfile = {
         id: signUpData.user.id,
-        username: username.trim(),
+        username: generatedUsername,
         email: signUpData.user.email || '',
         gender: gender,
         date_of_birth: format(dob, 'yyyy-MM-dd'),
@@ -336,18 +333,6 @@ export default function AuthPage() {
               )}
               <form onSubmit={handleSignup} className="space-y-5">
                 <div className="space-y-1.5">
-                  <Label htmlFor="signup-username">Username</Label>
-                  <Input
-                    id="signup-username"
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Your unique username"
-                    required
-                    className="neumorphic-shadow-inset-soft"
-                  />
-                </div>
-                <div className="space-y-1.5">
                   <Label htmlFor="signup-email">Email</Label>
                   <Input
                     id="signup-email"
@@ -410,6 +395,10 @@ export default function AuthPage() {
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="female" id="female" />
                       <Label htmlFor="female" className="font-normal">Female</Label>
+                    </div>
+                     <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="prefer_not_to_say" id="prefer_not_to_say" />
+                      <Label htmlFor="prefer_not_to_say" className="font-normal">Prefer not to say</Label>
                     </div>
                   </RadioGroup>
                 </div>
