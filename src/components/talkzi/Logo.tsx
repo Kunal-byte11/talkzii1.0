@@ -1,3 +1,4 @@
+
 import type { SVGProps } from 'react';
 
 export function Logo(props: SVGProps<SVGSVGElement>) {
@@ -21,8 +22,8 @@ export function Logo(props: SVGProps<SVGSVGElement>) {
         y="50%"
         dy=".35em"
         textAnchor="middle"
-        fontSize="24"
-        fontFamily="var(--font-geist-sans), Poppins, Satoshi, Arial, sans-serif"
+        fontSize="26"
+        fontFamily="Poppins, var(--font-geist-sans), Satoshi, Arial, sans-serif"
         fontWeight="bold"
         fill="url(#talkziGradient)"
       >
@@ -31,4 +32,3 @@ export function Logo(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
-
