@@ -1,3 +1,6 @@
+// To change the logo, you can edit the SVG markup in this file.
+// For complex graphical logos, you might replace this entire component
+// with an <img /> tag pointing to an image file, or embed new SVG paths.
 
 import type { SVGProps } from 'react';
 
@@ -5,9 +8,9 @@ export function Logo(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 100 30"
-      width="100"
-      height="30"
+      viewBox="0 0 100 30" // Adjusted viewBox slightly if needed for larger font
+      width="100" // Can be overridden by props
+      height="30" // Can be overridden by props
       aria-label="Talkzii Logo"
       {...props}
     >
@@ -20,10 +23,10 @@ export function Logo(props: SVGProps<SVGSVGElement>) {
       <text
         x="50%"
         y="50%"
-        dy=".35em"
+        dy=".35em" // Ensures vertical centering
         textAnchor="middle"
-        fontSize="26"
-        fontFamily="Poppins, var(--font-geist-sans), Satoshi, Arial, sans-serif"
+        fontSize="26" // Slightly increased from a potential previous smaller size
+        fontFamily="Poppins, var(--font-geist-sans), Satoshi, Arial, sans-serif" // Poppins prioritized
         fontWeight="bold"
         fill="url(#talkziGradient)"
       >
