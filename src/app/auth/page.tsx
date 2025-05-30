@@ -12,14 +12,10 @@ import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { format, isValid, subYears, getYear, getMonth, getDate, parse } from 'date-fns';
-import { AlertCircle, UserCircle, Eye, EyeOff } from "lucide-react";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import type { UserProfile } from '@/types/talkzi';
 import { useAuth } from '@/contexts/AuthContext';
-
-const MIN_AGE = 16;
 
 export default function AuthPage() {
   const router = useRouter();
@@ -36,42 +32,6 @@ export default function AuthPage() {
   // Signup specific state
   const [confirmPassword, setConfirmPassword] = useState('');
   const [gender, setGender] = useState<UserProfile['gender'] | undefined>(undefined);
-  const [selectedDay, setSelectedDay] = useState<string | undefined>(undefined);
-  const [selectedMonth, setSelectedMonth] = useState<string | undefined>(undefined);
-  const [selectedYear, setSelectedYear] = useState<string | undefined>(undefined);
-  const [dob, setDob] = useState<Date | undefined>(undefined);
-
-  const currentYear = getYear(new Date());
-  const years = useMemo(() =>
-    Array.from({ length: 100 }, (_, i) => currentYear - MIN_AGE - i)
-    .filter(year => year >= currentYear - 100),
-    [currentYear]
-  );
-  const months = useMemo(() => [
-    { value: "1", label: "January" }, { value: "2", label: "February" },
-    { value: "3", label: "March" }, { value: "4", label: "April" },
-    { value: "5", label: "May" }, { value: "6", label: "June" },
-    { value: "7", label: "July" }, { value: "8", label: "August" },
-    { value: "9", label: "September" }, { value: "10", label: "October" },
-    { value: "11", label: "November" }, { value: "12", label: "December" },
-  ], []);
-  const days = useMemo(() => Array.from({ length: 31 }, (_, i) => (i + 1).toString()), []);
-
-  useEffect(() => {
-    if (selectedDay && selectedMonth && selectedYear) {
-      const day = parseInt(selectedDay, 10);
-      const month = parseInt(selectedMonth, 10);
-      const year = parseInt(selectedYear, 10);
-      const potentialDob = parse(`${year}-${month}-${day}`, 'yyyy-MM-dd', new Date());
-      if (isValid(potentialDob) && getDate(potentialDob) === day && getMonth(potentialDob) === month - 1 && getYear(potentialDob) === year) {
-        setDob(potentialDob);
-      } else {
-        setDob(undefined);
-      }
-    } else {
-      setDob(undefined);
-    }
-  }, [selectedDay, selectedMonth, selectedYear]);
 
   useEffect(() => {
     if (!isAuthLoading && session) {
@@ -79,16 +39,6 @@ export default function AuthPage() {
     }
   }, [session, isAuthLoading, router]);
 
-
-  const calculateAge = (birthDate: Date): number => {
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDifference = today.getMonth() - birthDate.getMonth();
-    if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
-  };
 
   const handleLogin = async (event: FormEvent) => {
     event.preventDefault();
@@ -137,27 +87,6 @@ export default function AuthPage() {
       toast({ title: "Validation Error", description: "Please select your gender.", variant: "destructive" });
       return;
     }
-    if (!dob) {
-      setError("Please select a valid date of birth.");
-      toast({ title: "Validation Error", description: "Please select a valid date of birth.", variant: "destructive" });
-      return;
-    }
-    if (!isValid(dob)) {
-      setError("Invalid date of birth selected. Please check day, month, and year.");
-      toast({ title: "Validation Error", description: "Invalid date of birth selected.", variant: "destructive" });
-      return;
-    }
-
-    const age = calculateAge(dob);
-    if (age < MIN_AGE) {
-      setError(`You must be at least ${MIN_AGE} years old to use Talkzi.`);
-      toast({
-        title: "Age Restriction",
-        description: `You must be at least ${MIN_AGE} years old to sign up.`,
-        variant: "destructive",
-      });
-      return;
-    }
 
     setIsLoading(true);
 
@@ -183,22 +112,14 @@ export default function AuthPage() {
       const emailPrefix = email.split('@')[0];
       const generatedUsername = emailPrefix || `user${Date.now().toString().slice(-6)}`;
 
-      const profileData: UserProfile = {
+      const profileData: Omit<UserProfile, 'created_at' | 'updated_at'> = { // Omit to prevent sending undefined
         id: signUpData.user.id,
         username: generatedUsername,
         email: signUpData.user.email || '',
         gender: gender,
-        date_of_birth: format(dob, 'yyyy-MM-dd'),
       };
       console.log("Profile data to be inserted:", profileData);
       
-      const { data: sessionDataBeforeProfileInsert, error: sessionErrorBeforeProfileInsert } = await supabase.auth.getSession();
-      if (sessionErrorBeforeProfileInsert) {
-        console.error("Error fetching session before profile insert:", sessionErrorBeforeProfileInsert);
-      } else {
-        console.log("Session state before profile insert:", sessionDataBeforeProfileInsert.session);
-      }
-
       const { error: profileError } = await supabase
         .from('profiles')
         .insert(profileData);
@@ -208,14 +129,6 @@ export default function AuthPage() {
         console.error("Profile save error raw:", profileError);
         const profileErrorAsAny = profileError as any;
         const detailedMessage = profileErrorAsAny.message || 'Unknown error';
-        const details = profileErrorAsAny.details || 'No additional details';
-        const code = profileErrorAsAny.code || 'No code';
-        const hint = profileErrorAsAny.hint || 'No hint';
-        console.error('Supabase profile save error (message):', detailedMessage);
-        console.error('Supabase profile save error (details):', details);
-        console.error('Supabase profile save error (code):', code);
-        console.error('Supabase profile save error (hint):', hint);
-        console.error('Stringified profileError (all own props):', JSON.stringify(profileError, Object.getOwnPropertyNames(profileError), 2));
         
         setError(`Account created, but failed to save profile: ${detailedMessage}. Please contact support or try updating your profile later.`);
         toast({
@@ -223,6 +136,8 @@ export default function AuthPage() {
           description: `Your account was created, but we couldn't save other profile details. ${detailedMessage}`,
           variant: "destructive",
         });
+        // Consider if user should be signed out or if app should try to delete the auth user if profile fails
+        // For now, we let them be signed in, but profile is incomplete.
         return; 
       }
 
@@ -230,6 +145,7 @@ export default function AuthPage() {
         title: "Signup Successful!",
         description: "Welcome to Talkzi! Please check your email if confirmation is required.",
       });
+      // AuthProvider will handle redirect on successful auth state change
     } else {
        setError("An unexpected error occurred during signup. User data not found after sign up. Please try again.");
        toast({
@@ -346,46 +262,6 @@ export default function AuthPage() {
                 </div>
                 
                 <div className="space-y-1.5">
-                  <Label>Date of Birth</Label>
-                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                    <div>
-                      <Label htmlFor="dob-day" className="text-xs text-muted-foreground">Day</Label>
-                      <Select value={selectedDay} onValueChange={setSelectedDay}>
-                        <SelectTrigger id="dob-day" className="neumorphic-shadow-inset-soft">
-                          <SelectValue placeholder="Day" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {days.map(d => <SelectItem key={`day-${d}`} value={d}>{d}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="dob-month" className="text-xs text-muted-foreground">Month</Label>
-                      <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                        <SelectTrigger id="dob-month" className="neumorphic-shadow-inset-soft">
-                          <SelectValue placeholder="Month" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {months.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="dob-year" className="text-xs text-muted-foreground">Year</Label>
-                      <Select value={selectedYear} onValueChange={setSelectedYear}>
-                        <SelectTrigger id="dob-year" className="neumorphic-shadow-inset-soft">
-                          <SelectValue placeholder="Year" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {years.map(y => <SelectItem key={`year-${y}`} value={y.toString()}>{y}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">You must be at least {MIN_AGE} years old.</p>
-                </div>
-
-                <div className="space-y-1.5">
                   <Label>Gender</Label>
                   <RadioGroup onValueChange={(value) => setGender(value as UserProfile['gender'])} value={gender} className="flex flex-wrap gap-x-4 gap-y-2">
                     <div className="flex items-center space-x-2">
@@ -465,3 +341,4 @@ export default function AuthPage() {
     </div>
   );
 }
+

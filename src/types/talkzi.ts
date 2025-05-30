@@ -15,7 +15,7 @@ export interface UserProfile {
   username: string;
   email: string; // Ensure email is always present from auth
   gender: 'male' | 'female' | 'prefer_not_to_say';
-  date_of_birth: string; // Store as 'YYYY-MM-DD' string
   created_at?: string;
   updated_at?: string;
 }
+
