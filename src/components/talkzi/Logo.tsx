@@ -2,6 +2,12 @@
 // For complex graphical logos, you might replace this entire component
 // with an <img /> tag pointing to an image file, or embed new SVG paths.
 
+// Usage:
+// Import the Logo component: import { Logo } from '@/components/talkzi/Logo';
+// To control size, pass Tailwind classes or width/height props:
+// e.g., <Logo className="h-8 w-auto" /> or <Logo width={120} height={36} />
+// The colors (primary and accent) are sourced from CSS variables defined in globals.css.
+
 import type { SVGProps } from 'react';
 
 export function Logo(props: SVGProps<SVGSVGElement>) {
@@ -9,10 +15,10 @@ export function Logo(props: SVGProps<SVGSVGElement>) {
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 100 30" // Adjusted viewBox slightly if needed for larger font
-      width="100" // Can be overridden by props
-      height="30" // Can be overridden by props
+      width="100" // Default width, can be overridden by props or CSS
+      height="30" // Default height, can be overridden by props or CSS
       aria-label="Talkzii Logo"
-      {...props}
+      {...props} // Spread props to allow className, width, height, etc.
     >
       <defs>
         <linearGradient id="talkziGradient" x1="0%" y1="0%" x2="100%" y2="0%">
