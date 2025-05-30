@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
 
-const CHAT_COUNT_KEY = 'talkzi_chat_count';
+const CHAT_COUNT_KEY = 'talkzii_chat_count';
 const FREE_TIER_LIMIT = 20;
 
 interface ChatCounterHook {
@@ -54,3 +55,4 @@ export function useChatCounter(): ChatCounterHook {
 
   return { chatCount, incrementChatCount, resetChatCount, isLimitReached, isLoading };
 }
+

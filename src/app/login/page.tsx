@@ -58,7 +58,7 @@ export default function LoginPage() {
           </Link>
           <h1 className="text-3xl font-bold text-foreground">Welcome Back!</h1>
           <p className="text-muted-foreground">
-            Sign in to continue your journey with Talkzi.
+            Sign in to continue your journey with Talkzii.
           </p>
         </div>
 
@@ -109,3 +109,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

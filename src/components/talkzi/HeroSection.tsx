@@ -61,7 +61,7 @@ export function HeroSection() {
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-6">
           <span className="block">Feeling lonely?</span>
           <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
-            Talkzi’s here for you 💙
+            Talkzii’s here for you 💙
           </span>
         </h1>
         <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
@@ -86,3 +86,4 @@ export function HeroSection() {
     </section>
   );
 }
+

@@ -16,8 +16,8 @@ import { MessageSquareText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 
-const getChatHistoryKey = (userId?: string) => userId ? `talkzi_chat_history_${userId}` : 'talkzi_chat_history_guest';
-const getAIFriendTypeKey = (userId?: string) => userId ? `talkzi_ai_friend_type_${userId}` : 'talkzi_ai_friend_type_guest';
+const getChatHistoryKey = (userId?: string) => userId ? `talkzii_chat_history_${userId}` : 'talkzii_chat_history_guest';
+const getAIFriendTypeKey = (userId?: string) => userId ? `talkzii_ai_friend_type_${userId}` : 'talkzii_ai_friend_type_guest';
 
 async function saveMessageFeedbackToSupabase(feedbackData: {
   message_id: string;
@@ -204,7 +204,7 @@ export function ChatInterface() {
     } finally {
       setIsAiLoading(false);
     }
-  }, [user, profile, toast, currentAiFriendType]); // Added currentAiFriendType dependency
+  }, [user, profile, toast, currentAiFriendType]); 
 
   const handleFeedback = useCallback(async (messageId: string, feedbackType: 'liked' | 'disliked') => {
     if (!user) {
@@ -243,13 +243,11 @@ export function ChatInterface() {
         ai_persona: personaForFeedback,
       });
     }
-    // If finalFeedback is null (toggled off), we might want to send a 'delete' or 'nullify' to Supabase,
-    // but current logic only saves if feedback is explicitly 'liked' or 'disliked'. This is fine for now.
   }, [user, toast, currentAiFriendType]);
 
 
   const handleSubscribe = () => {
-    toast({ title: "Subscribed!", description: "Welcome to Talkzi Premium! (This is a demo)" });
+    toast({ title: "Subscribed!", description: "Welcome to Talkzii Premium! (This is a demo)" });
     setShowSubscriptionModal(false);
   };
 
@@ -258,8 +256,8 @@ export function ChatInterface() {
     return <div className="flex flex-col items-center justify-center h-full"><TypingIndicator /> <p className="ml-2 text-sm text-muted-foreground">Loading chat state...</p></div>;
   }
   
-  const personaDisplayForGuest = "Default Talkzi";
-  const personaDisplayForUser = currentAiFriendType?.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || 'Default Talkzi';
+  const personaDisplayForGuest = "Default Talkzii";
+  const personaDisplayForUser = currentAiFriendType?.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || 'Default Talkzii';
 
 
   return (

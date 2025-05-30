@@ -58,9 +58,10 @@ export default function HomePage() {
           <div className="flex justify-center space-x-4 mb-4">
             <Link href="https://github.com/firebase/firebase-studio" target="_blank" rel="noopener noreferrer"><Github className="h-6 w-6 hover:text-primary transition-colors" /></Link>
           </div>
-          <p>&copy; {new Date().getFullYear()} Talkzi. All rights reserved. Made with ❤️ for Gen Z.</p>
+          <p>&copy; {new Date().getFullYear()} Talkzii. All rights reserved. Made with ❤️ for Gen Z.</p>
         </div>
       </footer>
     </div>
   );
 }
+

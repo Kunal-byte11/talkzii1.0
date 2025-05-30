@@ -15,14 +15,14 @@ import { LoadingSpinner } from '@/components/talkzi/LoadingSpinner';
 import { AuthRequiredMessage } from '@/components/talkzi/AuthRequiredMessage';
 
 const personaOptions = [
-  { value: 'default', label: 'Default Talkzi', description: 'Your general empathetic AI companion.', icon: Bot },
+  { value: 'default', label: 'Default Talkzii', description: 'Your general empathetic AI companion.', icon: Bot },
   { value: 'female_best_friend', label: 'Female Best Friend', description: 'Supportive & bubbly like a trusted didi.', icon: Users },
   { value: 'male_best_friend', label: 'Male Best Friend', description: 'Chill & emotionally aware bro.', icon: Users },
   { value: 'topper_friend', label: 'Topper Friend', description: 'Helpful, kind, offers practical advice.', icon: Brain },
   { value: 'toxic_friend', label: 'Toxic Friend (Kabir Singh Vibe)', description: 'Blunt, "tough love" advice, pushes for action.', icon: Skull },
 ];
 
-const getAIFriendTypeKey = (userId: string) => `talkzi_ai_friend_type_${userId}`;
+const getAIFriendTypeKey = (userId: string) => `talkzii_ai_friend_type_${userId}`;
 
 export default function AIPersonaPage() {
   const router = useRouter();
@@ -130,7 +130,7 @@ export default function AIPersonaPage() {
             Choose Your AI Dost's Vibe!
           </h1>
           <p className="text-muted-foreground text-base sm:text-lg">
-            Pick the personality you want Talkzi to have for your chat session.
+            Pick the personality you want Talkzii to have for your chat session.
           </p>
         </div>
 
@@ -171,9 +171,10 @@ export default function AIPersonaPage() {
       </main>
       <footer className="py-6 border-t">
         <div className="container mx-auto px-4 text-center text-xs text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} Talkzi. Change your AI's vibe anytime!</p>
+          <p>&copy; {new Date().getFullYear()} Talkzii. Change your AI's vibe anytime!</p>
         </div>
       </footer>
     </div>
   );
 }
+

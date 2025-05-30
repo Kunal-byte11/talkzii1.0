@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -31,7 +32,7 @@ export function SubscriptionModal({ isOpen, onClose, onSubscribe }: Subscription
             Unlock Unlimited Chats!
           </AlertDialogTitle>
           <AlertDialogDescription className="text-center text-muted-foreground pt-2">
-            You've used all your free messages. Upgrade to Talkzi Premium for unlimited conversations, priority support, and more!
+            You've used all your free messages. Upgrade to Talkzii Premium for unlimited conversations, priority support, and more!
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="py-4 text-center">
@@ -40,7 +41,7 @@ export function SubscriptionModal({ isOpen, onClose, onSubscribe }: Subscription
             <li>Unlimited messages</li>
             <li>Access to all features</li>
             <li>Priority AI responses</li>
-            <li>Support Talkzi's development</li>
+            <li>Support Talkzii's development</li>
           </ul>
         </div>
         <AlertDialogFooter className="flex-col sm:flex-row gap-2">
@@ -57,3 +58,4 @@ export function SubscriptionModal({ isOpen, onClose, onSubscribe }: Subscription
     </AlertDialog>
   );
 }
+

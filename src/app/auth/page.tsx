@@ -112,7 +112,7 @@ export default function AuthPage() {
       const emailPrefix = email.split('@')[0];
       const generatedUsername = emailPrefix || `user${Date.now().toString().slice(-6)}`;
 
-      const profileData: Omit<UserProfile, 'created_at' | 'updated_at'> = { // Omit to prevent sending undefined
+      const profileData: Omit<UserProfile, 'created_at' | 'updated_at' | 'date_of_birth'> = { 
         id: signUpData.user.id,
         username: generatedUsername,
         email: signUpData.user.email || '',
@@ -136,16 +136,13 @@ export default function AuthPage() {
           description: `Your account was created, but we couldn't save other profile details. ${detailedMessage}`,
           variant: "destructive",
         });
-        // Consider if user should be signed out or if app should try to delete the auth user if profile fails
-        // For now, we let them be signed in, but profile is incomplete.
         return; 
       }
 
       toast({
         title: "Signup Successful!",
-        description: "Welcome to Talkzi! Please check your email if confirmation is required.",
+        description: "Welcome to Talkzii! Please check your email if confirmation is required.",
       });
-      // AuthProvider will handle redirect on successful auth state change
     } else {
        setError("An unexpected error occurred during signup. User data not found after sign up. Please try again.");
        toast({
@@ -239,7 +236,7 @@ export default function AuthPage() {
           <TabsContent value="signup">
             <div className="bg-card p-6 sm:p-8 rounded-xl shadow-xl neumorphic-shadow-soft mt-4">
               <h2 className="text-2xl font-bold text-center text-foreground mb-1">Create Account</h2>
-              <p className="text-muted-foreground text-center mb-6">Join Talkzi to start your journey.</p>
+              <p className="text-muted-foreground text-center mb-6">Join Talkzii to start your journey.</p>
                {error && (
                 <Alert variant="destructive" className="mb-4">
                   <AlertCircle className="h-4 w-4" />

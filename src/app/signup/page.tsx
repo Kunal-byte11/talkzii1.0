@@ -70,7 +70,7 @@ export default function SignupPage() {
       const emailPrefix = email.split('@')[0];
       const generatedUsername = emailPrefix || `user${Date.now().toString().slice(-6)}`;
 
-      const profileData: Omit<UserProfile, 'created_at' | 'updated_at'> = {
+      const profileData: Omit<UserProfile, 'created_at' | 'updated_at' | 'date_of_birth'> = {
         id: signUpData.user.id,
         username: generatedUsername,
         email: signUpData.user.email || '',
@@ -95,7 +95,7 @@ export default function SignupPage() {
 
       toast({
         title: "Signup Successful!",
-        description: "Welcome to Talkzi! Please check your email to verify your account (if email confirmation is enabled).",
+        description: "Welcome to Talkzii! Please check your email to verify your account (if email confirmation is enabled).",
       });
       router.push('/login'); 
     } else {
@@ -118,7 +118,7 @@ export default function SignupPage() {
           </Link>
           <h1 className="text-3xl font-bold text-foreground">Create Account</h1>
           <p className="text-muted-foreground">
-            Join Talkzi and start your supportive conversations.
+            Join Talkzii and start your supportive conversations.
           </p>
         </div>
 

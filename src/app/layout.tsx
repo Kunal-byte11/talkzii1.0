@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Talkzi: Your AI Dost',
+  title: 'Talkzii: Your AI Dost',
   description: 'AI-powered emotional support assistant for Gen Z in India.',
   manifest: '/manifest.json', // PWA manifest
   themeColor: '#F5F8FF',
@@ -46,3 +46,4 @@ export default function RootLayout({
     </html>
   );
 }
+

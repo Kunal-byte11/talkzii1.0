@@ -7,7 +7,7 @@ export function Logo(props: SVGProps<SVGSVGElement>) {
       viewBox="0 0 100 30"
       width="100"
       height="30"
-      aria-label="Talkzi Logo"
+      aria-label="Talkzii Logo"
       {...props}
     >
       <defs>
@@ -26,8 +26,9 @@ export function Logo(props: SVGProps<SVGSVGElement>) {
         fontWeight="bold"
         fill="url(#talkziGradient)"
       >
-        Talkzi
+        Talkzii
       </text>
     </svg>
   );
 }
+
