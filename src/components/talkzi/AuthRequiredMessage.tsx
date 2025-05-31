@@ -19,7 +19,7 @@ export function AuthRequiredMessage({
   const router = useRouter();
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
-      <Logo className="h-12 w-auto mb-4" />
+      <Logo className="h-10 w-auto mb-4" />
       <p className="text-muted-foreground mb-4 text-center">{message}</p>
       {actionButtonText && actionButtonPath && (
         <Button onClick={() => router.push(actionButtonPath)} className="gradient-button">
