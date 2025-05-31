@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type FormEvent, useEffect, useMemo } from 'react';
+import { useState, type FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -22,16 +22,14 @@ export default function AuthPage() {
   const { toast } = useToast();
   const { session, isLoading: isAuthLoading } = useAuth();
 
-  // Common state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoadingState] = useState(false); // Renamed to avoid conflict
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-
-  // Signup specific state
   const [confirmPassword, setConfirmPassword] = useState('');
   const [gender, setGender] = useState<UserProfile['gender'] | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState("login");
 
   useEffect(() => {
     if (!isAuthLoading && session) {
@@ -39,10 +37,9 @@ export default function AuthPage() {
     }
   }, [session, isAuthLoading, router]);
 
-
   const handleLogin = async (event: FormEvent) => {
     event.preventDefault();
-    setIsLoading(true);
+    setIsLoadingState(true);
     setError(null);
 
     const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -50,7 +47,7 @@ export default function AuthPage() {
       password,
     });
 
-    setIsLoading(false);
+    setIsLoadingState(false);
 
     if (signInError) {
       setError(signInError.message);
@@ -64,7 +61,6 @@ export default function AuthPage() {
         title: "Login Successful!",
         description: "Welcome back!",
       });
-      // AuthProvider's onAuthStateChange will handle redirecting
     }
   };
 
@@ -88,7 +84,7 @@ export default function AuthPage() {
       return;
     }
 
-    setIsLoading(true);
+    setIsLoadingState(true);
 
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
@@ -96,7 +92,7 @@ export default function AuthPage() {
     });
 
     if (signUpError) {
-      setIsLoading(false);
+      setIsLoadingState(false);
       setError(signUpError.message);
       toast({
         title: "Signup Failed",
@@ -107,231 +103,214 @@ export default function AuthPage() {
     }
 
     if (signUpData.user) {
-      console.log("User signed up successfully (from signUp response):", signUpData.user);
-      
       const emailPrefix = email.split('@')[0];
       const generatedUsername = emailPrefix || `user${Date.now().toString().slice(-6)}`;
-
-      const profileData: Omit<UserProfile, 'created_at' | 'updated_at' | 'date_of_birth'> = { 
+      const profileData: Omit<UserProfile, 'created_at' | 'updated_at'> = {
         id: signUpData.user.id,
         username: generatedUsername,
         email: signUpData.user.email || '',
         gender: gender,
       };
-      console.log("Profile data to be inserted:", profileData);
-      
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert(profileData);
-
+      const { error: profileError } = await supabase.from('profiles').insert(profileData);
       if (profileError) {
-        setIsLoading(false);
-        console.error("Profile save error raw:", profileError);
-        const profileErrorAsAny = profileError as any;
-        const detailedMessage = profileErrorAsAny.message || 'Unknown error';
-        
-        setError(`Account created, but failed to save profile: ${detailedMessage}. Please contact support or try updating your profile later.`);
+        setIsLoadingState(false);
+        setError(`Account created, but failed to save profile: ${profileError.message}.`);
         toast({
           title: "Profile Save Failed",
-          description: `Your account was created, but we couldn't save other profile details. ${detailedMessage}`,
+          description: `Your account was created, but we couldn't save other profile details. ${profileError.message}`,
           variant: "destructive",
         });
-        return; 
+        return;
       }
-
       toast({
         title: "Signup Successful!",
         description: "Welcome to Talkzii! Please check your email if confirmation is required.",
       });
     } else {
-       setError("An unexpected error occurred during signup. User data not found after sign up. Please try again.");
+       setError("An unexpected error occurred during signup. User data not found. Please try again.");
        toast({
         title: "Signup Failed",
-        description: "An unexpected error occurred (user data not available post-signup). Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     }
-    setIsLoading(false);
+    setIsLoadingState(false);
   };
 
-  if (isAuthLoading) {
+  if (isAuthLoading && !session) { // Show loading only if auth is loading and there's no session yet
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
-        <Logo className="h-12 w-auto mb-4 animate-pulse" />
+        <Logo className="h-10 w-auto mb-4 animate-pulse" />
         <p className="text-muted-foreground">Loading authentication state...</p>
       </div>
     );
   }
 
-
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-background via-primary/5 to-background p-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center">
-          <Link href="/" passHref className="inline-block">
-            <Logo className="h-10 w-auto mb-6 mx-auto" />
+    <div className="relative flex size-full min-h-screen flex-col bg-background justify-between">
+      <div>
+        <header className="flex items-center bg-background p-4 pb-2 justify-center">
+          <Link href="/" passHref>
+            <Logo className="h-8 w-auto" />
           </Link>
-        </div>
+        </header>
 
-        <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 rounded-lg neumorphic-shadow-soft">
-            <TabsTrigger value="login" className="py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:neumorphic-shadow-inset-soft rounded-md transition-all">Login</TabsTrigger>
-            <TabsTrigger value="signup" className="py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:neumorphic-shadow-inset-soft rounded-md transition-all">Sign Up</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md mx-auto mt-2 sm:mt-4">
+          <TabsList className="flex border-b border-border px-4 gap-8 justify-start bg-transparent p-0">
+            <TabsTrigger 
+              value="login" 
+              className="flex flex-col items-center justify-center border-b-[3px] data-[state=active]:border-primary data-[state=active]:text-foreground border-transparent text-muted-foreground pb-[13px] pt-4 px-1 sm:px-2 text-sm font-bold tracking-[0.015em] rounded-none shadow-none hover:text-foreground data-[state=active]:shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 sm:flex-initial"
+            >
+              Login
+            </TabsTrigger>
+            <TabsTrigger 
+              value="signup" 
+              className="flex flex-col items-center justify-center border-b-[3px] data-[state=active]:border-primary data-[state=active]:text-foreground border-transparent text-muted-foreground pb-[13px] pt-4 px-1 sm:px-2 text-sm font-bold tracking-[0.015em] rounded-none shadow-none hover:text-foreground data-[state=active]:shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 sm:flex-initial"
+            >
+              Sign Up
+            </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="login">
-            <div className="bg-card p-6 sm:p-8 rounded-xl shadow-xl neumorphic-shadow-soft mt-4">
-              <h2 className="text-2xl font-bold text-center text-foreground mb-1">Welcome Back!</h2>
-              <p className="text-muted-foreground text-center mb-6">Sign in to continue your journey.</p>
-              {error && (
+          <TabsContent value="login" className="mt-0">
+            <form onSubmit={handleLogin} className="px-4 py-3 space-y-4">
+              {error && activeTab === 'login' && (
                 <Alert variant="destructive" className="mb-4">
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Error</AlertTitle>
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-              <form onSubmit={handleLogin} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
+              <div>
+                <Input
+                  id="login-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email"
+                  required
+                  className="rounded-xl bg-input focus:border-none h-14 placeholder:text-muted-foreground p-4 text-base font-normal leading-normal border-none focus-visible:ring-primary focus-visible:ring-1"
+                />
+              </div>
+              <div>
+                <div className="relative">
                   <Input
-                    id="login-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
+                    id="login-password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password"
                     required
-                    className="neumorphic-shadow-inset-soft"
+                    className="rounded-xl bg-input focus:border-none h-14 placeholder:text-muted-foreground p-4 text-base font-normal leading-normal border-none pr-10 focus-visible:ring-primary focus-visible:ring-1"
                   />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="login-password"
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      required
-                      className="neumorphic-shadow-inset-soft pr-10"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </div>
-                <Button type="submit" disabled={isLoading} className="w-full gradient-button text-lg py-3 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                  {isLoading ? 'Signing In...' : 'Sign In'}
-                </Button>
-              </form>
-            </div>
+              </div>
+              <Link href="#" className="block text-muted-foreground text-sm font-normal leading-normal pt-1 px-0 underline">
+                Forgot Password?
+              </Link>
+              <Button type="submit" disabled={isLoadingState} className="w-full rounded-full h-12 px-5 bg-primary text-primary-foreground text-base font-bold tracking-[0.015em] hover:bg-primary/90">
+                {isLoadingState ? 'Logging In...' : 'Login'}
+              </Button>
+            </form>
           </TabsContent>
 
-          <TabsContent value="signup">
-            <div className="bg-card p-6 sm:p-8 rounded-xl shadow-xl neumorphic-shadow-soft mt-4">
-              <h2 className="text-2xl font-bold text-center text-foreground mb-1">Create Account</h2>
-              <p className="text-muted-foreground text-center mb-6">Join Talkzii to start your journey.</p>
-               {error && (
+          <TabsContent value="signup" className="mt-0">
+            <form onSubmit={handleSignup} className="px-4 py-3 space-y-4">
+               {error && activeTab === 'signup' && (
                 <Alert variant="destructive" className="mb-4">
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Error</AlertTitle>
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-              <form onSubmit={handleSignup} className="space-y-5">
-                <div className="space-y-1.5">
-                  <Label htmlFor="signup-email">Email</Label>
+              <div>
+                <Input
+                  id="signup-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email"
+                  required
+                  className="rounded-xl bg-input focus:border-none h-14 placeholder:text-muted-foreground p-4 text-base font-normal leading-normal border-none focus-visible:ring-primary focus-visible:ring-1"
+                />
+              </div>
+              
+              <div className="pt-1">
+                <Label className="text-muted-foreground font-normal text-sm mb-2 block">Gender</Label>
+                <RadioGroup onValueChange={(value) => setGender(value as UserProfile['gender'])} value={gender} className="flex flex-wrap gap-x-4 gap-y-2">
+                  {(['male', 'female', 'prefer_not_to_say'] as const).map((g) => (
+                    <div key={g} className="flex items-center space-x-2">
+                      <RadioGroupItem value={g} id={`gender-${g}`} className="border-muted-foreground data-[state=checked]:border-primary data-[state=checked]:text-primary"/>
+                      <Label htmlFor={`gender-${g}`} className="font-normal text-foreground capitalize">
+                        {g === 'prefer_not_to_say' ? 'Prefer not to say' : g}
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
+              
+              <div>
+                 <div className="relative">
                   <Input
-                    id="signup-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    required
-                    className="neumorphic-shadow-inset-soft"
-                  />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label>Gender</Label>
-                  <RadioGroup onValueChange={(value) => setGender(value as UserProfile['gender'])} value={gender} className="flex flex-wrap gap-x-4 gap-y-2">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="male" id="male" />
-                      <Label htmlFor="male" className="font-normal">Male</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="female" id="female" />
-                      <Label htmlFor="female" className="font-normal">Female</Label>
-                    </div>
-                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="prefer_not_to_say" id="prefer_not_to_say" />
-                      <Label htmlFor="prefer_not_to_say" className="font-normal">Prefer not to say</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-                
-                <div className="space-y-1.5">
-                  <Label htmlFor="signup-password">Password</Label>
-                   <div className="relative">
-                    <Input
-                      id="signup-password"
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="•••••••• (min. 6 characters)"
-                      required
-                      minLength={6}
-                      className="neumorphic-shadow-inset-soft pr-10"
-                    />
-                     <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="confirm-password">Confirm Password</Label>
-                  <Input
-                    id="confirm-password"
+                    id="signup-password"
                     type={showPassword ? "text" : "password"}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password (min. 6 characters)"
                     required
                     minLength={6}
-                    className="neumorphic-shadow-inset-soft pr-10"
+                    className="rounded-xl bg-input focus:border-none h-14 placeholder:text-muted-foreground p-4 text-base font-normal leading-normal border-none pr-10 focus-visible:ring-primary focus-visible:ring-1"
                   />
+                   <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </Button>
                 </div>
+              </div>
+              <div>
+                <Input
+                  id="confirm-password"
+                  type={showPassword ? "text" : "password"} // Link showPassword to confirm as well for consistency
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm Password"
+                  required
+                  minLength={6}
+                  className="rounded-xl bg-input focus:border-none h-14 placeholder:text-muted-foreground p-4 text-base font-normal leading-normal border-none focus-visible:ring-primary focus-visible:ring-1"
+                />
+              </div>
 
-                <Button type="submit" disabled={isLoading} className="w-full gradient-button text-lg py-3 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                  {isLoading ? 'Creating Account...' : 'Create Account'}
-                </Button>
-              </form>
-            </div>
+              <Button type="submit" disabled={isLoadingState} className="w-full rounded-full h-12 px-5 bg-primary text-primary-foreground text-base font-bold tracking-[0.015em] hover:bg-primary/90">
+                {isLoadingState ? 'Creating Account...' : 'Create Account'}
+              </Button>
+            </form>
           </TabsContent>
         </Tabs>
 
-        <div className="text-center text-sm text-muted-foreground mt-4">
-          <p>
-            Or,{' '}
-            <Link href="/chat" className="font-semibold text-primary hover:underline">
-              Continue as Guest & Chat with Default Persona
-            </Link>
-          </p>
+        <div className="max-w-md mx-auto px-4 py-3 mt-2">
+          <Button
+            variant="outline"
+            onClick={() => router.push('/chat')}
+            className="w-full rounded-full h-12 px-5 bg-input text-foreground text-base font-bold tracking-[0.015em] border-none hover:bg-muted"
+          >
+            Continue as Guest
+          </Button>
         </div>
 
-        <p className="text-center text-sm text-muted-foreground mt-6">
+        <p className="text-center text-sm text-muted-foreground mt-4 mb-8 px-4">
           By signing up, you agree to our (non-existent) Terms of Service.
         </p>
       </div>
@@ -339,3 +318,4 @@ export default function AuthPage() {
   );
 }
 
+    
