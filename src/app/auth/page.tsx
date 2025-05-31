@@ -24,7 +24,7 @@ export default function AuthPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoadingState] = useState(false); // Renamed to avoid conflict
+  const [isLoading, setIsLoadingState] = useState(false); // isLoading is the state, setIsLoadingState is the setter
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -216,8 +216,8 @@ export default function AuthPage() {
               <Link href="#" className="block text-muted-foreground text-sm font-normal leading-normal pt-1 px-0 underline">
                 Forgot Password?
               </Link>
-              <Button type="submit" disabled={isLoadingState} className="w-full rounded-full h-12 px-5 bg-primary text-primary-foreground text-base font-bold tracking-[0.015em] hover:bg-primary/90">
-                {isLoadingState ? 'Logging In...' : 'Login'}
+              <Button type="submit" disabled={isLoading} className="w-full rounded-full h-12 px-5 bg-primary text-primary-foreground text-base font-bold tracking-[0.015em] hover:bg-primary/90">
+                {isLoading ? 'Logging In...' : 'Login'}
               </Button>
             </form>
           </TabsContent>
@@ -293,8 +293,8 @@ export default function AuthPage() {
                 />
               </div>
 
-              <Button type="submit" disabled={isLoadingState} className="w-full rounded-full h-12 px-5 bg-primary text-primary-foreground text-base font-bold tracking-[0.015em] hover:bg-primary/90">
-                {isLoadingState ? 'Creating Account...' : 'Create Account'}
+              <Button type="submit" disabled={isLoading} className="w-full rounded-full h-12 px-5 bg-primary text-primary-foreground text-base font-bold tracking-[0.015em] hover:bg-primary/90">
+                {isLoading ? 'Creating Account...' : 'Create Account'}
               </Button>
             </form>
           </TabsContent>
@@ -317,5 +317,3 @@ export default function AuthPage() {
     </div>
   );
 }
-
-    
