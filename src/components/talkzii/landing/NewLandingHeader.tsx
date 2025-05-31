@@ -13,8 +13,8 @@ export function NewLandingHeader() {
       <Image 
         src="/removed bg.png" // Path from public folder
         alt="Talkzi AI Logo" 
-        width={64} 
-        height={64}
+        width={80} 
+        height={80}
         priority // Add priority if it's LCP
       />
     </div>
