@@ -140,7 +140,7 @@ export default function AuthPage() {
   if (isAuthLoading && !session) { // Show loading only if auth is loading and there's no session yet
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
-        <Logo className="h-10 w-auto mb-4 animate-pulse" />
+        <Logo width={120} height={40} className="mb-4 animate-pulse" />
         <p className="text-muted-foreground">Loading authentication state...</p>
       </div>
     );
@@ -151,7 +151,7 @@ export default function AuthPage() {
       <div>
         <header className="flex items-center bg-background p-4 pb-2 justify-center">
           <Link href="/" passHref>
-            <Logo className="h-8 w-auto" />
+            <Logo width={144} height={48} />
           </Link>
         </header>
 
