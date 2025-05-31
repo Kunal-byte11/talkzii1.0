@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; 
 import { MessageSquareText } from "lucide-react";
 
 interface Preview {
@@ -14,19 +14,17 @@ const previews: Preview[] = [
     snippetAI: "Koi na, buddy! Bata kya hua? Sab theek ho jayega.",
     snippetUser: "Yaar, aaj mood off hai...",
     emoji: "😔",
-    
   },
   {
     title: "Exam Stress!",
-    snippetUser: "Chill maar! You've got this. Thoda break le aur deep breaths.",
     snippetAI: "Kal exam hai, bahut tension ho rahi hai 😭",
+    snippetUser: "Chill maar! You've got this. Thoda break le aur deep breaths.",
     emoji: "📚",
-    
   },
   {
     title: "Just Vibing",
-    snippetUser: "Aur bata, Talkzi! Kya chal raha hai?",
     snippetAI: "Bas, chilling! Tu bata, any new series binge-watched?",
+    snippetUser: "Aur bata, Talkzi! Kya chal raha hai?",
     emoji: "😎",
   },
 ];
@@ -53,13 +51,16 @@ export function ConversationPreviewCarousel() {
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-3">
-                  <div className="flex justify-start">
-                    <div className="bg-secondary text-secondary-foreground p-3 rounded-lg rounded-bl-none max-w-[80%]">
+                  {/* User Message - Blue, Right */}
+                  <div className="flex justify-end">
+                    <div className="bg-primary text-primary-foreground p-3 rounded-lg rounded-br-none max-w-[80%]">
                       <p className="text-sm">{preview.snippetUser}</p>
                     </div>
                   </div>
-                  <div className="flex justify-end">
-                    <div className="bg-primary text-primary-foreground p-3 rounded-lg rounded-br-none max-w-[80%]">
+
+                  {/* AI Message - Gray, Left */}
+                  <div className="flex justify-start">
+                    <div className="bg-secondary text-secondary-foreground p-3 rounded-lg rounded-bl-none max-w-[80%]">
                       <p className="text-sm">{preview.snippetAI}</p>
                     </div>
                   </div>
@@ -72,3 +73,4 @@ export function ConversationPreviewCarousel() {
     </section>
   );
 }
+
