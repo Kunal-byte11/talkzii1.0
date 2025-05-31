@@ -10,7 +10,7 @@ export function Logo(
   const { width, height, ...rest } = props;
   return (
     <Image
-      src="/icons/assets/logo.png"
+      src="/icons/assets/logo1.png"
       alt="Talkzii Logo"
       width={width || 150} // Use passed width or default
       height={height || 50} // Use passed height or default
