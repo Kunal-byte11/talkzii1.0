@@ -2,37 +2,38 @@
 "use client";
 
 import { Logo } from '@/components/talkzi/Logo';
-import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import Link from 'next/link';
+// Button component is no longer needed here
+// import { useRouter } from 'next/navigation';
+// import { useAuth } from '@/contexts/AuthContext';
+import Link from 'next/link'; // Keep Link for logo
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button'; // Keep for SheetTrigger
 import { Menu } from 'lucide-react';
 import { useState } from 'react';
 
 const navLinks = [
   { href: '#features-section', label: 'Features' },
   { href: '#about-us-section', label: 'About Us' },
-  { href: '#values-section', label: 'Our Values' }, // Added Our Values link
+  { href: '#values-section', label: 'Our Values' },
   { href: '#footer-contact', label: 'Contact' },
 ];
 
 export function NewLandingHeader() {
-  const router = useRouter();
-  const { user } = useAuth();
+  // const router = useRouter(); // Not needed directly anymore
+  // const { user } = useAuth(); // Not needed directly anymore
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const handleGetStarted = () => {
-    if (user) {
-      router.push('/aipersona');
-    } else {
-      router.push('/auth');
-    }
-    setIsMobileMenuOpen(false);
-  };
+  // const handleGetStarted = () => { // This logic will be moved to individual sections
+  //   if (user) {
+  //     router.push('/aipersona');
+  //   } else {
+  //     router.push('/auth');
+  //   }
+  //   setIsMobileMenuOpen(false);
+  // };
 
   const handleNavLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    e.preventDefault(); // Prevent default anchor behavior
+    e.preventDefault(); 
     const targetElement = document.querySelector(href);
     if (targetElement) {
       targetElement.scrollIntoView({ behavior: 'smooth' });
@@ -50,7 +51,7 @@ export function NewLandingHeader() {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-4 lg:space-x-6">
           {navLinks.map((link) => (
-            <a // Changed to <a> for direct scroll handling
+            <a
               key={link.label}
               href={link.href}
               onClick={(e) => handleNavLinkClick(e, link.href)}
@@ -59,13 +60,7 @@ export function NewLandingHeader() {
               {link.label}
             </a>
           ))}
-          <Button
-            onClick={handleGetStarted}
-            size="sm"
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            Get Started
-          </Button>
+          {/* "Get Started" Button removed from here */}
         </nav>
 
         {/* Mobile Navigation Trigger */}
@@ -80,7 +75,7 @@ export function NewLandingHeader() {
             <SheetContent side="right" className="w-[280px] sm:w-[320px] p-6">
               <div className="flex flex-col space-y-4 mt-6">
                 {navLinks.map((link) => (
-                  <a // Changed to <a> for direct scroll handling
+                  <a
                     key={link.label}
                     href={link.href}
                     onClick={(e) => handleNavLinkClick(e, link.href)}
@@ -89,12 +84,7 @@ export function NewLandingHeader() {
                     {link.label}
                   </a>
                 ))}
-                <Button
-                  onClick={handleGetStarted}
-                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 mt-4"
-                >
-                  Get Started
-                </Button>
+                {/* "Get Started" Button removed from mobile menu as well, will be in sections */}
               </div>
             </SheetContent>
           </Sheet>

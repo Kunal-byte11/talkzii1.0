@@ -2,6 +2,9 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 const values = [
   {
@@ -22,16 +25,27 @@ const values = [
 ];
 
 export function NewLandingValues() {
+  const router = useRouter();
+  const { user } = useAuth();
+
+  const handleGetStarted = () => {
+    if (user) {
+      router.push('/aipersona');
+    } else {
+      router.push('/auth');
+    }
+  };
+
   return (
-    <section id="values-section" className="py-12 md:py-20 bg-background scroll-mt-20">
+    <section id="values-section" className="py-12 md:py-20 bg-background scroll-mt-20 text-center"> {/* Added text-center for button */}
       <div className="container mx-auto px-4">
-        <div className="flex flex-col items-start mb-10">
+        <div className="flex flex-col items-start mb-10 text-left"> {/* Keep text left for section header */}
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
             Our Values
           </h2>
           <div className="h-1 w-24 bg-primary rounded-full"></div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 text-left"> {/* Keep text left for card content */}
           {values.map((value, index) => (
             <Card 
               key={index} 
@@ -49,6 +63,15 @@ export function NewLandingValues() {
               </CardContent>
             </Card>
           ))}
+        </div>
+        <div className="mt-10"> {/* Container for the button, centered */}
+            <Button
+                onClick={handleGetStarted}
+                size="default"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6 py-2.5"
+            >
+                Get Started
+            </Button>
         </div>
       </div>
     </section>

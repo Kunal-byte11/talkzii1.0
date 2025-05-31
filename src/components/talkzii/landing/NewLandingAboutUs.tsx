@@ -1,10 +1,25 @@
 
 "use client";
 
+import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+
 export function NewLandingAboutUs() {
+  const router = useRouter();
+  const { user } = useAuth();
+
+  const handleGetStarted = () => {
+    if (user) {
+      router.push('/aipersona');
+    } else {
+      router.push('/auth');
+    }
+  };
+
   return (
-    <div id="about-us-section" className="flex flex-col gap-10 px-4 py-10 @container scroll-mt-20"> {/* Added ID and scroll-mt */}
-      <div className="flex flex-col gap-4">
+    <div id="about-us-section" className="flex flex-col gap-10 px-4 py-10 @container scroll-mt-20 text-center"> {/* Added text-center for button */}
+      <div className="flex flex-col gap-4 text-left"> {/* Keep text left for section header */}
         <h1
           className="text-foreground tracking-light text-[32px] font-bold leading-tight @[480px]:text-4xl @[480px]:font-black @[480px]:leading-tight @[480px]:tracking-[-0.033em] max-w-[720px]"
         >
@@ -12,7 +27,7 @@ export function NewLandingAboutUs() {
         </h1>
         <p className="text-foreground text-base font-normal leading-normal max-w-[720px]">Learn more about Talkzii and our mission.</p>
       </div>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4 p-0">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4 p-0 text-left"> {/* Keep text left for card content */}
         <div className="flex flex-1 gap-4 rounded-lg border border-border bg-card p-6 flex-col shadow-sm hover:shadow-md transition-shadow">
           <div className="text-primary" data-icon="UsersThree" data-size="24px" data-weight="regular">
             <svg xmlns="http://www.w3.org/2000/svg" width="32px" height="32px" fill="currentColor" viewBox="0 0 256 256">
@@ -28,6 +43,15 @@ export function NewLandingAboutUs() {
             </p>
           </div>
         </div>
+      </div>
+      <div className="mt-6"> {/* Container for the button, centered */}
+        <Button
+            onClick={handleGetStarted}
+            size="default"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6 py-2.5"
+        >
+            Get Started
+        </Button>
       </div>
     </div>
   );
