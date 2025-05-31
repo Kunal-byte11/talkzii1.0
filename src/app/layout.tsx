@@ -20,8 +20,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Talkzii: Your AI Dost',
   description: 'AI-powered emotional support assistant for Gen Z in India.',
-  manifest: '/manifest.json', // PWA manifest
-  themeColor: '#14171F', // Updated to match new dark background (approx HSL 220 15% 10%)
+  manifest: '/manifest.json',
+  themeColor: '#FAF8FC', // Updated to new light background
   appleWebAppCapable: 'yes',
   appleWebAppStatusBarStyle: 'default',
 };
@@ -33,7 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen bg-background text-foreground`}>
         <AuthProvider>
           <div className="flex-grow">
             {children}

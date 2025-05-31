@@ -8,44 +8,46 @@ body {
 
 @layer base {
   :root {
-    --background: 220 15% 10%; /* Dark Navy/Almost Black */
-    --foreground: 220 10% 90%; /* Light Cool Gray */
-    --card: 220 15% 15%; /* Slightly Lighter Dark Navy */
-    --card-foreground: 220 10% 90%;
-    --popover: 220 15% 15%;
-    --popover-foreground: 220 10% 90%;
-    --primary: 180 70% 55%; /* Vibrant Cyan/Teal */
-    --primary-foreground: 220 15% 10%; /* Dark text for contrast on primary */
-    --secondary: 220 15% 25%; /* Medium Dark Gray */
-    --secondary-foreground: 220 10% 80%;
-    --muted: 220 15% 20%; /* Dark Gray */
-    --muted-foreground: 220 10% 60%; /* Muted Gray Text */
-    --accent: 190 75% 60%; /* Slightly bluer Cyan for accents */
-    --accent-foreground: 220 15% 10%; /* Dark text for contrast on accent */
-    --destructive: 0 70% 55%; /* Adjusted destructive for dark theme */
+    /* New Light Theme based on provided design */
+    --background: 257 33% 98%; /* #faf8fc */
+    --foreground: 270 21% 10%; /* #150e1b */
+    --card: 257 33% 96%; /* Slightly darker than background for cards, e.g., #f5f2f9 */
+    --card-foreground: 270 21% 10%; /* #150e1b */
+    --popover: 257 33% 96%;
+    --popover-foreground: 270 21% 10%;
+    --primary: 274 81% 50%; /* #8619e6 */
+    --primary-foreground: 257 33% 98%; /* #faf8fc (text on primary buttons) */
+    --secondary: 274 50% 85%; /* Lighter purple for secondary elements */
+    --secondary-foreground: 270 21% 10%;
+    --muted: 257 33% 92%; /* For muted backgrounds */
+    --muted-foreground: 274 32% 44%; /* #754e97 (secondary text color) */
+    --accent: 274 70% 60%; /* A slightly lighter/different purple for accents */
+    --accent-foreground: 257 33% 98%;
+    --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
-    --border: 220 15% 25%; /* Dark Border */
-    --input: 220 15% 20%; /* Dark Input Background */
-    --ring: 180 70% 60%; /* Ring color based on primary */
-    --chart-1: 180 70% 55%;
-    --chart-2: 190 65% 60%;
-    --chart-3: 200 60% 50%;
-    --chart-4: 210 55% 65%;
-    --chart-5: 170 50% 50%;
+    --border: 257 33% 90%; /* Light border */
+    --input: 257 33% 94%; /* Light input background */
+    --ring: 274 81% 55%; /* Ring color based on primary */
+    
+    --chart-1: 274 70% 55%;
+    --chart-2: 280 65% 60%;
+    --chart-3: 270 60% 50%;
+    --chart-4: 260 55% 65%;
+    --chart-5: 290 50% 50%;
     --radius: 0.75rem;
     
-    --sidebar-background: 220 15% 12%;
-    --sidebar-foreground: 220 10% 85%;
-    --sidebar-primary: 180 70% 55%;
-    --sidebar-primary-foreground: 220 15% 10%;
-    --sidebar-accent: 190 75% 60%;
-    --sidebar-accent-foreground: 220 15% 10%;
-    --sidebar-border: 220 15% 22%;
-    --sidebar-ring: 180 70% 60%;
+    --sidebar-background: 257 33% 97%;
+    --sidebar-foreground: 270 21% 15%;
+    --sidebar-primary: 274 81% 50%;
+    --sidebar-primary-foreground: 257 33% 98%;
+    --sidebar-accent: 274 70% 60%;
+    --sidebar-accent-foreground: 257 33% 98%;
+    --sidebar-border: 257 33% 88%;
+    --sidebar-ring: 274 81% 55%;
   }
 
   .dark {
-    /* Making dark mode visually identical to the new default dark theme */
+    /* Dark theme remains, but root is now light. Can be customized separately. */
     --background: 220 15% 10%;
     --foreground: 220 10% 90%;
     --card: 220 15% 15%;
@@ -99,19 +101,24 @@ body {
   @apply bg-gradient-to-r from-primary to-accent text-primary-foreground;
 }
 
+/* Adjusted Neumorphism for Light Theme */
 .neumorphic-shadow-soft {
-  /* Adjusted for dark theme - less intense shadow */
-  box-shadow: 6px 6px 12px hsl(var(--background) / 0.5), -6px -6px 12px hsl(var(--card) / 0.7);
+  box-shadow: 6px 6px 12px hsl(var(--background) / 0.7), 
+              -6px -6px 12px hsl(var(--background) / 0.9),
+              inset 2px 2px 3px hsl(var(--background) / 0.6),
+              inset -2px -2px 3px hsl(var(--background) / 0.8);
+  background-color: hsl(var(--background)); /* Ensure background matches */
 }
 
 .neumorphic-shadow-inset-soft {
-  /* Adjusted for dark theme - less intense inset shadow */
-  box-shadow: inset 4px 4px 8px hsl(var(--background) / 0.5), inset -4px -4px 8px hsl(var(--card) / 0.7);
+  box-shadow: inset 4px 4px 8px hsl(var(--muted) / 0.5), 
+              inset -4px -4px 8px hsl(var(--background) / 0.9);
+  background-color: hsl(var(--background));
 }
 
 .glassmorphic {
-  background: hsla(var(--card) / 0.3); /* Lower opacity for better dark theme effect */
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid hsla(var(--border) / 0.2); /* Less visible border */
+  background: hsla(var(--card) / 0.6); /* Slightly more opaque for light theme */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid hsla(var(--border) / 0.3);
 }
