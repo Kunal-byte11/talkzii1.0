@@ -11,15 +11,17 @@ interface Preview {
 const previews: Preview[] = [
   {
     title: "Feeling Low?",
-    snippetUser: "Yaar, aaj mood off hai...",
     snippetAI: "Koi na, buddy! Bata kya hua? Sab theek ho jayega.",
+    snippetUser: "Yaar, aaj mood off hai...",
     emoji: "😔",
+    
   },
   {
     title: "Exam Stress!",
-    snippetUser: "Kal exam hai, bahut tension ho rahi hai 😭",
-    snippetAI: "Chill maar! You've got this. Thoda break le aur deep breaths.",
+    snippetUser: "Chill maar! You've got this. Thoda break le aur deep breaths.",
+    snippetAI: "Kal exam hai, bahut tension ho rahi hai 😭",
     emoji: "📚",
+    
   },
   {
     title: "Just Vibing",
