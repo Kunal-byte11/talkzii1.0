@@ -14,19 +14,13 @@ const features: Feature[] = [
     title: "AI Personas",
     description: "Engage with diverse AI personalities, each with unique traits and backgrounds.",
     imageHint: "avatars diversity",
-    imageUrl: "https://placehold.co/600x400.png", // Placeholder
+    imageUrl: "/icons/assets/persona.jpg", // Placeholder
   },
   {
     title: "Interactive Chat",
     description: "Enjoy real-time conversations with AI companions, sharing thoughts and ideas.",
     imageHint: "chat bubbles",
-    imageUrl: "https://placehold.co/600x400.png", // Placeholder
-  },
-  {
-    title: "Chat History",
-    description: "Access and review past conversations with your AI friends anytime.",
-    imageHint: "archive list",
-    imageUrl: "https://placehold.co/600x400.png", // Placeholder
+    imageUrl: "/icons/assets/chat.jpg", // Placeholder
   },
 ];
 
