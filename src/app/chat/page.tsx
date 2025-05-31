@@ -3,14 +3,12 @@
 
 import { useEffect, useState } from 'react';
 import { ChatInterface } from '@/components/talkzi/ChatInterface';
-import { Logo } from '@/components/talkzi/Logo';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Home, Cog, LogOut, LogIn } from 'lucide-react'; // Added LogIn
+import { Menu as MenuIcon, Cog, LogOut, LogIn } from 'lucide-react'; // Changed Home to MenuIcon
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/talkzi/LoadingSpinner';
-import { AuthRequiredMessage } from '@/components/talkzi/AuthRequiredMessage';
-import { useRouter } from 'next/navigation'; // For redirecting to /auth
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function ChatPage() {
   const { user, signOut, isLoading: isAuthLoading } = useAuth();
@@ -21,47 +19,46 @@ export default function ChatPage() {
     setIsClientReady(true);
   }, []);
 
-  // If auth is still loading OR client is not ready, show loading spinner
   if (isAuthLoading || !isClientReady) {
     return <LoadingSpinner message="Preparing chat..." />;
   }
 
-  // No AuthRequiredMessage here anymore, ChatInterface will handle guest state UI
-
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen bg-background">
       <header className="sticky top-0 z-20 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 max-w-5xl mx-auto items-center justify-between px-4">
-          <Link href="/" passHref>
-            <Logo className="h-6 w-auto" />
-          </Link>
-          <div className="flex items-center space-x-1 sm:space-x-2">
-            {user && ( // Only show Cog and Logout if user is logged in
+          <div className="flex items-center w-12"> {/* Left icon container */}
+            <Button variant="ghost" size="icon" title="Menu" className="text-foreground">
+              <MenuIcon className="h-6 w-6" />
+              <span className="sr-only">Menu</span>
+            </Button>
+          </div>
+          
+          <h2 className="text-foreground text-lg font-bold leading-tight tracking-[-0.015em] text-center flex-1">
+            Talkzii
+          </h2>
+
+          <div className="flex items-center space-x-1 sm:space-x-2 w-auto justify-end">
+            {user && (
               <>
-                <Button variant="ghost" size="icon" asChild title="Change AI Persona">
+                <Button variant="ghost" size="icon" asChild title="Change AI Persona" className="text-foreground">
                   <Link href="/aipersona">
                     <Cog className="h-5 w-5" />
                     <span className="sr-only">Change AI Persona</span>
                   </Link>
                 </Button>
-                 <Button variant="ghost" size="icon" onClick={signOut} title="Logout">
+                 <Button variant="ghost" size="icon" onClick={signOut} title="Logout" className="text-foreground">
                   <LogOut className="h-5 w-5" />
                   <span className="sr-only">Logout</span>
                 </Button>
               </>
             )}
-            {!user && ( // Show Login/Sign Up if user is not logged in
+            {!user && (
               <Button variant="outline" onClick={() => router.push('/auth')} title="Login / Sign Up">
                 <LogIn className="h-5 w-5 mr-2 sm:mr-0" />
                 <span className="hidden sm:inline ml-1">Login / Sign Up</span>
               </Button>
             )}
-            <Button variant="ghost" size="icon" asChild title="Home">
-              <Link href="/">
-                <Home className="h-5 w-5" />
-                <span className="sr-only">Home</span>
-              </Link>
-            </Button>
           </div>
         </div>
       </header>
@@ -71,4 +68,3 @@ export default function ChatPage() {
     </div>
   );
 }
-

@@ -1,30 +1,30 @@
-import { Bot } from 'lucide-react';
+
+import { Bot, LayoutGrid } from 'lucide-react'; // Changed to LayoutGrid
+import { cn } from '@/lib/utils';
 
 export function TypingIndicator() {
   return (
-    <div className="flex items-end space-x-2 p-2 my-2 self-start max-w-[70%]">
-       <div className="flex items-center justify-center h-8 w-8 rounded-full bg-secondary text-secondary-foreground shrink-0">
+    <div className={cn('flex flex-col w-full my-2 items-start justify-start')}>
+      <p className="text-muted-foreground text-[13px] font-normal leading-normal ml-12 mb-0.5">AI</p>
+      <div className={cn('flex items-end gap-2 max-w-[80%] sm:max-w-[70%]', 'flex-row')}>
+        <div className={cn(
+          "flex items-center justify-center h-10 w-10 rounded-full shrink-0 self-start",
+          'bg-input text-foreground' // Matches AI avatar style
+        )}>
           <Bot className="h-5 w-5" />
         </div>
-      <div className="bg-muted text-muted-foreground p-3 rounded-tl-xl rounded-tr-xl rounded-br-xl shadow-md">
-        <div className="flex space-x-1">
-          <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce delay-0"></div>
-          <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce delay-150"></div>
-          <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce delay-300"></div>
+        <div
+          className={cn(
+            'px-4 py-3 shadow-md min-w-[60px] rounded-xl flex items-center space-x-2',
+            'bg-input text-foreground' // Matches AI bubble style
+          )}
+        >
+          <LayoutGrid className="h-4 w-4 text-muted-foreground animate-pulse" /> 
+          <p className="text-base font-normal leading-normal whitespace-pre-wrap break-words">
+            AI is typing...
+          </p>
         </div>
       </div>
-       <style jsx>{`
-        .animate-bounce {
-          animation: bounce 1.4s infinite ease-in-out both;
-        }
-        .delay-0 { animation-delay: 0s; }
-        .delay-150 { animation-delay: 0.15s; }
-        .delay-300 { animation-delay: 0.3s; }
-        @keyframes bounce {
-          0%, 80%, 100% { transform: scale(0); }
-          40% { transform: scale(1.0); }
-        }
-      `}</style>
     </div>
   );
 }

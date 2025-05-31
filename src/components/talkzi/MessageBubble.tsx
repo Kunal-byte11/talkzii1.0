@@ -3,91 +3,100 @@
 
 import type { ChatMessage } from '@/types/talkzi';
 import { cn } from '@/lib/utils';
-import { Bot, User, AlertTriangle, ThumbsUp, ThumbsDown } from 'lucide-react';
-import { format } from 'date-fns';
+import { Bot, User, AlertTriangle } from 'lucide-react'; // Removed ThumbsUp, ThumbsDown
+// import { format } from 'date-fns'; // Timestamp removed from design
 import React from 'react';
 
 interface MessageBubbleProps {
   message: ChatMessage;
-  onFeedback?: (messageId: string, feedback: 'liked' | 'disliked') => void;
+  // onFeedback?: (messageId: string, feedback: 'liked' | 'disliked') => void; // Feedback removed from design
 }
 
-const MessageBubbleComponent = ({ message, onFeedback }: MessageBubbleProps) => {
+const MessageBubbleComponent = ({ message }: MessageBubbleProps) => { // Removed onFeedback
   const isUser = message.sender === 'user';
-  const isSystem = message.sender === 'system';
   const isAI = message.sender === 'ai';
+  const isSystem = message.sender === 'system'; // For crisis or other system messages
   const isCrisis = message.isCrisis;
 
-  const alignmentClass = isUser ? 'items-end' : 'items-start';
+  const AvatarComponent = isUser ? User : Bot;
+  const avatarBgClass = isUser ? 'bg-primary/20' : 'bg-input';
+  const avatarTextClass = isUser ? 'text-primary' : 'text-foreground';
+
   const bubbleColorClass = isUser
     ? 'bg-primary text-primary-foreground'
     : isCrisis
-    ? 'bg-destructive/80 text-destructive-foreground'
-    : 'bg-muted text-muted-foreground';
+    ? 'bg-destructive/80 text-destructive-foreground' // Retain distinct crisis styling
+    : 'bg-input text-foreground';
+  
+  const messageAlignment = isUser ? 'items-end justify-end' : 'items-start justify-start';
+  const labelText = isUser ? "User" : isCrisis ? "System" : "AI"; // Use "AI" as generic label for AI persona
 
-  const borderRadiusClass = isUser
-    ? 'rounded-t-xl rounded-bl-xl' // Adjusted for a slightly more modern feel
-    : 'rounded-t-xl rounded-br-xl';
-
-  const Icon = isUser ? User : isCrisis ? AlertTriangle : Bot;
-
-  const handleFeedbackClick = (feedbackType: 'liked' | 'disliked') => {
-    if (onFeedback && isAI) {
-      onFeedback(message.id, feedbackType);
-    }
-  };
-
-  return (
-    <div className={cn('flex flex-col w-full my-2', alignmentClass)}>
-      <div className={cn('flex items-end gap-2 max-w-[80%] sm:max-w-[70%]', isUser ? 'flex-row-reverse' : 'flex-row')}>
-        {!isUser && (
+  // System messages (like crisis) might not need an avatar or the "AI" label
+  if (isSystem && !isCrisis) { // Generic system message (e.g. "couldn't process")
+    return (
+        <div className="flex flex-col w-full my-2 items-center">
+            <div className={cn(
+                'p-3 shadow-sm rounded-xl max-w-[80%] sm:max-w-[70%]',
+                'bg-muted text-muted-foreground text-sm'
+            )}>
+                <p className="whitespace-pre-wrap break-words">{message.text}</p>
+            </div>
+        </div>
+    );
+  }
+  // Crisis messages styling
+  if (isCrisis) {
+     return (
+      <div className={cn('flex flex-col w-full my-2 items-start')}>
+         <p className="text-muted-foreground text-[13px] font-normal leading-normal ml-12 mb-0.5">{labelText}</p>
+        <div className={cn('flex items-end gap-2 max-w-[80%] sm:max-w-[70%]', 'flex-row')}>
           <div className={cn(
-            "flex items-center justify-center h-8 w-8 rounded-full shrink-0 self-start mt-1 shadow-sm",
-            isCrisis ? "bg-destructive text-destructive-foreground" : "bg-secondary text-secondary-foreground"
+            "flex items-center justify-center h-10 w-10 rounded-full shrink-0 self-start",
+            "bg-destructive text-destructive-foreground" 
           )}>
-            <Icon className="h-5 w-5" />
+            <AlertTriangle className="h-5 w-5" />
           </div>
-        )}
-        <div
-          className={cn(
-            'p-3 shadow-md min-w-[60px]', // Added min-w for very short messages
-            bubbleColorClass,
-            borderRadiusClass,
-            isCrisis ? 'border border-destructive' : ''
-          )}
-        >
-          <p className="text-sm whitespace-pre-wrap break-words">{message.text}</p>
+          <div
+            className={cn(
+              'p-3 shadow-md min-w-[60px] rounded-xl', 
+              bubbleColorClass,
+              'border border-destructive'
+            )}
+          >
+            <p className="text-sm whitespace-pre-wrap break-words">{message.text}</p>
+          </div>
         </div>
       </div>
-      <div className={cn('flex items-center mt-1.5 space-x-2 text-xs text-muted-foreground/80', isUser ? 'justify-end pr-1' : 'justify-start ml-10')}>
-        <p>
-          {format(new Date(message.timestamp), 'p')}
-        </p>
-        {isAI && onFeedback && (
-          <div className="flex items-center space-x-1.5">
-            <button
-              onClick={() => handleFeedbackClick('liked')}
-              title="Like response"
-              className={cn(
-                "p-0.5 rounded-full hover:bg-primary/20 transition-colors",
-                message.feedback === 'liked' ? 'text-primary' : 'text-muted-foreground/70 hover:text-primary'
-              )}
-            >
-              <ThumbsUp className="h-3.5 w-3.5" strokeWidth={message.feedback === 'liked' ? 2.5 : 2} />
-            </button>
-            <button
-              onClick={() => handleFeedbackClick('disliked')}
-              title="Dislike response"
-              className={cn(
-                "p-0.5 rounded-full hover:bg-destructive/20 transition-colors",
-                message.feedback === 'disliked' ? 'text-destructive' : 'text-muted-foreground/70 hover:text-destructive'
-              )}
-            >
-              <ThumbsDown className="h-3.5 w-3.5" strokeWidth={message.feedback === 'disliked' ? 2.5 : 2} />
-            </button>
-          </div>
-        )}
+    );
+  }
+
+
+  return (
+    <div className={cn('flex flex-col w-full my-2', messageAlignment)}>
+       <p className={cn(
+            "text-muted-foreground text-[13px] font-normal leading-normal max-w-[360px] mb-0.5",
+            isUser ? 'mr-12 text-right' : 'ml-12 text-left'
+        )}>
+        {labelText}
+      </p>
+      <div className={cn('flex items-end gap-2 max-w-[80%] sm:max-w-[70%]', isUser ? 'flex-row-reverse' : 'flex-row')}>
+        <div className={cn(
+          "flex items-center justify-center h-10 w-10 rounded-full shrink-0 self-start",
+          avatarBgClass,
+          avatarTextClass
+        )}>
+          <AvatarComponent className="h-5 w-5" />
+        </div>
+        <div
+          className={cn(
+            'px-4 py-3 shadow-md min-w-[60px] rounded-xl',
+            bubbleColorClass
+          )}
+        >
+          <p className="text-base font-normal leading-normal whitespace-pre-wrap break-words">{message.text}</p>
+        </div>
       </div>
+      {/* Timestamp and feedback removed based on new design */}
     </div>
   );
 };
