@@ -1,18 +1,20 @@
+
 'use client'
 
 import Image from 'next/image'
 import type { ComponentProps } from 'react'
 
 export function Logo(
-  props: Omit<ComponentProps<typeof Image>, 'src' | 'alt' | 'width' | 'height'>
+  props: Omit<ComponentProps<typeof Image>, 'src' | 'alt' | 'width' | 'height'> & { width?: number; height?: number }
 ) {
+  const { width, height, ...rest } = props;
   return (
     <Image
-  src="/icons/assets/logo.png"  // ✅ path from public/
-  alt="Talkzii Logo"
-  width={150}
-  height={50}
-/>
-
+      src="/icons/assets/logo.png"
+      alt="Talkzii Logo"
+      width={width || 150} // Use passed width or default
+      height={height || 50} // Use passed height or default
+      {...rest} // Spread remaining props, including className
+    />
   )
 }

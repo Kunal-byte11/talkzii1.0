@@ -2,17 +2,37 @@
 "use client";
 
 import { Logo } from '@/components/talkzi/Logo';
+import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import Link from 'next/link';
 
 export function NewLandingHeader() {
+  const router = useRouter();
+  const { user } = useAuth();
+
+  const handleGetStarted = () => {
+    if (user) {
+      router.push('/aipersona');
+    } else {
+      router.push('/auth');
+    }
+  };
+
   return (
-    <div className="flex items-center bg-background p-4 pb-2 justify-between">
-      <Logo width={20} height={15} />
-      <a
-        href="#footer-contact"
-        className="text-primary hover:text-primary/80 font-semibold text-sm px-3 py-2 rounded-md transition-colors"
-      >
-        Contact Us
-      </a>
-    </div>
+    <header className="bg-background/95 sticky top-0 z-50 w-full border-b border-border/40 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <Link href="/" aria-label="Talkzii Home">
+          <Logo width={120} height={30} className="h-auto" />
+        </Link>
+        <Button
+          onClick={handleGetStarted}
+          size="sm" 
+          className="bg-primary text-primary-foreground hover:bg-primary/90"
+        >
+          Get Started
+        </Button>
+      </div>
+    </header>
   );
 }
