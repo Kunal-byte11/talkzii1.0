@@ -13,6 +13,7 @@ import { useState } from 'react';
 const navLinks = [
   { href: '#features-section', label: 'Features' },
   { href: '#about-us-section', label: 'About Us' },
+  { href: '#values-section', label: 'Our Values' }, // Added Our Values link
   { href: '#footer-contact', label: 'Contact' },
 ];
 
@@ -30,7 +31,12 @@ export function NewLandingHeader() {
     setIsMobileMenuOpen(false);
   };
 
-  const handleNavLinkClick = () => {
+  const handleNavLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault(); // Prevent default anchor behavior
+    const targetElement = document.querySelector(href);
+    if (targetElement) {
+      targetElement.scrollIntoView({ behavior: 'smooth' });
+    }
     setIsMobileMenuOpen(false);
   };
 
@@ -44,13 +50,14 @@ export function NewLandingHeader() {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-4 lg:space-x-6">
           {navLinks.map((link) => (
-            <Link
+            <a // Changed to <a> for direct scroll handling
               key={link.label}
               href={link.href}
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+              onClick={(e) => handleNavLinkClick(e, link.href)}
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary cursor-pointer"
             >
               {link.label}
-            </Link>
+            </a>
           ))}
           <Button
             onClick={handleGetStarted}
@@ -73,14 +80,14 @@ export function NewLandingHeader() {
             <SheetContent side="right" className="w-[280px] sm:w-[320px] p-6">
               <div className="flex flex-col space-y-4 mt-6">
                 {navLinks.map((link) => (
-                  <Link
+                  <a // Changed to <a> for direct scroll handling
                     key={link.label}
                     href={link.href}
-                    onClick={handleNavLinkClick}
-                    className="text-base font-medium text-foreground transition-colors hover:text-primary py-2"
+                    onClick={(e) => handleNavLinkClick(e, link.href)}
+                    className="text-base font-medium text-foreground transition-colors hover:text-primary py-2 cursor-pointer"
                   >
                     {link.label}
-                  </Link>
+                  </a>
                 ))}
                 <Button
                   onClick={handleGetStarted}
