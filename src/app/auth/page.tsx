@@ -27,6 +27,7 @@ export default function AuthPage() {
   const [isLoading, setIsLoadingState] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false); // New state for confirm password
   const [confirmPassword, setConfirmPassword] = useState('');
   const [gender, setGender] = useState<UserProfile['gender'] | undefined>(undefined);
   const [activeTab, setActiveTab] = useState("login");
@@ -137,7 +138,7 @@ export default function AuthPage() {
     setIsLoadingState(false);
   };
 
-  if (isAuthLoading && !session) { // Show loading only if auth is loading and there's no session yet
+  if (isAuthLoading && !session) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
         <Logo width={120} height={40} className="mb-4 animate-pulse" />
@@ -208,6 +209,7 @@ export default function AuthPage() {
                     size="icon"
                     className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 text-muted-foreground hover:text-foreground"
                     onClick={() => setShowPassword(!showPassword)}
+                    title={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </Button>
@@ -275,22 +277,35 @@ export default function AuthPage() {
                     size="icon"
                     className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 text-muted-foreground hover:text-foreground"
                     onClick={() => setShowPassword(!showPassword)}
+                    title={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </Button>
                 </div>
               </div>
               <div>
-                <Input
-                  id="confirm-password"
-                  type={showPassword ? "text" : "password"} // Link showPassword to confirm as well for consistency
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm Password"
-                  required
-                  minLength={6}
-                  className="rounded-xl bg-input focus:border-none h-14 placeholder:text-muted-foreground p-4 text-base font-normal leading-normal border-none focus-visible:ring-primary focus-visible:ring-1"
-                />
+                <div className="relative">
+                  <Input
+                    id="confirm-password"
+                    type={showConfirmPassword ? "text" : "password"} 
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm Password"
+                    required
+                    minLength={6}
+                    className="rounded-xl bg-input focus:border-none h-14 placeholder:text-muted-foreground p-4 text-base font-normal leading-normal border-none pr-10 focus-visible:ring-primary focus-visible:ring-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    title={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </Button>
+                </div>
               </div>
 
               <Button type="submit" disabled={isLoading} className="w-full rounded-full h-12 px-5 bg-primary text-primary-foreground text-base font-bold tracking-[0.015em] hover:bg-primary/90">

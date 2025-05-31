@@ -1,32 +1,26 @@
 
 "use client";
 
-interface Feature {
-  title: string;
-  description: string;
-  imageHint: string;
-  imageUrl: string;
-}
+import { personaOptions as allPersonas } from '@/lib/personaOptions'; // Using shared personaOptions
 
-// Using placeholder images as per guidelines
-const features: Feature[] = [
+const features = [
   {
     title: "AI Personas",
     description: "Engage with diverse AI personalities, each with unique traits and backgrounds.",
-    imageHint: "avatars diversity",
-    imageUrl: "/icons/assets/persona.jpg", // Placeholder
+    imageHint: allPersonas.find(p => p.value === 'default')?.imageHint || "avatars diversity",
+    imageUrl: allPersonas.find(p => p.value === 'default')?.imageUrl || "/icons/assets/persona.jpg",
   },
   {
     title: "Interactive Chat",
     description: "Enjoy real-time conversations with AI companions, sharing thoughts and ideas.",
     imageHint: "chat bubbles",
-    imageUrl: "/icons/assets/chat.jpg", // Placeholder
+    imageUrl: "/icons/assets/chat.jpg", // Placeholder, as the design showed a generic chat image
   },
 ];
 
 export function NewLandingFeatures() {
   return (
-    <div className="flex flex-col gap-10 px-4 py-10 @container">
+    <div id="features-section" className="flex flex-col gap-10 px-4 py-10 @container scroll-mt-20"> {/* Added ID and scroll-mt */}
       <div className="flex flex-col gap-4">
         <h1 className="text-foreground tracking-light text-[32px] font-bold leading-tight @[480px]:text-4xl @[480px]:font-black @[480px]:leading-tight @[480px]:tracking-[-0.033em] max-w-[720px]">
           Key Features
@@ -40,7 +34,7 @@ export function NewLandingFeatures() {
         {features.map((feature, index) => (
           <div
             key={index}
-            className="flex flex-col gap-3 pb-3" // Removed shadow and bg-card from individual items
+            className="flex flex-col gap-3 pb-3"
           >
             <div
               className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-xl"

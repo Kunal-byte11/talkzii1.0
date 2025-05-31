@@ -25,7 +25,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col min-h-dvh bg-background"> {/* Changed h-screen to min-h-dvh */}
       <header className="sticky top-0 z-20 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 max-w-5xl mx-auto items-center justify-between px-4">
           <div className="flex items-center w-12"> {/* Left icon container */}
@@ -63,7 +63,7 @@ export default function ChatPage() {
           </div>
         </div>
       </header>
-      <main className="flex-grow overflow-hidden">
+      <main className="flex-grow overflow-hidden"> {/* flex-grow will make ChatInterface take remaining space */}
         <ChatInterface />
       </main>
     </div>

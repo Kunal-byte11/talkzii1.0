@@ -3,19 +3,19 @@
 
 import type { ChatMessage } from '@/types/talkzi';
 import { cn } from '@/lib/utils';
-import { Bot, User, AlertTriangle } from 'lucide-react'; // Removed ThumbsUp, ThumbsDown
-// import { format } from 'date-fns'; // Timestamp removed from design
+import { Bot, User, AlertTriangle } from 'lucide-react';
 import React from 'react';
+import Image from 'next/image';
 
 interface MessageBubbleProps {
   message: ChatMessage;
-  // onFeedback?: (messageId: string, feedback: 'liked' | 'disliked') => void; // Feedback removed from design
+  onFeedback?: (messageId: string, feedback: 'liked' | 'disliked') => void; 
 }
 
-const MessageBubbleComponent = ({ message }: MessageBubbleProps) => { // Removed onFeedback
+const MessageBubbleComponent = ({ message }: MessageBubbleProps) => {
   const isUser = message.sender === 'user';
   const isAI = message.sender === 'ai';
-  const isSystem = message.sender === 'system'; // For crisis or other system messages
+  const isSystem = message.sender === 'system';
   const isCrisis = message.isCrisis;
 
   const AvatarComponent = isUser ? User : Bot;
@@ -25,14 +25,13 @@ const MessageBubbleComponent = ({ message }: MessageBubbleProps) => { // Removed
   const bubbleColorClass = isUser
     ? 'bg-primary text-primary-foreground'
     : isCrisis
-    ? 'bg-destructive/80 text-destructive-foreground' // Retain distinct crisis styling
+    ? 'bg-destructive/80 text-destructive-foreground'
     : 'bg-input text-foreground';
   
   const messageAlignment = isUser ? 'items-end justify-end' : 'items-start justify-start';
-  const labelText = isUser ? "User" : isCrisis ? "System" : "AI"; // Use "AI" as generic label for AI persona
+  const labelText = isUser ? "User" : isCrisis ? "System" : "AI";
 
-  // System messages (like crisis) might not need an avatar or the "AI" label
-  if (isSystem && !isCrisis) { // Generic system message (e.g. "couldn't process")
+  if (isSystem && !isCrisis) {
     return (
         <div className="flex flex-col w-full my-2 items-center">
             <div className={cn(
@@ -44,7 +43,6 @@ const MessageBubbleComponent = ({ message }: MessageBubbleProps) => { // Removed
         </div>
     );
   }
-  // Crisis messages styling
   if (isCrisis) {
      return (
       <div className={cn('flex flex-col w-full my-2 items-start')}>
@@ -70,7 +68,6 @@ const MessageBubbleComponent = ({ message }: MessageBubbleProps) => { // Removed
     );
   }
 
-
   return (
     <div className={cn('flex flex-col w-full my-2', messageAlignment)}>
        <p className={cn(
@@ -81,11 +78,14 @@ const MessageBubbleComponent = ({ message }: MessageBubbleProps) => { // Removed
       </p>
       <div className={cn('flex items-end gap-2 max-w-[80%] sm:max-w-[70%]', isUser ? 'flex-row-reverse' : 'flex-row')}>
         <div className={cn(
-          "flex items-center justify-center h-10 w-10 rounded-full shrink-0 self-start",
-          avatarBgClass,
-          avatarTextClass
+          "flex items-center justify-center h-10 w-10 rounded-full shrink-0 self-start overflow-hidden", // Added overflow-hidden
+          avatarBgClass // Keep background for fallback or if image fails
         )}>
-          <AvatarComponent className="h-5 w-5" />
+          {isAI && message.personaImage ? (
+            <Image src={message.personaImage} alt="AI Persona" width={40} height={40} className="object-cover" />
+          ) : (
+            <AvatarComponent className={cn("h-5 w-5", avatarTextClass)} />
+          )}
         </div>
         <div
           className={cn(
@@ -96,7 +96,6 @@ const MessageBubbleComponent = ({ message }: MessageBubbleProps) => { // Removed
           <p className="text-base font-normal leading-normal whitespace-pre-wrap break-words">{message.text}</p>
         </div>
       </div>
-      {/* Timestamp and feedback removed based on new design */}
     </div>
   );
 };
