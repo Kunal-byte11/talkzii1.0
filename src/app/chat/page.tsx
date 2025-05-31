@@ -4,11 +4,12 @@
 import { useEffect, useState } from 'react';
 import { ChatInterface } from '@/components/talkzi/ChatInterface';
 import { Button } from '@/components/ui/button';
-import { Menu as MenuIcon, Cog, LogOut, LogIn } from 'lucide-react'; // Changed Home to MenuIcon
+import { Menu as MenuIcon, Cog, LogOut, LogIn } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/talkzi/LoadingSpinner';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Logo } from '@/components/talkzi/Logo';
 
 export default function ChatPage() {
   const { user, signOut, isLoading: isAuthLoading } = useAuth();
@@ -34,9 +35,9 @@ export default function ChatPage() {
             </Button>
           </div>
           
-          <h2 className="text-foreground text-lg font-bold leading-tight tracking-[-0.015em] text-center flex-1">
-            Talkzii
-          </h2>
+          <div className="flex-1 text-center">
+            <Logo width={90} height={30} />
+          </div>
 
           <div className="flex items-center space-x-1 sm:space-x-2 w-auto justify-end">
             {user && (
@@ -68,4 +69,3 @@ export default function ChatPage() {
     </div>
   );
 }
-

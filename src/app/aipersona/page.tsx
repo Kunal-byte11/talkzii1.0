@@ -179,7 +179,7 @@ export default function AIPersonaPage() {
       <div>
         <header className="flex items-center bg-background p-4 pb-2 justify-between">
           <Link href="/" passHref>
-            <Logo className="h-7 w-auto" />
+            <Logo width={84} height={28} />
           </Link>
           <div className="flex items-center space-x-2">
              <Button variant="ghost" size="icon" asChild title="Home Page">
