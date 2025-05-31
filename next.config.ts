@@ -19,9 +19,10 @@ const nextConfig: NextConfig = {
     ],
   },
   watchOptions: {
-    // Files and directories to ignore for the watcher.
-    // This can help prevent restart loops caused by tools
-    // writing temporary files or logs into watched directories.
+    // Files and directories to ignore for the Next.js file watcher.
+    // This helps prevent unnecessary server restarts or build loops
+    // caused by tools writing temporary files, logs, or cache files
+    // into watched project directories.
     ignored: [
       // Common patterns
       '**/.DS_Store', // macOS specific
