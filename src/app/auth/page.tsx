@@ -169,7 +169,7 @@ export default function AuthPage() {
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <Link href="/" passHref className="inline-block">
-            <Logo className="h-12 w-auto mb-6 mx-auto" />
+            <Logo className="h-10 w-auto mb-6 mx-auto" />
           </Link>
         </div>
 
