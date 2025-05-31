@@ -14,13 +14,50 @@ import { AuthRequiredMessage } from '@/components/talkzi/AuthRequiredMessage';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
+// Updated personaOptions with local image paths
 const personaOptions = [
-  { value: 'default', label: 'Talkzii', description: 'Your default, empathetic AI companion for all moods.', imageHint: 'abstract companion', imageUrl: 'https://placehold.co/200x200.png' },
-  { value: 'wise_dadi', label: 'Wise Dadi', description: 'A comforting grandma with desi wisdom and love.', imageHint: 'grandmother wisdom', imageUrl: 'https://placehold.co/200x200.png' },
-  { value: 'chill_bro', label: 'Chill Bro', description: 'A laid-back bestie to help you vibe and de-stress.', imageHint: 'friendly confident', imageUrl: 'https://placehold.co/200x200.png' },
-  { value: 'geeky_bhai', label: 'Geeky Bhai', description: 'A nerdy topper for practical tips and quirky humor.', imageHint: 'smart glasses', imageUrl: 'https://placehold.co/200x200.png' },
-  { value: 'flirty_diva', label: 'Flirty Diva', description: 'A sassy gal for playful, flirty chats.', imageHint: 'fashion glamour', imageUrl: 'https://placehold.co/200x200.png' },
-  { value: 'cheeky_lad', label: 'Cheeky Lad', description: 'A charming guy for cheeky, flirty banter.', imageHint: 'playful smile', imageUrl: 'https://placehold.co/200x200.png' },
+  {
+    value: 'default',
+    label: 'Talkzii',
+    description: 'Your default, empathetic AI companion for all moods.',
+    imageHint: 'abstract companion',
+    imageUrl: '/icons/assets/talzii.png',
+  },
+  {
+    value: 'wise_dadi',
+    label: 'Wise Dadi',
+    description: 'A comforting grandma with desi wisdom and love.',
+    imageHint: 'grandmother wisdom',
+    imageUrl: '/icons/assets/dadi.jpg',
+  },
+  {
+    value: 'chill_bro',
+    label: 'Chill Bro',
+    description: 'A laid-back bestie to help you vibe and de-stress.',
+    imageHint: 'friendly confident',
+    imageUrl: '/icons/assets/chillbro.png',
+  },
+  {
+    value: 'geeky_bhai',
+    label: 'Geeky Bhai', // Label changed to match design more closely
+    description: 'A nerdy topper for practical tips and quirky humor.',
+    imageHint: 'smart glasses',
+    imageUrl: '/icons/assets/nerdyfriend.png',
+  },
+  {
+    value: 'flirty_diva', // value changed from flirty_dia
+    label: 'Flirty Diva', // Label changed to match design more closely
+    description: 'A sassy gal for playful, flirty chats.',
+    imageHint: 'fashion glamour',
+    imageUrl: '/icons/assets/Flirty Dia.png', // filename for Flirty Diva
+  },
+  {
+    value: 'cheeky_lad',
+    label: 'Cheeky Lad',
+    description: 'A charming guy for cheeky, flirty banter.',
+    imageHint: 'playful smile',
+    imageUrl: '/icons/assets/Cheeky Lad.png',
+  },
 ];
 
 const getAIFriendTypeKey = (userId: string) => `talkzii_ai_friend_type_${userId}`;
@@ -47,7 +84,7 @@ export default function AIPersonaPage() {
         if (savedPersona && personaOptions.some(p => p.value === savedPersona)) {
           setSelectedPersona(savedPersona);
         } else {
-          setSelectedPersona('default'); // Default to "Talkzii"
+          setSelectedPersona('default');
         }
       } catch (error) {
         console.error("Error reading persona from localStorage", error);
@@ -63,7 +100,7 @@ export default function AIPersonaPage() {
     if (selectedPersona && user && AI_FRIEND_TYPE_KEY) {
       try {
         if (selectedPersona === 'default') {
-          localStorage.removeItem(AI_FRIEND_TYPE_KEY); // Or set to 'default' if preferred
+          localStorage.removeItem(AI_FRIEND_TYPE_KEY);
         } else {
           localStorage.setItem(AI_FRIEND_TYPE_KEY, selectedPersona);
         }
@@ -96,7 +133,6 @@ export default function AIPersonaPage() {
   return (
     <div
       className="relative flex size-full min-h-screen flex-col bg-background justify-between"
-      style={{ fontFamily: '"Plus Jakarta Sans", "Noto Sans", sans-serif' }}
     >
       <div>
         <header className="flex items-center bg-background p-4 pb-2 justify-between">
@@ -104,7 +140,7 @@ export default function AIPersonaPage() {
             <Logo className="h-6 w-auto" />
           </Link>
           <div className="flex items-center space-x-2">
-             <Button variant="ghost" size="icon" asChild title="Home">
+             <Button variant="ghost" size="icon" asChild title="Home Page">
               <Link href="/">
                 <Home className="h-5 w-5 text-muted-foreground" />
                 <span className="sr-only">Home</span>
@@ -125,18 +161,18 @@ export default function AIPersonaPage() {
         </header>
 
         {user && (
-            <div className="px-4 pt-3 text-center sm:text-left">
-                <p className="text-sm text-muted-foreground mb-1 flex items-center justify-center sm:justify-start">
+            <div className="px-4 pt-3 text-left">
+                <p className="text-sm text-muted-foreground mb-1 flex items-center justify-start">
                     <UserIcon className="h-4 w-4 mr-1 text-primary" /> Logged in as: {user.email}
                 </p>
             </div>
         )}
         
-        <h2 className="text-foreground text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5 text-center sm:text-left">
+        <h2 className="text-foreground text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5 text-left">
           Choose your Talkzii
         </h2>
 
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-4 p-4 @[480px]:grid-cols-[repeat(auto-fit,minmax(180px,1fr))] @lg:grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-3 p-4 @[480px]:grid-cols-[repeat(auto-fit,minmax(180px,1fr))] @lg:grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
           {personaOptions.map((persona) => (
             <div
               key={persona.value}
@@ -146,14 +182,14 @@ export default function AIPersonaPage() {
                 selectedPersona === persona.value ? 'border-primary ring-2 ring-primary shadow-xl bg-primary/5' : 'border-border bg-card hover:border-primary/50'
               )}
             >
-              <div className="px-4 w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40">
+              <div className="relative px-4 w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40">
                 <Image
                   src={persona.imageUrl}
                   alt={persona.label}
-                  width={160}
-                  height={160}
+                  layout="fill"
+                  objectFit="cover"
                   data-ai-hint={persona.imageHint}
-                  className="w-full h-full object-cover rounded-full aspect-square"
+                  className="rounded-full"
                 />
               </div>
               <div>
@@ -178,11 +214,9 @@ export default function AIPersonaPage() {
 
       <footer className="py-6 border-t border-border">
         <div className="container mx-auto px-4 text-center text-xs text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} Talkzii. Change your AI's vibe anytime!</p>
+          <p>© {new Date().getFullYear()} Talkzii. Change your AI's vibe anytime!</p>
         </div>
       </footer>
     </div>
   );
 }
-
-    
