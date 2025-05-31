@@ -1,10 +1,25 @@
 
 "use client";
 
-// Removed Button, useRouter, useAuth
+import Image from "next/image";
 
 export function NewLandingAboutUs() {
-  // Removed handleGetStarted function
+  const teamMembers = [
+    {
+      name: "Mr Kunal Dubey",
+      title: "Founder & CEO",
+      description: "Visionary leader driving Talkzii's mission to foster meaningful connections through AI.",
+      imageUrl: "https://placehold.co/120x120.png",
+      imageHint: "man portrait",
+    },
+    {
+      name: "Vedant Ghodki",
+      title: "Co-Founder & CTO",
+      description: "Architecting the innovative technology that powers Talkzii's empathetic conversations.",
+      imageUrl: "https://placehold.co/120x120.png",
+      imageHint: "man portrait",
+    },
+  ];
 
   return (
     <div id="about-us-section" className="flex flex-col gap-10 px-4 py-10 @container scroll-mt-20 text-center">
@@ -33,7 +48,35 @@ export function NewLandingAboutUs() {
           </div>
         </div>
       </div>
-      {/* "Get Started" Button removed from here */}
+
+      {/* Meet Our Team Section */}
+      <div className="mt-12 text-left">
+        <div className="flex flex-col items-start mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
+                Meet Our Team
+            </h2>
+            <div className="h-1 w-24 bg-primary rounded-full"></div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-8">
+          {teamMembers.map((member) => (
+            <div key={member.name} className="flex flex-col items-center text-center p-6 rounded-xl border border-border bg-card shadow-sm hover:shadow-lg transition-shadow duration-300">
+              <div className="relative w-32 h-32 mb-4">
+                <Image
+                  src={member.imageUrl}
+                  alt={member.name}
+                  layout="fill"
+                  objectFit="cover"
+                  className="rounded-full"
+                  data-ai-hint={member.imageHint}
+                />
+              </div>
+              <h3 className="text-xl font-bold text-foreground">{member.name}</h3>
+              <p className="text-sm text-primary font-medium">{member.title}</p>
+              <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{member.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
