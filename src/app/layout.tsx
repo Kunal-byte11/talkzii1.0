@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   title: 'Talkzii: Your AI Dost',
   description: 'AI-powered emotional support assistant for Gen Z in India.',
   manifest: '/manifest.json', // PWA manifest
-  themeColor: '#F5F8FF',
+  themeColor: '#14171F', // Updated to match new dark background (approx HSL 220 15% 10%)
   appleWebAppCapable: 'yes',
   appleWebAppStatusBarStyle: 'default',
 };
@@ -46,4 +46,3 @@ export default function RootLayout({
     </html>
   );
 }
-
