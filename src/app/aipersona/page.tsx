@@ -4,22 +4,23 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { Logo } from '@/components/talkzi/Logo';
 import Link from 'next/link';
-import { Home, Bot, Users, Brain, Skull, LogOut, User as UserIcon } from 'lucide-react';
+import { LogOut, User as UserIcon, Home } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/talkzi/LoadingSpinner';
 import { AuthRequiredMessage } from '@/components/talkzi/AuthRequiredMessage';
+import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 const personaOptions = [
-  { value: 'default', label: 'Default Talkzii', description: 'Your general empathetic AI companion.', icon: Bot },
-  { value: 'female_best_friend', label: 'Female Best Friend', description: 'Supportive & bubbly like a trusted didi.', icon: Users },
-  { value: 'male_best_friend', label: 'Male Best Friend', description: 'Chill & emotionally aware bro.', icon: Users },
-  { value: 'topper_friend', label: 'Topper Friend', description: 'Helpful, kind, offers practical advice.', icon: Brain },
-  { value: 'toxic_friend', label: 'Toxic Friend ', description: 'Blunt, "tough love" advice, pushes for action.', icon: Skull },
+  { value: 'default', label: 'Talkzii', description: 'Your default, empathetic AI companion for all moods.', imageHint: 'abstract companion', imageUrl: 'https://placehold.co/200x200.png' },
+  { value: 'wise_dadi', label: 'Wise Dadi', description: 'A comforting grandma with desi wisdom and love.', imageHint: 'grandmother wisdom', imageUrl: 'https://placehold.co/200x200.png' },
+  { value: 'chill_bro', label: 'Chill Bro', description: 'A laid-back bestie to help you vibe and de-stress.', imageHint: 'friendly confident', imageUrl: 'https://placehold.co/200x200.png' },
+  { value: 'geeky_bhai', label: 'Geeky Bhai', description: 'A nerdy topper for practical tips and quirky humor.', imageHint: 'smart glasses', imageUrl: 'https://placehold.co/200x200.png' },
+  { value: 'flirty_diva', label: 'Flirty Diva', description: 'A sassy gal for playful, flirty chats.', imageHint: 'fashion glamour', imageUrl: 'https://placehold.co/200x200.png' },
+  { value: 'cheeky_lad', label: 'Cheeky Lad', description: 'A charming guy for cheeky, flirty banter.', imageHint: 'playful smile', imageUrl: 'https://placehold.co/200x200.png' },
 ];
 
 const getAIFriendTypeKey = (userId: string) => `talkzii_ai_friend_type_${userId}`;
@@ -35,7 +36,7 @@ export default function AIPersonaPage() {
     if (user?.id) {
       return getAIFriendTypeKey(user.id);
     }
-    return null; // No key if no user
+    return null;
   }, [user?.id]);
 
   useEffect(() => {
@@ -46,7 +47,7 @@ export default function AIPersonaPage() {
         if (savedPersona && personaOptions.some(p => p.value === savedPersona)) {
           setSelectedPersona(savedPersona);
         } else {
-          setSelectedPersona('default');
+          setSelectedPersona('default'); // Default to "Talkzii"
         }
       } catch (error) {
         console.error("Error reading persona from localStorage", error);
@@ -54,17 +55,15 @@ export default function AIPersonaPage() {
       }
       setIsPersonaLoading(false);
     } else if (!user && !isAuthLoading) {
-      // Not logged in, or auth state resolved to no user
       setIsPersonaLoading(false); 
     }
-    // If isAuthLoading is true, we wait for it to resolve.
   }, [user, isAuthLoading, AI_FRIEND_TYPE_KEY]);
 
   const handleConfirm = () => {
     if (selectedPersona && user && AI_FRIEND_TYPE_KEY) {
       try {
         if (selectedPersona === 'default') {
-          localStorage.removeItem(AI_FRIEND_TYPE_KEY);
+          localStorage.removeItem(AI_FRIEND_TYPE_KEY); // Or set to 'default' if preferred
         } else {
           localStorage.setItem(AI_FRIEND_TYPE_KEY, selectedPersona);
         }
@@ -79,7 +78,6 @@ export default function AIPersonaPage() {
       router.push('/chat');
     } else if (!user) {
       toast({ title: "Not Logged In", description: "Please log in to save preferences and chat.", variant: "destructive" });
-      // AuthProvider should handle redirect, but this is a fallback message
     }
   };
 
@@ -88,88 +86,97 @@ export default function AIPersonaPage() {
   }
 
   if (!user) {
-    // Auth is resolved, but no user. AuthProvider should redirect them.
-    // This message is a fallback or shown briefly during redirection.
     return <AuthRequiredMessage message="You need to be logged in to choose a persona." actionButtonText="Go to Login" actionButtonPath="/auth" />;
   }
 
-  // User is present, and auth is resolved.
   if (isPersonaLoading) {
     return <LoadingSpinner message="Loading persona settings..." />;
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <header className="sticky top-0 z-20 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 max-w-5xl mx-auto items-center justify-between px-4">
+    <div
+      className="relative flex size-full min-h-screen flex-col bg-background justify-between"
+      style={{ fontFamily: '"Plus Jakarta Sans", "Noto Sans", sans-serif' }}
+    >
+      <div>
+        <header className="flex items-center bg-background p-4 pb-2 justify-between">
           <Link href="/" passHref>
             <Logo className="h-6 w-auto" />
           </Link>
-          <div className="flex items-center space-x-1 sm:space-x-2">
-            <Button variant="ghost" size="icon" asChild title="Home">
+          <div className="flex items-center space-x-2">
+             <Button variant="ghost" size="icon" asChild title="Home">
               <Link href="/">
-                <Home className="h-5 w-5" />
+                <Home className="h-5 w-5 text-muted-foreground" />
                 <span className="sr-only">Home</span>
               </Link>
             </Button>
             {user && (
-              <Button variant="ghost" size="icon" onClick={signOut} title="Logout">
-                <LogOut className="h-5 w-5" />
-                <span className="sr-only">Logout</span>
+              <Button
+                variant="link"
+                onClick={signOut}
+                className="text-muted-foreground text-base font-bold leading-normal tracking-[0.015em] shrink-0 p-0 h-auto hover:no-underline hover:text-primary"
+                title="Logout"
+              >
+                <LogOut className="h-5 w-5 mr-1 sm:mr-0 md:mr-1" />
+                <span className="hidden md:inline">Logout</span>
               </Button>
             )}
           </div>
+        </header>
+
+        {user && (
+            <div className="px-4 pt-3 text-center sm:text-left">
+                <p className="text-sm text-muted-foreground mb-1 flex items-center justify-center sm:justify-start">
+                    <UserIcon className="h-4 w-4 mr-1 text-primary" /> Logged in as: {user.email}
+                </p>
+            </div>
+        )}
+        
+        <h2 className="text-foreground text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5 text-center sm:text-left">
+          Choose your Talkzii
+        </h2>
+
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-4 p-4 @[480px]:grid-cols-[repeat(auto-fit,minmax(180px,1fr))] @lg:grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
+          {personaOptions.map((persona) => (
+            <div
+              key={persona.value}
+              onClick={() => setSelectedPersona(persona.value)}
+              className={cn(
+                "flex flex-col gap-3 text-center pb-3 items-center cursor-pointer p-3 rounded-xl border-2 transition-all duration-200 ease-in-out hover:shadow-lg",
+                selectedPersona === persona.value ? 'border-primary ring-2 ring-primary shadow-xl bg-primary/5' : 'border-border bg-card hover:border-primary/50'
+              )}
+            >
+              <div className="px-4 w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40">
+                <Image
+                  src={persona.imageUrl}
+                  alt={persona.label}
+                  width={160}
+                  height={160}
+                  data-ai-hint={persona.imageHint}
+                  className="w-full h-full object-cover rounded-full aspect-square"
+                />
+              </div>
+              <div>
+                <p className="text-foreground text-base font-medium leading-normal">{persona.label}</p>
+                <p className="text-muted-foreground text-sm font-normal leading-normal px-1">{persona.description}</p>
+              </div>
+            </div>
+          ))}
         </div>
-      </header>
-
-      <main className="flex-grow container mx-auto px-4 py-8 sm:py-12 max-w-2xl">
-        <div className="text-center mb-8 sm:mb-10">
-          <UserIcon className="mx-auto h-10 w-10 text-primary mb-2" />
-          <p className="text-sm text-muted-foreground mb-1">Logged in as: {user.email}</p>
-          <h1 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent text-transparent bg-clip-text">
-            Choose Your AI Dost's Vibe!
-          </h1>
-          <p className="text-muted-foreground text-base sm:text-lg">
-            Pick the personality you want Talkzii to have for your chat session.
-          </p>
+        
+        <div className="px-4 py-6 mt-4">
+          <Button
+            onClick={handleConfirm}
+            disabled={!selectedPersona || isAuthLoading || !user || isPersonaLoading}
+            className="w-full gradient-button text-lg py-3 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+            aria-label="Confirm persona selection and start chatting"
+          >
+            Confirm & Chat
+          </Button>
         </div>
+      </div>
 
-        <RadioGroup
-          value={selectedPersona}
-          onValueChange={setSelectedPersona}
-          className="space-y-4"
-          aria-label="Select AI Persona"
-        >
-          {personaOptions.map((persona) => {
-            const IconComponent = persona.icon;
-            return (
-              <Label
-                key={persona.value}
-                htmlFor={`persona-${persona.value}`}
-                className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all duration-200 ease-in-out hover:shadow-lg focus-within:ring-2 focus-within:ring-primary focus-within:border-primary ${selectedPersona === persona.value ? 'ring-2 ring-primary border-primary shadow-xl bg-primary/5' : 'border-border bg-card hover:border-primary/50'
-                  }`}
-              >
-                <RadioGroupItem value={persona.value} id={`persona-${persona.value}`} className="mr-4 h-5 w-5 border-muted-foreground data-[state=checked]:border-primary data-[state=checked]:text-primary" />
-                <IconComponent className={`h-7 w-7 mr-3 ${selectedPersona === persona.value ? 'text-primary' : 'text-muted-foreground'}`} />
-                <div className="flex-grow">
-                  <span className={`font-semibold text-lg ${selectedPersona === persona.value ? 'text-primary' : 'text-card-foreground'}`}>{persona.label}</span>
-                  <p className="text-sm text-muted-foreground">{persona.description}</p>
-                </div>
-              </Label>
-            );
-          })}
-        </RadioGroup>
-
-        <Button
-          onClick={handleConfirm}
-          disabled={!selectedPersona || isAuthLoading || !user || isPersonaLoading}
-          className="w-full mt-8 sm:mt-10 gradient-button text-lg py-3 rounded-lg shadow-md hover:shadow-lg transition-shadow"
-          aria-label="Confirm persona selection and start chatting"
-        >
-          Confirm & Chat
-        </Button>
-      </main>
-      <footer className="py-6 border-t">
+      <footer className="py-6 border-t border-border">
         <div className="container mx-auto px-4 text-center text-xs text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} Talkzii. Change your AI's vibe anytime!</p>
         </div>
@@ -178,3 +185,4 @@ export default function AIPersonaPage() {
   );
 }
 
+    
