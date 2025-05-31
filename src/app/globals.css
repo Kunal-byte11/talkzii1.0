@@ -8,26 +8,37 @@ body {
 
 @layer base {
   :root {
-    /* Light Theme based on user's design */
-    --background: 257 33% 98%; /* #faf8fc */
-    --foreground: 270 21% 10%; /* #150e1b */
-    --card: 257 33% 96%; /* #f5f2f9 */
-    --card-foreground: 270 21% 10%; /* #150e1b */
-    --popover: 257 33% 96%;
-    --popover-foreground: 270 21% 10%;
-    --primary: 274 81% 50%; /* #8619e6 */
-    --primary-foreground: 257 33% 98%; /* #faf8fc (text on primary buttons) */
-    --secondary: 274 50% 85%; /* Lighter purple for secondary elements */
-    --secondary-foreground: 270 21% 10%;
-    --muted: 257 33% 92%; /* For muted backgrounds */
-    --muted-foreground: 274 32% 44%; /* #754e97 / #5f4c9a (secondary text color) */
-    --accent: 274 70% 60%; /* A slightly lighter/different purple for accents */
+    /* Light Theme based on user's latest design */
+    --background: 270 25% 98.2%; /* #f9f9fb */
+    --foreground: 255 15% 8.2%; /* #121019 */
+
+    --card: 0 0% 100%; /* Assuming cards would be white on the new light bg */
+    --card-foreground: 255 15% 8.2%; /* #121019 */
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 255 15% 8.2%;
+
+    /* Primary is now the light lavender for hero button */
+    --primary: 258 45% 80.8%; /* #cabeee */
+    --primary-foreground: 255 15% 8.2%; /* #121019 (text on hero button) */
+
+    /* Secondary can be a supporting color, let's keep it soft */
+    --secondary: 270 50% 90%; /* Lighter purple for secondary elements if needed */
+    --secondary-foreground: 255 15% 8.2%;
+
+    --muted: 270 25% 94%; /* For muted backgrounds like input fields from previous designs */
+    --muted-foreground: 256 25% 45.3%; /* #66588d (for feature descriptions, etc.) */
+
+    /* Accent can be a different vibrant color or a variation */
+    --accent: 274 81% 50%; /* Original Purple, can be used for other accents if needed */
     --accent-foreground: 257 33% 98%;
+
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
-    --border: 257 33% 88%; /* #dcd0e7 / #eae7f3 (light border) */
-    --input: 257 60% 94%; /* #eee7f3 (light input background) */
-    --ring: 274 81% 55%; /* Ring color based on primary */
+
+    --border: 270 25% 90%; /* #e2e2f1 light border */
+    --input: 270 25% 94%; /* #eee7f3 (light input background from auth page design) */
+    --ring: 258 45% 75%; /* Ring color based on new primary */
     
     --chart-1: 274 70% 55%;
     --chart-2: 280 65% 60%;
@@ -36,52 +47,60 @@ body {
     --chart-5: 290 50% 50%;
     --radius: 0.75rem;
     
-    --sidebar-background: 257 33% 97%;
-    --sidebar-foreground: 270 21% 15%;
-    --sidebar-primary: 274 81% 50%;
-    --sidebar-primary-foreground: 257 33% 98%;
-    --sidebar-accent: 274 70% 60%;
+    --sidebar-background: 270 25% 97%;
+    --sidebar-foreground: 255 15% 10%;
+    --sidebar-primary: 258 45% 80.8%;
+    --sidebar-primary-foreground: 255 15% 8.2%;
+    --sidebar-accent: 274 81% 50%;
     --sidebar-accent-foreground: 257 33% 98%;
-    --sidebar-border: 257 33% 88%;
-    --sidebar-ring: 274 81% 55%;
+    --sidebar-border: 270 25% 88%;
+    --sidebar-ring: 258 45% 75%;
   }
 
   .dark {
-    /* Keeping dark theme consistent with new light theme base */
-    --background: 257 33% 98%; 
-    --foreground: 270 21% 10%; 
-    --card: 257 33% 96%; 
-    --card-foreground: 270 21% 10%; 
-    --popover: 257 33% 96%;
-    --popover-foreground: 270 21% 10%;
-    --primary: 274 81% 50%; 
-    --primary-foreground: 257 33% 98%; 
-    --secondary: 274 50% 85%; 
-    --secondary-foreground: 270 21% 10%;
-    --muted: 257 33% 92%; 
-    --muted-foreground: 274 32% 44%; 
-    --accent: 274 70% 60%; 
-    --accent-foreground: 257 33% 98%;
-    --destructive: 0 70% 55%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 257 33% 88%; 
-    --input: 257 60% 94%; 
-    --ring: 274 81% 55%; 
-    
-    --chart-1: 274 70% 55%;
-    --chart-2: 280 65% 60%;
-    --chart-3: 270 60% 50%;
-    --chart-4: 260 55% 65%;
-    --chart-5: 290 50% 50%;
+    /* Dark theme - For consistency, using the new branding's dark color as bg */
+    --background: 255 15% 8.2%; /* #121019 */
+    --foreground: 270 25% 98.2%; /* #f9f9fb */
 
-    --sidebar-background: 257 33% 97%;
-    --sidebar-foreground: 270 21% 15%;
-    --sidebar-primary: 274 81% 50%;
-    --sidebar-primary-foreground: 257 33% 98%;
-    --sidebar-accent: 274 70% 60%;
-    --sidebar-accent-foreground: 257 33% 98%;
-    --sidebar-border: 257 33% 88%;
-    --sidebar-ring: 274 81% 55%;
+    --card: 255 15% 12%; /* Slightly lighter than background */
+    --card-foreground: 270 25% 98.2%;
+
+    --popover: 255 15% 12%;
+    --popover-foreground: 270 25% 98.2%;
+
+    --primary: 258 45% 80.8%; /* #cabeee */
+    --primary-foreground: 255 15% 8.2%; /* #121019 */
+    
+    --secondary: 270 25% 20%; 
+    --secondary-foreground: 270 25% 98.2%;
+
+    --muted: 255 15% 15%;
+    --muted-foreground: 256 25% 65.3%; /* Lighter version of #66588d for dark */
+    
+    --accent: 274 81% 60%; /* Brighter purple for dark mode accent */
+    --accent-foreground: 255 15% 8.2%;
+
+    --destructive: 0 60% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 255 15% 15%;
+    --input: 255 15% 18%; 
+    --ring: 258 45% 70%; 
+    
+    --chart-1: 258 45% 70%;
+    --chart-2: 260 50% 75%;
+    --chart-3: 270 55% 65%;
+    --chart-4: 280 60% 80%;
+    --chart-5: 290 65% 60%;
+
+    --sidebar-background: 255 15% 10%;
+    --sidebar-foreground: 270 25% 97%;
+    --sidebar-primary: 258 45% 80.8%;
+    --sidebar-primary-foreground: 255 15% 8.2%;
+    --sidebar-accent: 274 81% 60%;
+    --sidebar-accent-foreground: 255 15% 8.2%;
+    --sidebar-border: 255 15% 15%;
+    --sidebar-ring: 258 45% 70%;
   }
 }
 
@@ -99,8 +118,10 @@ body {
 }
 
 .gradient-button {
+  /* This might need adjustment if primary is now very light */
   @apply bg-gradient-to-r from-primary to-accent text-primary-foreground;
 }
+
 
 /* Adjusted Neumorphism for Light Theme */
 .neumorphic-shadow-soft {
@@ -118,7 +139,7 @@ body {
 }
 
 .glassmorphic {
-  background: hsla(var(--card) / 0.6); /* Slightly more opaque for light theme */
+  background: hsla(var(--card) / 0.6); 
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid hsla(var(--border) / 0.3);

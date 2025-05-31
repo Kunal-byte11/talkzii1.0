@@ -25,10 +25,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Talkzii: Your AI Dost',
+  title: 'Talkzi AI - Your Desi Bestie',
   description: 'AI-powered emotional support assistant for Gen Z in India.',
   manifest: '/manifest.json',
-  themeColor: '#FAF8FC', 
+  themeColor: '#f9f9fb', 
   appleWebAppCapable: 'yes',
   appleWebAppStatusBarStyle: 'default',
 };
