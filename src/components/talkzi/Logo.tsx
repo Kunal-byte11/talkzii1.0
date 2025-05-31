@@ -11,7 +11,7 @@ export function Logo(
   src="/icons/assets/logo.png"  // ✅ path from public/
   alt="Talkzii Logo"
   width={100}
-  height={35}
+  height={30}
 />
 
   )
