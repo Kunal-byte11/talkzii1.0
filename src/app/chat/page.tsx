@@ -33,7 +33,7 @@ export default function ChatPage() {
       <header className="sticky top-0 z-20 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 max-w-5xl mx-auto items-center justify-between px-4">
           <Link href="/" passHref>
-            <Logo className="h-8 w-auto" />
+            <Logo className="h-7 w-auto" />
           </Link>
           <div className="flex items-center space-x-1 sm:space-x-2">
             {user && ( // Only show Cog and Logout if user is logged in

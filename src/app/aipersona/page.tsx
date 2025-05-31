@@ -19,7 +19,7 @@ const personaOptions = [
   { value: 'female_best_friend', label: 'Female Best Friend', description: 'Supportive & bubbly like a trusted didi.', icon: Users },
   { value: 'male_best_friend', label: 'Male Best Friend', description: 'Chill & emotionally aware bro.', icon: Users },
   { value: 'topper_friend', label: 'Topper Friend', description: 'Helpful, kind, offers practical advice.', icon: Brain },
-  { value: 'toxic_friend', label: 'Toxic Friend (Kabir Singh Vibe)', description: 'Blunt, "tough love" advice, pushes for action.', icon: Skull },
+  { value: 'toxic_friend', label: 'Toxic Friend ', description: 'Blunt, "tough love" advice, pushes for action.', icon: Skull },
 ];
 
 const getAIFriendTypeKey = (userId: string) => `talkzii_ai_friend_type_${userId}`;
@@ -103,7 +103,7 @@ export default function AIPersonaPage() {
       <header className="sticky top-0 z-20 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 max-w-5xl mx-auto items-center justify-between px-4">
           <Link href="/" passHref>
-            <Logo className="h-8 w-auto" />
+            <Logo className="h-7 w-auto" />
           </Link>
           <div className="flex items-center space-x-1 sm:space-x-2">
             <Button variant="ghost" size="icon" asChild title="Home">
@@ -177,4 +177,3 @@ export default function AIPersonaPage() {
     </div>
   );
 }
-

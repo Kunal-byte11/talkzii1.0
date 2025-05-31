@@ -27,7 +27,7 @@ export default function HomePage() {
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between mx-auto px-4">
           <Link href="/" passHref>
-            <Logo className="h-8 w-auto" />
+            <Logo className="h-7 w-auto" />
           </Link>
           <div className="flex items-center space-x-2">
             <Button onClick={handleStartChatting} className="gradient-button">
@@ -64,4 +64,3 @@ export default function HomePage() {
     </div>
   );
 }
-
