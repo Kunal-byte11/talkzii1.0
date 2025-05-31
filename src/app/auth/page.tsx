@@ -24,7 +24,7 @@ export default function AuthPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoadingState] = useState(false); // isLoading is the state, setIsLoadingState is the setter
+  const [isLoading, setIsLoadingState] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -303,7 +303,7 @@ export default function AuthPage() {
         <div className="max-w-md mx-auto px-4 py-3 mt-2">
           <Button
             variant="outline"
-            onClick={() => router.push('/chat')}
+            onClick={() => router.push('/aipersona')}
             className="w-full rounded-full h-12 px-5 bg-input text-foreground text-base font-bold tracking-[0.015em] border-none hover:bg-muted"
           >
             Continue as Guest

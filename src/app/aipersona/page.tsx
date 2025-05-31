@@ -67,42 +67,70 @@ const getChatHistoryKey = (userId?: string) => userId ? `talkzii_chat_history_${
 export default function AIPersonaPage() {
   const router = useRouter();
   const { user, signOut, isLoading: isAuthLoading } = useAuth();
-  const [selectedPersona, setSelectedPersona] = useState<string | undefined>(undefined);
+  const [selectedPersona, setSelectedPersona] = useState<string>('default'); // Default to 'default'
   const [previousSavedPersona, setPreviousSavedPersona] = useState<string | undefined>(undefined);
   const [isPersonaLoading, setIsPersonaLoading] = useState(true);
   const { toast } = useToast();
 
   const AI_FRIEND_TYPE_KEY = useMemo(() => {
-    if (user?.id) {
-      return getAIFriendTypeKey(user.id);
-    }
-    // For guests, use the guest-specific key.
-    // This handles the case where `user` is null.
-    return getAIFriendTypeKey(undefined); 
+    return getAIFriendTypeKey(user?.id); // Returns guest key if user is null
   }, [user?.id]);
 
   useEffect(() => {
-    if (isAuthLoading) return; // Wait for auth state to resolve
+    if (isAuthLoading) return; 
 
     setIsPersonaLoading(true);
-    // AI_FRIEND_TYPE_KEY is now guaranteed to be non-null by the useMemo hook logic
-    try {
-      const savedPersona = localStorage.getItem(AI_FRIEND_TYPE_KEY);
-      const initialPersona = savedPersona || 'default';
-      
-      setPreviousSavedPersona(initialPersona); // Store what was actually saved or default
-      setSelectedPersona(initialPersona);     // Set the current selection to match
-
-    } catch (error) {
-      console.error("Error reading persona from localStorage", error);
-      setPreviousSavedPersona('default');
+    if (!user) { // Guest user
       setSelectedPersona('default');
+      setPreviousSavedPersona('default');
+    } else { // Logged-in user
+      try {
+        const savedPersona = localStorage.getItem(AI_FRIEND_TYPE_KEY);
+        const initialPersona = savedPersona || 'default';
+        
+        setPreviousSavedPersona(initialPersona); 
+        setSelectedPersona(initialPersona);     
+      } catch (error) {
+        console.error("Error reading persona from localStorage for user", error);
+        setPreviousSavedPersona('default');
+        setSelectedPersona('default');
+      }
     }
     setIsPersonaLoading(false);
-  }, [isAuthLoading, AI_FRIEND_TYPE_KEY]);
+  }, [isAuthLoading, AI_FRIEND_TYPE_KEY, user]);
 
+
+  const handlePersonaSelect = (personaValue: string) => {
+    if (!user && personaValue !== 'default') {
+      const personaLabel = personaOptions.find(p => p.value === personaValue)?.label || "this persona";
+      toast({
+        title: "Login to Use Persona",
+        description: `Please log in to chat with ${personaLabel}. Guests chat with Talkzii (default).`,
+      });
+      return; 
+    }
+    setSelectedPersona(personaValue);
+  };
 
   const handleConfirm = () => {
+    if (!user) { // Guest user
+      try {
+        // Guests always use default, clear any potentially stored guest-specific persona/history
+        localStorage.removeItem(getAIFriendTypeKey(undefined)); 
+        localStorage.removeItem(getChatHistoryKey(undefined)); 
+        toast({
+          title: "Continuing as Guest",
+          description: "You'll be chatting with Talkzii (default).",
+        });
+      } catch (error) {
+        console.error("Error clearing guest localStorage", error);
+        // Still navigate even if localStorage fails
+      }
+      router.push('/chat');
+      return;
+    }
+
+    // Logged-in user logic
     if (!selectedPersona) {
         toast({ title: "Select a Persona", description: "Please select a persona to chat with." });
         return;
@@ -113,9 +141,8 @@ export default function AIPersonaPage() {
     }
 
     try {
-      // Check if persona actually changed from what was loaded
       if (previousSavedPersona !== selectedPersona) {
-        const currentChatHistoryKey = getChatHistoryKey(user?.id); // Get chat key for current user/guest
+        const currentChatHistoryKey = getChatHistoryKey(user.id); 
         localStorage.removeItem(currentChatHistoryKey);
         toast({
           title: "Persona Changed",
@@ -123,39 +150,26 @@ export default function AIPersonaPage() {
         });
       }
 
-      // Save the new persona choice
       if (selectedPersona === 'default') {
         localStorage.removeItem(AI_FRIEND_TYPE_KEY);
       } else {
         localStorage.setItem(AI_FRIEND_TYPE_KEY, selectedPersona);
       }
     } catch (error) {
-      console.error("Error during persona confirmation/localStorage operations", error);
+      console.error("Error during persona confirmation/localStorage operations for user", error);
       toast({
         title: "Error",
         description: "Could not save your persona preference or clear chat history.",
         variant: "destructive"
       });
-      return; // Don't navigate if there was an error
+      return; 
     }
     router.push('/chat');
   };
 
 
-  if (isAuthLoading) {
-    return <LoadingSpinner message="Verifying authentication..." />;
-  }
-
-  if (!user) {
-     // Redirect guests to auth page if they try to access /aipersona directly
-     // as persona selection is tied to a user or a clearly defined guest experience from chat.
-     // However, current setup allows guest selection of 'default' persona here.
-     // For simplicity, we'll allow guest through but their persona choice is fixed to 'default' by ChatInterface if needed.
-     // The AuthContext might redirect them anyway if they land here unauthenticated without prior flow.
-  }
-
-  if (isPersonaLoading) {
-    return <LoadingSpinner message="Loading persona settings..." />;
+  if (isAuthLoading || isPersonaLoading) { // Combined loading state
+    return <LoadingSpinner message={isAuthLoading ? "Verifying authentication..." : "Loading persona settings..."} />;
   }
 
   return (
@@ -206,10 +220,11 @@ export default function AIPersonaPage() {
           {personaOptions.map((persona) => (
             <div
               key={persona.value}
-              onClick={() => setSelectedPersona(persona.value)}
+              onClick={() => handlePersonaSelect(persona.value)}
               className={cn(
-                "flex flex-col gap-3 text-center pb-3 items-center cursor-pointer p-3 rounded-xl border-2 transition-all duration-200 ease-in-out hover:shadow-lg",
-                selectedPersona === persona.value ? 'border-primary ring-2 ring-primary shadow-xl bg-primary/5' : 'border-border bg-card hover:border-primary/50'
+                "flex flex-col gap-3 text-center pb-3 items-center p-3 rounded-xl border-2 transition-all duration-200 ease-in-out hover:shadow-lg",
+                selectedPersona === persona.value ? 'border-primary ring-2 ring-primary shadow-xl bg-primary/5' : 'border-border bg-card hover:border-primary/50',
+                !user && persona.value !== 'default' && 'opacity-70 cursor-not-allowed hover:border-border hover:shadow-none' 
               )}
             >
               <div className="relative px-4 w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40">
@@ -233,11 +248,11 @@ export default function AIPersonaPage() {
         <div className="px-4 py-6 mt-4">
           <Button
             onClick={handleConfirm}
-            disabled={!selectedPersona || isAuthLoading || isPersonaLoading}
+            disabled={(!user && selectedPersona !== 'default') || (user && !selectedPersona) || isAuthLoading || isPersonaLoading}
             className="w-full gradient-button text-lg py-3 rounded-lg shadow-md hover:shadow-lg transition-shadow"
-            aria-label="Confirm persona selection and start chatting"
+            aria-label={user ? "Confirm persona selection and start chatting" : "Chat with Talkzii (Default)"}
           >
-            Confirm & Chat
+            {user ? "Confirm & Chat" : "Chat with Talkzii (Default)"}
           </Button>
         </div>
       </div>

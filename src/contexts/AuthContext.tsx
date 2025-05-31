@@ -151,11 +151,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       // If logged in and on other pages (like /chat, /aipersona, /), no automatic redirect needed from here.
     } else { // User is NOT logged in (guest)
-      if (pathname === '/aipersona') {
-        // If guest tries to access /aipersona (which requires login for persona selection tied to a user), redirect to auth.
-        router.push('/auth');
-      }
-      // Guests are allowed on /chat and the homepage (/) without redirection.
+      // Guests are allowed on /chat, /aipersona and the homepage (/) without redirection.
+      // The /aipersona page itself will handle guest limitations.
     }
   }, [session, pathname, router, isAuthLoading, isProfileLoading]);
 
