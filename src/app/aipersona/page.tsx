@@ -103,7 +103,7 @@ export default function AIPersonaPage() {
       <header className="sticky top-0 z-20 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 max-w-5xl mx-auto items-center justify-between px-4">
           <Link href="/" passHref>
-            <Logo className="h-7 w-auto" />
+            <Logo className="h-6 w-auto" />
           </Link>
           <div className="flex items-center space-x-1 sm:space-x-2">
             <Button variant="ghost" size="icon" asChild title="Home">
