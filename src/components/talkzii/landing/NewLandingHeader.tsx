@@ -28,16 +28,13 @@ export function NewLandingHeader() {
     } else {
       router.push('/auth');
     }
-    setIsMobileMenuOpen(false); // Close mobile menu if open
+    setIsMobileMenuOpen(false); 
   };
 
   const handleNavLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    e.preventDefault(); 
-    const targetElement = document.querySelector(href);
-    if (targetElement) {
-      targetElement.scrollIntoView({ behavior: 'smooth' });
-    }
-    setIsMobileMenuOpen(false);
+    // Allow default browser navigation to the anchor href
+    // The scroll-behavior: smooth in globals.css and scroll-mt on sections will handle the offset
+    setIsMobileMenuOpen(false); // Close mobile menu if open
   };
 
   return (
@@ -52,7 +49,7 @@ export function NewLandingHeader() {
           {navLinks.map((link) => (
             <a
               key={link.label}
-              href={link.href}
+              href={link.href} // Native anchor link
               onClick={(e) => handleNavLinkClick(e, link.href)}
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary cursor-pointer"
             >
@@ -89,7 +86,7 @@ export function NewLandingHeader() {
                 {navLinks.map((link) => (
                   <a
                     key={link.label}
-                    href={link.href}
+                    href={link.href} // Native anchor link
                     onClick={(e) => handleNavLinkClick(e, link.href)}
                     className="text-base font-medium text-foreground transition-colors hover:text-primary py-2 cursor-pointer"
                   >
