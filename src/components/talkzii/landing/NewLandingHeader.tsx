@@ -73,8 +73,7 @@ export function NewLandingHeader() {
           <Button
             onClick={handleGetStarted}
             size="sm"
-            variant="outline"
-            className="mr-2 rounded-full px-4 py-2 text-primary border-primary hover:bg-primary/10"
+            className="mr-2 rounded-full px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90"
           >
             Get Started
           </Button>

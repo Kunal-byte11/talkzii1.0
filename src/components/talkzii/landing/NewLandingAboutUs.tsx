@@ -6,17 +6,17 @@ import Image from "next/image";
 export function NewLandingAboutUs() {
   const teamMembers = [
     {
-      name: "Mr Kunal Dubey",
+      name: " Kunal Dubey",
       title: "Founder & CEO",
       description: "Visionary leader driving Talkzii's mission to foster meaningful connections through AI.",
-      imageUrl: "https://placehold.co/120x120.png",
+      imageUrl: "/icons/assets/kunal1.jpg",
       imageHint: "man portrait",
     },
     {
       name: "Vedant Ghodki",
-      title: "Co-Founder & CTO",
+      title: "Co-founder & CTO",
       description: "Architecting the innovative technology that powers Talkzii's empathetic conversations.",
-      imageUrl: "https://placehold.co/120x120.png",
+      imageUrl: "/icons/assets/vedant.jpg",
       imageHint: "man portrait",
     },
   ];
@@ -53,7 +53,7 @@ export function NewLandingAboutUs() {
       <div className="mt-12 text-left">
         <div className="flex flex-col items-start mb-10">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-                Meet Our Team
+                Peoples
             </h2>
             <div className="h-1 w-24 bg-primary rounded-full"></div>
         </div>
@@ -71,7 +71,7 @@ export function NewLandingAboutUs() {
                 />
               </div>
               <h3 className="text-xl font-bold text-foreground">{member.name}</h3>
-              <p className="text-sm text-primary font-medium">{member.title}</p>
+              <p className="text-sm text-bold font-medium">{member.title}</p>
               <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{member.description}</p>
             </div>
           ))}
