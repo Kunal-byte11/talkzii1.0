@@ -2,12 +2,11 @@
 "use client";
 
 import { Logo } from '@/components/talkzi/Logo';
-// Button component is no longer needed here
-// import { useRouter } from 'next/navigation';
-// import { useAuth } from '@/contexts/AuthContext';
-import Link from 'next/link'; // Keep Link for logo
+import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import Link from 'next/link';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button'; // Keep for SheetTrigger
 import { Menu } from 'lucide-react';
 import { useState } from 'react';
 
@@ -19,18 +18,18 @@ const navLinks = [
 ];
 
 export function NewLandingHeader() {
-  // const router = useRouter(); // Not needed directly anymore
-  // const { user } = useAuth(); // Not needed directly anymore
+  const router = useRouter();
+  const { user } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // const handleGetStarted = () => { // This logic will be moved to individual sections
-  //   if (user) {
-  //     router.push('/aipersona');
-  //   } else {
-  //     router.push('/auth');
-  //   }
-  //   setIsMobileMenuOpen(false);
-  // };
+  const handleGetStarted = () => {
+    if (user) {
+      router.push('/aipersona');
+    } else {
+      router.push('/auth');
+    }
+    setIsMobileMenuOpen(false); // Close mobile menu if open
+  };
 
   const handleNavLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault(); 
@@ -60,11 +59,25 @@ export function NewLandingHeader() {
               {link.label}
             </a>
           ))}
-          {/* "Get Started" Button removed from here */}
+          <Button
+            onClick={handleGetStarted}
+            size="sm"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-4 py-2"
+          >
+            Get Started
+          </Button>
         </nav>
 
         {/* Mobile Navigation Trigger */}
-        <div className="md:hidden">
+        <div className="md:hidden flex items-center">
+          <Button
+            onClick={handleGetStarted}
+            size="sm"
+            variant="outline"
+            className="mr-2 rounded-full px-4 py-2 text-primary border-primary hover:bg-primary/10"
+          >
+            Get Started
+          </Button>
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -84,7 +97,6 @@ export function NewLandingHeader() {
                     {link.label}
                   </a>
                 ))}
-                {/* "Get Started" Button removed from mobile menu as well, will be in sections */}
               </div>
             </SheetContent>
           </Sheet>

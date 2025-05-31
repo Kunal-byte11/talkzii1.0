@@ -2,9 +2,7 @@
 "use client";
 
 import { personaOptions as allPersonas } from '@/lib/personaOptions';
-import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
+// Removed Button, useRouter, useAuth
 
 const features = [
   {
@@ -22,20 +20,11 @@ const features = [
 ];
 
 export function NewLandingFeatures() {
-  const router = useRouter();
-  const { user } = useAuth();
-
-  const handleGetStarted = () => {
-    if (user) {
-      router.push('/aipersona');
-    } else {
-      router.push('/auth');
-    }
-  };
+  // Removed handleGetStarted function
 
   return (
-    <div id="features-section" className="flex flex-col gap-10 px-4 py-10 @container scroll-mt-20 text-center"> {/* Added text-center for button */}
-      <div className="flex flex-col gap-4 text-left"> {/* Keep text left for section header */}
+    <div id="features-section" className="flex flex-col gap-10 px-4 py-10 @container scroll-mt-20 text-center">
+      <div className="flex flex-col gap-4 text-left">
         <h1 className="text-foreground tracking-light text-[32px] font-bold leading-tight @[480px]:text-4xl @[480px]:font-black @[480px]:leading-tight @[480px]:tracking-[-0.033em] max-w-[720px]">
           Key Features
         </h1>
@@ -44,7 +33,7 @@ export function NewLandingFeatures() {
         </p>
       </div>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-3 text-left"> {/* Keep text left for features */}
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-3 text-left">
         {features.map((feature, index) => (
           <div
             key={index}
@@ -66,15 +55,7 @@ export function NewLandingFeatures() {
           </div>
         ))}
       </div>
-      <div className="mt-6"> {/* Container for the button, centered */}
-        <Button
-            onClick={handleGetStarted}
-            size="default"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6 py-2.5"
-        >
-            Get Started
-        </Button>
-      </div>
+      {/* "Get Started" Button removed from here */}
     </div>
   );
 }
