@@ -5,23 +5,24 @@ import { Logo } from '@/components/talkzi/Logo';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import Link from 'next/link'; // Keep for desktop logo link
+import Link from 'next/link'; 
 
-// Use the new MenuContainer and MenuItem for the stack menu
 import { MenuContainer, MenuItem } from '@/components/ui/fluid-menu'; 
 import {
   Menu as MenuIconLucide,
   X,
   LayoutGrid, 
-  Users as UsersIcon, 
   Heart as HeartIcon, 
   Mail as MailIcon, 
+  Info,
+  UsersRound,
 } from 'lucide-react';
 
 
 const navLinks = [
   { href: '#features-section', label: 'Features', icon: <LayoutGrid size={18} strokeWidth={1.5} /> },
-  { href: '#about-us-section', label: 'About Us', icon: <UsersIcon size={18} strokeWidth={1.5} /> },
+  { href: '#about-us-section', label: 'About Us', icon: <Info size={18} strokeWidth={1.5} /> },
+  { href: '#peoples-subsection', label: 'Peoples', icon: <UsersRound size={18} strokeWidth={1.5} /> },
   { href: '#values-section', label: 'Our Values', icon: <HeartIcon size={18} strokeWidth={1.5} /> },
   { href: '#footer-contact', label: 'Contact', icon: <MailIcon size={18} strokeWidth={1.5} /> },
 ];
@@ -36,16 +37,12 @@ export function NewLandingHeader() {
     } else {
       router.push('/auth');
     }
-    // No need to close menu here as this button is outside the mobile menu
   };
 
-  // Simplified nav link click for desktop, relies on native anchor behavior
   const handleDesktopNavLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    // If you want to add specific logic for desktop clicks, do it here.
-    // Otherwise, let the default anchor behavior handle scrolling.
+    // Native anchor behavior will handle scrolling, scroll-margin-top will provide offset.
   };
   
-  // onClick handler for mobile menu items
   const handleMobileNavLinkClick = (href: string) => {
     window.location.hash = href;
     // The MenuContainer will handle closing the menu
@@ -107,7 +104,7 @@ export function NewLandingHeader() {
             {/* Navigation items for the dropdown */}
             {navLinks.map((link) => (
               <MenuItem
-                key={link.href}
+                key={link.href + link.label} // Ensure unique key if hrefs can be same (like here)
                 icon={link.icon}
                 onClick={() => handleMobileNavLinkClick(link.href)}
                 aria-label={link.label}
