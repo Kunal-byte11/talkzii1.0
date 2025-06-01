@@ -39,18 +39,19 @@ export function NewLandingHeader() {
     }
   };
 
+  // For desktop navigation links - direct href click
   const handleDesktopNavLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    // Native anchor behavior will handle scrolling, scroll-margin-top will provide offset.
-    // No prevention needed.
+    // Native anchor behavior will handle scrolling.
+    // The scroll-mt-20 on sections should handle the offset.
   };
 
-  const handleMobileNavLinkClick = (href: string) => {
-    const targetId = href.substring(1); // Remove #
-    const targetElement = document.getElementById(targetId);
-    if (targetElement) {
-      targetElement.scrollIntoView({ behavior: 'smooth' });
+  // For mobile navigation items - JS smooth scroll
+  const handleMobileNavLinkClick = (hash: string) => {
+    const el = document.querySelector(hash);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
     }
-    // The menu closing is handled by MenuContainer's wrapper around onClick
+    // The MenuContainer's onClick wrapper (in fluid-menu.tsx) will handle closing the menu.
   };
   
 
@@ -82,7 +83,7 @@ export function NewLandingHeader() {
           </Button>
         </nav>
 
-        {/* Mobile Navigation - New Stack Menu */}
+        {/* Mobile Navigation - Stack Menu */}
         <div className="md:hidden flex items-center space-x-2">
            <Button
             onClick={handleGetStarted}
@@ -114,7 +115,7 @@ export function NewLandingHeader() {
                 icon={link.icon}
                 onClick={() => handleMobileNavLinkClick(link.href)} // Use JS scroll
                 aria-label={link.label}
-                // No href prop here, so MenuItem renders as a button
+                // NO href prop here, so it renders as a button
               >
                 {link.label}
               </MenuItem>
