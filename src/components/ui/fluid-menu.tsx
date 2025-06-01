@@ -13,8 +13,6 @@ import React, {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useOnClickOutside } from "@/hooks/useOnClickOutside";
-// X icon from lucide-react is not used in this version, so import can be removed if not needed by MenuItem directly.
-// Assuming MenuItem itself doesn't import/use X for its own internal purposes.
 
 interface MenuContextType {
   isOpen: boolean;
@@ -38,7 +36,6 @@ export const MenuContainer: React.FC<MenuContainerProps> = ({
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu = () => setIsOpen(false);
 
-  // useOnClickOutside hook will close the menu when clicking outside of menuRef
   useOnClickOutside(menuRef, () => {
     if (isOpen) {
       closeMenu();
@@ -55,7 +52,6 @@ export const MenuContainer: React.FC<MenuContainerProps> = ({
         {/* Render Toggle Item */}
         {toggleItem && cloneElement(toggleItem as React.ReactElement<any>, { 
           isToggle: true, 
-          // onClick is handled by MenuItem's internal handleClick based on isToggle
         })}
 
         <AnimatePresence>
@@ -66,18 +62,17 @@ export const MenuContainer: React.FC<MenuContainerProps> = ({
               exit={{ opacity: 0, y: -10, height: 0 }}
               transition={{ duration: 0.2, ease: "circOut" }}
               className="absolute top-full right-0 mt-2 w-56 bg-background border border-border rounded-lg shadow-xl z-20 overflow-hidden"
-              id="mobile-menu-dropdown" // Ensure this ID is unique or contextually appropriate
+              id="mobile-menu-dropdown"
             >
               <ul className="py-1">
                 {menuItems.map((child, index) => (
                    <li key={child.key !== null && child.key !== undefined ? child.key : index} className="block">
                     {cloneElement(child as React.ReactElement<any>, {
-                      // Wrap the original onClick to also close the menu after a delay
                       onClick: (event?: React.MouseEvent<HTMLElement>) => {
                         if (child.props.onClick) {
-                          child.props.onClick(event); // Execute original onClick (e.g., navigation)
+                          child.props.onClick(event);
                         }
-                        setTimeout(() => { // Delay allows navigation/action to initiate
+                        setTimeout(() => {
                           closeMenu();
                         }, 150); 
                       },
@@ -96,10 +91,10 @@ export const MenuContainer: React.FC<MenuContainerProps> = ({
 interface MenuItemProps {
   icon?: React.ReactNode;
   onClick?: (event?: React.MouseEvent<HTMLElement>) => void;
-  href?: string; // href is used by MenuItem to render as <a> or <button>
+  href?: string; 
   className?: string;
-  isToggle?: boolean; // To identify the toggle button
-  children?: React.ReactNode; // For text label
+  isToggle?: boolean;
+  children?: React.ReactNode; 
   'aria-label'?: string;
 }
 
@@ -117,20 +112,17 @@ export const MenuItem: React.FC<MenuItemProps> = ({
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     if (isToggle && context?.toggleMenu) {
       context.toggleMenu();
-      event.stopPropagation(); // Prevent event from bubbling if it's the toggle
+      event.stopPropagation();
     } else if (onClick) {
-      onClick(event); // For non-toggle items, their specific onClick is called
-                      // Menu closing is handled by MenuContainer's wrapper
+      onClick(event);
     }
-    // If it's a simple href link without a specific onClick,
-    // MenuContainer's wrapper handles closing.
   };
 
   const commonClasses = cn(
     "flex items-center w-full text-sm text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:bg-muted/60",
     isToggle 
-      ? "p-2 rounded-md justify-center hover:bg-muted/50 transition-colors" // Toggle button styling
-      : "px-3 py-2.5 hover:bg-muted/50 gap-3 transition-colors", // Standard item styling
+      ? "p-2 rounded-md justify-center hover:bg-muted/50 transition-colors" 
+      : "px-3 py-2.5 hover:bg-muted/50 gap-3 transition-colors", 
     className
   );
 
@@ -142,28 +134,26 @@ export const MenuItem: React.FC<MenuItemProps> = ({
   );
 
   if (isToggle) {
-    // Toggle button
     return (
       <button 
         type="button" 
         className={commonClasses}
         onClick={handleClick}
         aria-expanded={context?.isOpen}
-        aria-controls={isToggle ? "mobile-menu-dropdown" : undefined} // ID of the panel
+        aria-controls={isToggle ? "mobile-menu-dropdown" : undefined}
         aria-label={ariaLabel || "Toggle navigation menu"}
       >
-        {icon} {/* Icon for the toggle, e.g., animated hamburger/X */}
+        {icon} 
       </button>
     );
   }
 
-  // Regular menu item (link or button)
-  if (href) { // If href is present, render as an anchor tag
+  if (href) { 
     return (
       <a 
         href={href} 
         className={commonClasses}
-        onClick={handleClick} // Still call handleClick for potential context interactions or if original onClick needs to run
+        onClick={handleClick} 
         aria-label={ariaLabel || (typeof children === 'string' ? children : "Menu item")}
       >
         {content}
@@ -171,7 +161,6 @@ export const MenuItem: React.FC<MenuItemProps> = ({
     );
   }
 
-  // Default to button if not a toggle and no href
   return ( 
     <button 
       type="button" 
@@ -183,5 +172,3 @@ export const MenuItem: React.FC<MenuItemProps> = ({
     </button>
   );
 };
-
-    

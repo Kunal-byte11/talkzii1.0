@@ -39,24 +39,22 @@ export function NewLandingHeader() {
     }
   };
 
-  // For desktop navigation links - direct href click
   const handleDesktopNavLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     // Native anchor behavior will handle scrolling.
-    // The scroll-mt-20 on sections should handle the offset.
   };
 
   const handleMobileNavLinkClick = (hash: string) => {
+    const header = document.getElementById('landing-page-header');
+    let headerOffset = 72; // Default offset, approx h-16 (64px) + some buffer
+    if (header) {
+      headerOffset = header.offsetHeight;
+    }
+
     const el = document.querySelector(hash);
     if (el) {
-      const header = document.getElementById('landing-page-header');
-      let headerOffset = 72; // Default offset if header not found or for some buffer (approx h-16 + some padding)
-      if (header) {
-        headerOffset = header.offsetHeight;
-      }
-  
       const elementPosition = el.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.scrollY - headerOffset;
-  
+
       window.scrollTo({
         top: offsetPosition,
         behavior: 'smooth'
@@ -68,7 +66,7 @@ export function NewLandingHeader() {
 
   return (
     <header 
-      id="landing-page-header" // Added ID here
+      id="landing-page-header"
       className="bg-background/95 sticky top-0 z-50 w-full border-b border-border/40 backdrop-blur supports-[backdrop-filter]:bg-background/60"
     >
       <div className="container mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -127,7 +125,7 @@ export function NewLandingHeader() {
               <MenuItem
                 key={link.href + link.label} 
                 icon={link.icon}
-                onClick={() => handleMobileNavLinkClick(link.href)}
+                onClick={() => handleMobileNavLinkClick(link.href)} // No href prop, rely on onClick
                 aria-label={link.label}
               >
                 {link.label}
@@ -139,4 +137,3 @@ export function NewLandingHeader() {
     </header>
   );
 }
-
