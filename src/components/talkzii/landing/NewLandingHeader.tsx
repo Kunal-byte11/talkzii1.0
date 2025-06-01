@@ -43,10 +43,6 @@ export function NewLandingHeader() {
     // Native anchor behavior will handle scrolling, scroll-margin-top will provide offset.
   };
   
-  const handleMobileNavLinkClick = (href: string) => {
-    window.location.hash = href;
-    // The MenuContainer will handle closing the menu
-  };
 
   return (
     <header className="bg-background/95 sticky top-0 z-50 w-full border-b border-border/40 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -104,10 +100,11 @@ export function NewLandingHeader() {
             {/* Navigation items for the dropdown */}
             {navLinks.map((link) => (
               <MenuItem
-                key={link.href + link.label} // Ensure unique key if hrefs can be same (like here)
+                key={link.href + link.label} 
                 icon={link.icon}
-                onClick={() => handleMobileNavLinkClick(link.href)}
+                href={link.href} // Added href prop
                 aria-label={link.label}
+                // Removed onClick that called handleMobileNavLinkClick
               >
                 {link.label}
               </MenuItem>
@@ -118,3 +115,4 @@ export function NewLandingHeader() {
     </header>
   );
 }
+
