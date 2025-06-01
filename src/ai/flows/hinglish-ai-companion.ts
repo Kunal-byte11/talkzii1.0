@@ -63,7 +63,7 @@ const hinglishCompanionPrompt = ai.definePrompt({
   name: 'hinglishCompanionPrompt',
   input: { schema: PromptInputSchema },
   output: { schema: z.object({ response: z.string() }) },
-  model: 'googleai/gemma-7b-it', // Changed to Gemma model
+  model: 'googleai/gemini-1.5-flash-latest', // Changed from gemma-7b-it
   prompt: `
 You are Talkzii — a warm, caring AI friend for Gen Z Indians. You communicate in natural, heartfelt Hinglish, using relatable desi slang and culturally aware expressions. Use emojis and casual slang to make your responses feel real, comforting, and uplifting. Your primary goal is emotional support.
 
@@ -148,7 +148,7 @@ User: {{message}}
 AI:
   `,
   config: {
-    temperature: 0.0, // Using 0.0 for more deterministic responses with personas.
+    temperature: 0.0,
     safetySettings: [
       { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
@@ -175,7 +175,7 @@ export const hinglishAICompanion = ai.defineFlow(
     let formattedHistory = '';
     if (input.history && input.history.length > 0) {
       formattedHistory = input.history
-        .slice(-6)
+        .slice(-6) 
         .map(turn => `${turn.role === 'user' ? 'User' : 'AI'}: ${turn.content}`)
         .join('\n');
     }

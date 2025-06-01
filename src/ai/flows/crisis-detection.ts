@@ -31,7 +31,7 @@ const prompt = ai.definePrompt({
   name: 'detectCrisisPrompt',
   input: {schema: DetectCrisisInputSchema},
   output: {schema: DetectCrisisOutputSchema},
-  model: 'googleai/gemma-7b-it', // Model moved to top level and changed to Gemma
+  model: 'googleai/gemini-1.5-flash-latest', // Changed from gemma-7b-it
   prompt: `You are an AI assistant. Your previous role involved detecting crisis cues in user messages.
 This specific crisis intervention messaging is no longer handled by this part of the system.
 
