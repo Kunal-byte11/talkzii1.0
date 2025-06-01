@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react'; // Added useState
+import React, { useState } from 'react';
 import { Logo } from '@/components/talkzi/Logo';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -23,14 +23,14 @@ import {
   Heart as HeartIcon, 
   Mail as MailIcon, 
   Info,
-  // UsersRound, // "Peoples" link was removed
+  // UsersRound, // "Peoples" link was removed as per user instruction
 } from 'lucide-react';
 
 
 const navLinks = [
   { href: '#features-section', label: 'Features', icon: <LayoutGrid size={18} strokeWidth={1.5} /> },
   { href: '#about-us-section', label: 'About Us', icon: <Info size={18} strokeWidth={1.5} /> },
-  // { href: '#peoples-subsection', label: 'Peoples', icon: <UsersRound size={18} strokeWidth={1.5} /> }, // Reverted
+  // { href: '#peoples-subsection', label: 'Peoples', icon: <UsersRound size={18} strokeWidth={1.5} /> }, // Removed
   { href: '#values-section', label: 'Our Values', icon: <HeartIcon size={18} strokeWidth={1.5} /> },
   { href: '#footer-contact', label: 'Contact', icon: <MailIcon size={18} strokeWidth={1.5} /> },
 ];
@@ -48,37 +48,37 @@ export function NewLandingHeader() {
     }
   };
 
+  // For Desktop: Let native anchor behavior handle scrolling.
+  // The 'scroll-mt-20' or similar on target elements will provide the offset.
   const handleDesktopNavLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    // Native anchor behavior will handle scrolling.
-    // If issues persist, similar JS scrolling could be used here too.
-    const el = document.querySelector(href);
-    if (el) {
-        e.preventDefault(); // Prevent default anchor jump
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    // e.preventDefault(); // Removed: Let browser handle default scroll for href
+    // const elementId = href.substring(1);
+    // const element = document.getElementById(elementId);
+    // if (element) {
+    //   element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // }
+    // No JavaScript scrolling needed here; browser handles href.
   };
 
   const handleMobileNavLinkClick = (hash: string) => {
-    // hash will be like '#features-section'
     const id = hash.substring(1); // remove the '#'
     const element = document.getElementById(id);
 
     if (element) {
-      // The 'scroll-mt-20' class on the target element provides a scroll-margin-top.
+      // The 'scroll-mt-20' (or similar) class on the target element provides a scroll-margin-top.
       // 'block: 'start'' ensures the top of the element (after margin) aligns with the top of the viewport.
       element.scrollIntoView({
         behavior: 'smooth',
         block: 'start'
       });
     }
-    // The DropdownMenu will close itself after this onClick handler completes.
-    setMobileMenuOpen(false); // Explicitly close menu
+    // The DropdownMenu will close itself via onOpenChange.
   };
   
 
   return (
     <header 
-      id="landing-page-header" // ID for potential offset calculation if needed
+      id="landing-page-header"
       className="bg-background/95 sticky top-0 z-50 w-full border-b border-border/40 backdrop-blur supports-[backdrop-filter]:bg-background/60"
     >
       <div className="container mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -91,8 +91,8 @@ export function NewLandingHeader() {
           {navLinks.map((link) => (
             <a
               key={link.label}
-              href={link.href}
-              onClick={(e) => handleDesktopNavLinkClick(e, link.href)}
+              href={link.href} // Native href will handle scrolling
+              onClick={(e) => handleDesktopNavLinkClick(e, link.href)} // onClick can be used for other purposes if needed
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary cursor-pointer"
             >
               {link.label}
@@ -125,14 +125,35 @@ export function NewLandingHeader() {
                 className="p-2 rounded-md justify-center hover:bg-muted/50 transition-colors"
                 aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               >
-                {mobileMenuOpen ? <X size={22} strokeWidth={2} /> : <MenuIconLucide size={22} strokeWidth={2} />}
+                {/* Animated Hamburger/X Icon */}
+                <div className="relative w-6 h-6 flex items-center justify-center">
+                  <MenuIconLucide
+                    size={22}
+                    strokeWidth={2}
+                    className={cn(
+                      "absolute transition-all duration-300 ease-in-out",
+                      mobileMenuOpen ? "opacity-0 rotate-90 scale-50" : "opacity-100 rotate-0 scale-100"
+                    )}
+                  />
+                  <X
+                    size={22}
+                    strokeWidth={2}
+                    className={cn(
+                      "absolute transition-all duration-300 ease-in-out",
+                      mobileMenuOpen ? "opacity-100 rotate-0 scale-100" : "opacity-0 -rotate-90 scale-50"
+                    )}
+                  />
+                </div>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-background border-border shadow-xl z-[60]"> {/* Increased z-index */}
+            <DropdownMenuContent align="end" className="w-56 bg-background border-border shadow-xl z-[60]">
               {navLinks.map((link) => (
                 <DropdownMenuItem
                   key={link.label}
-                  onClick={() => handleMobileNavLinkClick(link.href)}
+                  onClick={() => {
+                    handleMobileNavLinkClick(link.href);
+                    // DropdownMenu's onOpenChange will set mobileMenuOpen to false
+                  }}
                   className="flex items-center gap-3 px-3 py-2.5 text-sm text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
                   aria-label={link.label}
                 >
