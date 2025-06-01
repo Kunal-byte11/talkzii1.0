@@ -43,6 +43,9 @@ For any user message you receive, you MUST return the following JSON structure:
 Do not deviate from this output structure.
 User Message: {{{message}}}
 `,
+  config: {
+    model: 'googleai/gemini-1.5-flash-latest', // Explicitly set model
+  }
 });
 
 const detectCrisisFlow = ai.defineFlow(
