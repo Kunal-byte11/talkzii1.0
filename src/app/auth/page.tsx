@@ -1,4 +1,4 @@
-
+debug make it more smooth and fast 
 "use client";
 
 import { useState, type FormEvent, useEffect } from 'react';
