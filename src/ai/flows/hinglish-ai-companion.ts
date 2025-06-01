@@ -18,9 +18,9 @@ const ChatTurnSchema = z.object({
 const HinglishAICompanionInputSchema = z.object({
   message: z.string().describe('User message in Hinglish.'),
   aiFriendType: z
-    .enum(['default', 'wise_dadi', 'chill_bro', 'geeky_bhai', 'flirty_diva', 'cheeky_lad']) // Updated personas
+    .enum(['default', 'wise_dadi', 'chill_bro', 'geeky_bhai', 'flirty_diva', 'cheeky_lad']) 
     .optional()
-    .default('default') // Ensure default if not provided
+    .default('default') 
     .describe('Chosen AI friend persona.'),
   userGender: z.enum(['male', 'female']).optional().describe('User gender, if known.'),
   history: z.array(ChatTurnSchema).optional().describe('Recent conversation history.'),
@@ -162,7 +162,7 @@ Conversation History:
 User: {{message}}
 AI:`,
   config: {
-    model: 'gemini-pro', 
+    model: 'googleai/gemini-1.5-flash-latest', 
     safetySettings: [
       { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
@@ -191,7 +191,7 @@ export const hinglishAICompanion = ai.defineFlow(
     // STEP 2: Format Conversation History
     let formattedHistory = '';
     if (input.history && input.history.length > 0) {
-      const historyToConsider = input.history.slice(-6);
+      const historyToConsider = input.history.slice(-6); // Consider last 6 turns
       formattedHistory = historyToConsider
         .map(turn => `${turn.role === 'user' ? 'User' : 'AI'}: ${turn.content}`)
         .join('\n') + '\n'; 
@@ -230,4 +230,3 @@ export const hinglishAICompanion = ai.defineFlow(
     }
   }
 );
-
