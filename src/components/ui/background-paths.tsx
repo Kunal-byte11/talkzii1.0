@@ -86,12 +86,7 @@ export function BackgroundPaths({
             </div>
 
             <div className="relative z-10 container mx-auto px-4 md:px-6 text-center">
-                <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }} 
-                    className="max-w-4xl mx-auto"
-                >
+                <div className="max-w-4xl mx-auto">
                     <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-4 sm:mb-6 tracking-tight">
                         {words.map((word, wordIndex) => (
                             <span
@@ -134,7 +129,7 @@ export function BackgroundPaths({
                             variant="ghost"
                             onClick={finalCtaClick}
                             className={cn(
-                                "rounded-[1.15rem] px-6 py-3 sm:px-8 sm:py-4 text-sm sm:text-base font-semibold backdrop-blur-md", // Adjusted text size for base
+                                "rounded-[1.15rem] px-6 py-3 sm:px-8 sm:py-4 text-sm sm:text-base font-semibold backdrop-blur-md", 
                                 "bg-card/95 hover:bg-card text-card-foreground",
                                 "transition-all duration-300 group-hover:-translate-y-0.5 border border-border",
                                 "hover:shadow-md"
@@ -151,7 +146,7 @@ export function BackgroundPaths({
                             </span>
                         </Button>
                     </div>
-                </motion.div>
+                </div>
             </div>
         </div>
     );
