@@ -5,11 +5,10 @@ import { Logo } from '@/components/talkzi/Logo';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import Link from 'next/link';
-import { useState } from 'react';
+import Link from 'next/link'; // Keep for desktop logo link
 
-// NEW IMPORTS for Fluid Menu
-import { MenuContainer, MenuItem } from '@/components/ui/fluid-menu';
+// Use the new MenuContainer and MenuItem for the stack menu
+import { MenuContainer, MenuItem } from '@/components/ui/fluid-menu'; 
 import {
   Menu as MenuIconLucide,
   X,
@@ -21,18 +20,15 @@ import {
 
 
 const navLinks = [
-  { href: '#features-section', label: 'Features', icon: <LayoutGrid size={20} strokeWidth={1.5} /> },
-  { href: '#about-us-section', label: 'About Us', icon: <UsersIcon size={20} strokeWidth={1.5} /> },
-  { href: '#values-section', label: 'Our Values', icon: <HeartIcon size={20} strokeWidth={1.5} /> },
-  { href: '#footer-contact', label: 'Contact', icon: <MailIcon size={20} strokeWidth={1.5} /> },
+  { href: '#features-section', label: 'Features', icon: <LayoutGrid size={18} strokeWidth={1.5} /> },
+  { href: '#about-us-section', label: 'About Us', icon: <UsersIcon size={18} strokeWidth={1.5} /> },
+  { href: '#values-section', label: 'Our Values', icon: <HeartIcon size={18} strokeWidth={1.5} /> },
+  { href: '#footer-contact', label: 'Contact', icon: <MailIcon size={18} strokeWidth={1.5} /> },
 ];
 
 export function NewLandingHeader() {
   const router = useRouter();
   const { user } = useAuth();
-  // isMobileMenuOpen state might not be directly needed by MenuContainer if it manages its own state
-  // but can be kept if other logic depends on it, or removed.
-  // const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
 
   const handleGetStarted = () => {
     if (user) {
@@ -40,12 +36,19 @@ export function NewLandingHeader() {
     } else {
       router.push('/auth');
     }
-    // setIsMobileMenuOpen(false); // Close menu if it was open, handled by fluid menu itself
+    // No need to close menu here as this button is outside the mobile menu
   };
 
-  const handleNavLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    // For desktop, allow native anchor navigation
-    // For mobile fluid menu, its internal onClick on MenuItem (if it's a link) will handle closing
+  // Simplified nav link click for desktop, relies on native anchor behavior
+  const handleDesktopNavLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    // If you want to add specific logic for desktop clicks, do it here.
+    // Otherwise, let the default anchor behavior handle scrolling.
+  };
+  
+  // onClick handler for mobile menu items
+  const handleMobileNavLinkClick = (href: string) => {
+    window.location.hash = href;
+    // The MenuContainer will handle closing the menu
   };
 
   return (
@@ -61,7 +64,7 @@ export function NewLandingHeader() {
             <a
               key={link.label}
               href={link.href}
-              onClick={(e) => handleNavLinkClick(e, link.href)}
+              onClick={(e) => handleDesktopNavLinkClick(e, link.href)}
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary cursor-pointer"
             >
               {link.label}
@@ -76,7 +79,7 @@ export function NewLandingHeader() {
           </Button>
         </nav>
 
-        {/* Mobile Navigation - Fluid Menu */}
+        {/* Mobile Navigation - New Stack Menu */}
         <div className="md:hidden flex items-center space-x-2">
            <Button
             onClick={handleGetStarted}
@@ -86,28 +89,31 @@ export function NewLandingHeader() {
             Get Started
           </Button>
           
-          <MenuContainer itemOffset={65} startAngle={-90} className="relative z-50">
-            <MenuItem
-              key="toggle"
+          <MenuContainer className="relative z-50">
+            <MenuItem 
+              isToggle={true}
               aria-label="Toggle navigation menu"
               icon={
-                <div className="relative w-6 h-6">
-                  <div className="absolute inset-0 transition-all duration-300 ease-in-out origin-center opacity-100 scale-100 rotate-0 [div[data-expanded=true]_&]:opacity-0 [div[data-expanded=true]_&]:scale-0 [div[data-expanded=true]_&]:rotate-180">
+                <div className="relative w-6 h-6 flex items-center justify-center">
+                  <div className="absolute inset-0 transition-all duration-200 ease-in-out origin-center opacity-100 scale-100 rotate-0 [div[data-expanded=true]_>div>&]:opacity-0 [div[data-expanded=true]_>div>&]:scale-90 [div[data-expanded=true]_>div>&]:-rotate-90">
                     <MenuIconLucide size={22} strokeWidth={2} />
                   </div>
-                  <div className="absolute inset-0 transition-all duration-300 ease-in-out origin-center opacity-0 scale-0 -rotate-180 [div[data-expanded=true]_&]:opacity-100 [div[data-expanded=true]_&]:scale-100 [div[data-expanded=true]_&]:rotate-0">
+                  <div className="absolute inset-0 transition-all duration-200 ease-in-out origin-center opacity-0 scale-90 rotate-90 [div[data-expanded=true]_>div>&]:opacity-100 [div[data-expanded=true]_>div>&]:scale-100 [div[data-expanded=true]_>div>&]:rotate-0">
                     <X size={22} strokeWidth={2} />
                   </div>
                 </div>
               }
             />
+            {/* Navigation items for the dropdown */}
             {navLinks.map((link) => (
               <MenuItem
                 key={link.href}
-                href={link.href} 
                 icon={link.icon}
+                onClick={() => handleMobileNavLinkClick(link.href)}
                 aria-label={link.label}
-              />
+              >
+                {link.label}
+              </MenuItem>
             ))}
           </MenuContainer>
         </div>
@@ -115,4 +121,3 @@ export function NewLandingHeader() {
     </header>
   );
 }
-
