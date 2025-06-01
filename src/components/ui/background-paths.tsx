@@ -4,6 +4,8 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 function FloatingPaths({ position }: { position: number }) {
     const paths = Array.from({ length: 36 }, (_, i) => ({
@@ -15,14 +17,13 @@ function FloatingPaths({ position }: { position: number }) {
         } ${343 - i * 6}C${616 - i * 5 * position} ${470 - i * 6} ${
             684 - i * 5 * position
         } ${875 - i * 6} ${684 - i * 5 * position} ${875 - i * 6}`,
-        // color is controlled by parent SVG's text color via stroke="currentColor"
         width: 0.5 + i * 0.03,
     }));
 
     return (
         <div className="absolute inset-0 pointer-events-none">
             <svg
-                className="w-full h-full text-primary" // Use theme's primary color for paths
+                className="w-full h-full text-primary" 
                 viewBox="0 0 696 316"
                 fill="none"
             >
@@ -54,17 +55,31 @@ function FloatingPaths({ position }: { position: number }) {
 
 export function BackgroundPaths({
     title = "Background Paths",
+    subtitle,
     ctaText = "Discover Excellence",
     onCtaClick,
 }: {
     title?: string;
+    subtitle?: string;
     ctaText?: string;
     onCtaClick?: () => void;
 }) {
     const words = title.split(" ");
+    const router = useRouter();
+    const { user } = useAuth();
+
+    const handleDefaultCtaClick = () => {
+        if (user) {
+            router.push('/aipersona');
+        } else {
+            router.push('/auth');
+        }
+    };
+
+    const finalCtaClick = onCtaClick || handleDefaultCtaClick;
 
     return (
-        <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-background text-foreground">
+        <div className="relative min-h-[calc(100vh-4rem)] sm:min-h-screen w-full flex items-center justify-center overflow-hidden bg-background text-foreground py-16">
             <div className="absolute inset-0">
                 <FloatingPaths position={1} />
                 <FloatingPaths position={-1} />
@@ -72,16 +87,16 @@ export function BackgroundPaths({
 
             <div className="relative z-10 container mx-auto px-4 md:px-6 text-center">
                 <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 2 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8 }}
                     className="max-w-4xl mx-auto"
                 >
-                    <h1 className="text-5xl sm:text-7xl md:text-8xl font-bold mb-8 tracking-tighter">
+                    <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 tracking-tight">
                         {words.map((word, wordIndex) => (
                             <span
                                 key={wordIndex}
-                                className="inline-block mr-4 last:mr-0"
+                                className="inline-block mr-2 sm:mr-3 last:mr-0"
                             >
                                 {word.split("").map((letter, letterIndex) => (
                                     <motion.span
@@ -105,6 +120,12 @@ export function BackgroundPaths({
                             </span>
                         ))}
                     </h1>
+                    
+                    {subtitle && (
+                        <p className="text-md sm:text-lg text-muted-foreground mb-10 max-w-2xl mx-auto">
+                            {subtitle}
+                        </p>
+                    )}
 
                     <div
                         className="inline-block group relative bg-gradient-to-b from-foreground/5 to-background/5 
@@ -113,9 +134,9 @@ export function BackgroundPaths({
                     >
                         <Button
                             variant="ghost"
-                            onClick={onCtaClick}
+                            onClick={finalCtaClick}
                             className={cn(
-                                "rounded-[1.15rem] px-8 py-6 text-lg font-semibold backdrop-blur-md",
+                                "rounded-[1.15rem] px-6 py-3 sm:px-8 sm:py-4 text-base sm:text-lg font-semibold backdrop-blur-md",
                                 "bg-card/95 hover:bg-card text-card-foreground",
                                 "transition-all duration-300 group-hover:-translate-y-0.5 border border-border",
                                 "hover:shadow-md"
@@ -125,7 +146,7 @@ export function BackgroundPaths({
                                 {ctaText}
                             </span>
                             <span
-                                className="ml-3 opacity-70 group-hover:opacity-100 group-hover:translate-x-1.5 
+                                className="ml-2 sm:ml-3 opacity-70 group-hover:opacity-100 group-hover:translate-x-1 
                                 transition-all duration-300"
                             >
                                 →

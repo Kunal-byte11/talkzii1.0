@@ -2,10 +2,10 @@
 "use client";
 
 import { NewLandingHeader } from '@/components/talkzii/landing/NewLandingHeader';
-import { NewLandingHero } from '@/components/talkzii/landing/NewLandingHero';
+import { BackgroundPaths } from '@/components/ui/background-paths'; // Import the new hero
 import { NewLandingFeatures } from '@/components/talkzii/landing/NewLandingFeatures';
 import { NewLandingAboutUs } from '@/components/talkzii/landing/NewLandingAboutUs';
-import { NewLandingValues } from '@/components/talkzii/landing/NewLandingValues'; // Import the new component
+import { NewLandingValues } from '@/components/talkzii/landing/NewLandingValues'; 
 import { NewLandingFooter } from '@/components/talkzii/landing/NewLandingFooter';
 
 export default function HomePage() {
@@ -15,10 +15,14 @@ export default function HomePage() {
     >
       <div>
         <NewLandingHeader />
-        <NewLandingHero />
+        <BackgroundPaths 
+          title="Chat with your AI Dost"
+          subtitle="Connect with AI companions for engaging conversations and personalized experiences."
+          ctaText="Explore Talkzii"
+        />
         <NewLandingFeatures />
         <NewLandingAboutUs />
-        <NewLandingValues /> {/* Add the new component here */}
+        <NewLandingValues />
       </div>
       <NewLandingFooter />
     </div>
