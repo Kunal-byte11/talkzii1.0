@@ -31,6 +31,7 @@ const prompt = ai.definePrompt({
   name: 'detectCrisisPrompt',
   input: {schema: DetectCrisisInputSchema},
   output: {schema: DetectCrisisOutputSchema},
+  model: 'googleai/gemma-7b-it', // Model moved to top level and changed to Gemma
   prompt: `You are an AI assistant. Your previous role involved detecting crisis cues in user messages.
 This specific crisis intervention messaging is no longer handled by this part of the system.
 
@@ -43,9 +44,8 @@ For any user message you receive, you MUST return the following JSON structure:
 Do not deviate from this output structure.
 User Message: {{{message}}}
 `,
-  config: {
-    model: 'googleai/gemini-1.5-flash-latest', // Explicitly set model
-  }
+  // Config object can be removed if empty, or used for temperature, safetySettings etc.
+  // For this prompt, default config is fine.
 });
 
 const detectCrisisFlow = ai.defineFlow(
