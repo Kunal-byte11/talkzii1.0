@@ -1,7 +1,7 @@
 
 "use client";
 
-import React from 'react'; // Removed useState as MenuContainer handles its state
+import React from 'react';
 import { Logo } from '@/components/talkzi/Logo';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
-// Import custom MenuContainer and MenuItem
+// Using custom fluid-menu components
 import { MenuContainer, MenuItem } from '@/components/ui/fluid-menu';
 
 import {
@@ -19,7 +19,7 @@ import {
   Heart as HeartIcon,
   Mail as MailIcon,
   Info,
-  // UsersRound, // "Peoples" link removed previously
+  // UsersRound, // Removed as per previous instruction
 } from 'lucide-react';
 
 
@@ -34,7 +34,6 @@ const navLinks = [
 export function NewLandingHeader() {
   const router = useRouter();
   const { user } = useAuth();
-  // mobileMenuOpen state is no longer needed here; MenuContainer handles its own state
 
   const handleGetStarted = () => {
     if (user) {
@@ -52,30 +51,31 @@ export function NewLandingHeader() {
     if (element) {
       element.scrollIntoView({
         behavior: 'smooth',
-        block: 'start'
+        block: 'start' // 'start' should respect scroll-margin-top
       });
     }
   };
 
   const handleMobileNavLinkClick = (hash: string) => {
     const header = document.getElementById('landing-page-header');
-    let headerOffset = 72; // Default offset
-    if (header) {
-      headerOffset = header.offsetHeight;
-    }
+    let headerOffset = header?.offsetHeight || 72; // Default if header not found or height is 0
 
-    const id = hash.substring(1);
+    const id = hash.substring(1); // Remove the '#' to get the actual ID
     const element = document.getElementById(id);
-    if (element) {
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.scrollY - headerOffset;
 
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
+    if (element) {
+      // Wait for the menu to close (animation duration) before scrolling
+      setTimeout(() => {
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.scrollY - headerOffset;
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }, 300); // Delay should ideally match or slightly exceed menu close animation
     }
-    // Menu closing is handled by MenuContainer's wrapper logic with a setTimeout
+    // Menu closing is handled by MenuContainer's wrapper logic with its own setTimeout
   };
 
 
@@ -120,14 +120,14 @@ export function NewLandingHeader() {
             Get Started
           </Button>
 
-          <MenuContainer className="relative z-50"> {/* MenuContainer handles its own open/close state */}
-            {/* Toggle Item: First child of MenuContainer, isToggle prop is handled internally by MenuContainer */}
+          <MenuContainer className="relative z-50">
+            {/* Toggle Item: First child of MenuContainer */}
             <MenuItem
-              isToggle={true} // This prop is now used by MenuItem itself and MenuContainer
+              isToggle={true}
               aria-label="Toggle navigation menu"
               icon={
                 <div className="relative w-6 h-6 flex items-center justify-center">
-                  {/* These selectors now depend on data-expanded on MenuContainer's root */}
+                  {/* MenuIconLucide appears when data-expanded is false */}
                   <div className={cn(
                     "absolute inset-0 transition-all duration-300 ease-in-out origin-center",
                     "[div[data-expanded=true]_&]:opacity-0 [div[data-expanded=true]_&]:-rotate-90 [div[data-expanded=true]_&]:scale-50",
@@ -136,6 +136,7 @@ export function NewLandingHeader() {
                   )}>
                     <MenuIconLucide size={22} strokeWidth={2} />
                   </div>
+                  {/* X icon appears when data-expanded is true */}
                   <div className={cn(
                     "absolute inset-0 transition-all duration-300 ease-in-out origin-center",
                     "[div[data-expanded=true]_&]:opacity-100 [div[data-expanded=true]_&]:rotate-0 [div[data-expanded=true]_&]:scale-100",
@@ -151,7 +152,7 @@ export function NewLandingHeader() {
               <MenuItem
                 key={link.href + link.label}
                 icon={link.icon}
-                onClick={() => handleMobileNavLinkClick(link.href)} // No href prop, rely on onClick
+                onClick={() => handleMobileNavLinkClick(link.href)}
                 aria-label={link.label}
               >
                 {link.label}
