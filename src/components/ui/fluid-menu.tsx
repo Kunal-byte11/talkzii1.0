@@ -14,8 +14,8 @@ const MenuContext = createContext<MenuContextType | null>(null);
 interface MenuContainerProps {
   children: React.ReactNode;
   className?: string;
-  itemOffset?: number; 
-  startAngle?: number; 
+  itemOffset?: number;
+  startAngle?: number;
 }
 
 export const MenuContainer: React.FC<MenuContainerProps> = ({
@@ -59,7 +59,7 @@ export const MenuContainer: React.FC<MenuContainerProps> = ({
 
               return (
                 <motion.div
-                  key={(child.props as any).key || index}
+                  key={child.key !== null && child.key !== undefined ? child.key : index}
                   className="absolute"
                   initial={{ opacity: 0, scale: 0.5, x: 0, y: 0 }}
                   animate={{ opacity: 1, scale: 1, x: x, y: y }}
@@ -71,14 +71,14 @@ export const MenuContainer: React.FC<MenuContainerProps> = ({
                       if (child.props.onClick) {
                         child.props.onClick();
                       }
-                      setIsOpen(false); 
+                      setIsOpen(false);
                     }
                   })}
                 </motion.div>
               );
             })}
         </AnimatePresence>
-        
+
         <div className="relative z-10">
           {toggleItem && cloneElement(toggleItem as React.ReactElement<any>, { isToggle: true })}
         </div>
@@ -90,12 +90,12 @@ export const MenuContainer: React.FC<MenuContainerProps> = ({
 interface MenuItemProps {
   icon: React.ReactNode;
   onClick?: (event?: React.MouseEvent<HTMLElement>) => void;
-  href?: string; 
+  href?: string;
   className?: string;
-  isToggle?: boolean; 
+  isToggle?: boolean;
   children?: React.ReactNode;
   'aria-label'?: string;
-  key?: string | number;
+  // key?: string | number; // Key is a special prop, should not be explicitly defined here
 }
 
 export const MenuItem: React.FC<MenuItemProps> = ({
@@ -109,7 +109,7 @@ export const MenuItem: React.FC<MenuItemProps> = ({
 }) => {
   const context = useContext(MenuContext);
   if (!context) {
-    return null; 
+    return null;
   }
   const { toggleMenu, isOpen } = context;
 
@@ -132,7 +132,7 @@ export const MenuItem: React.FC<MenuItemProps> = ({
     "aria-label": ariaLabel || (isToggle ? "Toggle menu" : "Menu item"),
   };
 
-  if (href && !isToggle) { 
+  if (href && !isToggle) {
     return (
       <a href={href} {...commonProps}>
         {icon}
@@ -148,4 +148,3 @@ export const MenuItem: React.FC<MenuItemProps> = ({
     </button>
   );
 };
-
