@@ -4,7 +4,7 @@
 import React, { useState, Children, cloneElement, isValidElement, createContext, useContext, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { useOnClickOutside } from '@/hooks/useOnClickOutside'; // Assuming you have this hook or will create it
+import { useOnClickOutside } from '@/hooks/useOnClickOutside';
 
 interface MenuContextType {
   isOpen: boolean;
@@ -37,8 +37,6 @@ export const MenuContainer: React.FC<MenuContainerProps> = ({ children, classNam
         {/* Render Toggle Item */}
         {toggleItem && cloneElement(toggleItem as React.ReactElement<any>, { 
           isToggle: true, 
-          // Pass isOpen to the toggle item if it needs to change its appearance based on state
-          // This is handled by data-expanded attribute on parent for the Menu/X icon example
         })}
 
         <AnimatePresence>
@@ -49,17 +47,20 @@ export const MenuContainer: React.FC<MenuContainerProps> = ({ children, classNam
               exit={{ opacity: 0, y: -10, height: 0 }}
               transition={{ duration: 0.2, ease: "circOut" }}
               className="absolute top-full right-0 mt-2 w-56 bg-background border border-border rounded-lg shadow-xl z-20 overflow-hidden"
+              id="mobile-menu-dropdown" // Added for aria-controls
             >
               <ul className="py-1">
                 {menuItems.map((child, index) => (
-                   <li key={child.key || index} className="block">
+                   <li key={child.key !== null && child.key !== undefined ? child.key : index} className="block">
                     {cloneElement(child as React.ReactElement<any>, {
-                      // Wrap onClick to close menu
                       onClick: (event?: React.MouseEvent<HTMLElement>) => {
                         if (child.props.onClick) {
                           child.props.onClick(event);
                         }
-                        closeMenu(); // Close menu after item action
+                        // Add a small delay before closing the menu
+                        setTimeout(() => {
+                          closeMenu();
+                        }, 150); 
                       },
                     })}
                   </li>
@@ -76,10 +77,10 @@ export const MenuContainer: React.FC<MenuContainerProps> = ({ children, classNam
 interface MenuItemProps {
   icon?: React.ReactNode;
   onClick?: (event?: React.MouseEvent<HTMLElement>) => void;
-  href?: string; // For navigation items that are links
+  href?: string; 
   className?: string;
   isToggle?: boolean;
-  children?: React.ReactNode; // For text label
+  children?: React.ReactNode; 
   'aria-label'?: string;
 }
 
@@ -97,20 +98,17 @@ export const MenuItem: React.FC<MenuItemProps> = ({
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     if (isToggle && context?.toggleMenu) {
       context.toggleMenu();
+      event.stopPropagation(); // Prevent event from bubbling if it's the toggle
     } else if (onClick) {
-      // For non-toggle items, onClick is already wrapped by MenuContainer to close.
-      // So just call the original onClick.
       onClick(event);
     }
-    // If it's an href link, the browser will navigate. 
-    // The MenuContainer's cloneElement will handle closing for items inside the dropdown.
   };
 
   const commonClasses = cn(
     "flex items-center w-full text-sm text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:bg-muted/60",
     isToggle 
-      ? "p-2 rounded-md justify-center hover:bg-muted/50 transition-colors" // Toggle button styling
-      : "px-3 py-2.5 hover:bg-muted/50 gap-3 transition-colors", // Dropdown item styling
+      ? "p-2 rounded-md justify-center hover:bg-muted/50 transition-colors" 
+      : "px-3 py-2.5 hover:bg-muted/50 gap-3 transition-colors", 
     className
   );
 
@@ -131,18 +129,17 @@ export const MenuItem: React.FC<MenuItemProps> = ({
         aria-controls={isToggle ? "mobile-menu-dropdown" : undefined}
         aria-label={ariaLabel || "Toggle navigation menu"}
       >
-        {icon} {/* Toggle usually only has an icon that changes state */}
+        {icon} 
       </button>
     );
   }
 
-  // For items within the dropdown
   if (href) { 
     return (
       <a 
         href={href} 
         className={commonClasses}
-        onClick={handleClick} // onClick here is the one passed from MenuContainer's cloneElement
+        onClick={handleClick} 
         aria-label={ariaLabel || (typeof children === 'string' ? children : "Menu item")}
       >
         {content}
@@ -154,30 +151,10 @@ export const MenuItem: React.FC<MenuItemProps> = ({
     <button 
       type="button" 
       className={commonClasses}
-      onClick={handleClick} // onClick here is the one passed from MenuContainer's cloneElement
+      onClick={handleClick} 
       aria-label={ariaLabel || (typeof children === 'string' ? children : "Menu item")}
     >
       {content}
     </button>
   );
 };
-
-// Minimal useOnClickOutside hook (if not already present in project)
-// Ensure this hook is either imported from your project or defined here/elsewhere if not available.
-// For brevity, I'm adding a simple version. A more robust one might be needed.
-// const useOnClickOutside = (ref, handler) => {
-//   useEffect(() => {
-//     const listener = (event) => {
-//       if (!ref.current || ref.current.contains(event.target)) {
-//         return;
-//       }
-//       handler(event);
-//     };
-//     document.addEventListener("mousedown", listener);
-//     document.addEventListener("touchstart", listener);
-//     return () => {
-//       document.removeEventListener("mousedown", listener);
-//       document.removeEventListener("touchstart", listener);
-//     };
-//   }, [ref, handler]);
-// };
