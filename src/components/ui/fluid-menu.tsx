@@ -1,175 +1,177 @@
-"use client"
 
-import React, { useState, useRef, useEffect } from "react"
-import { ChevronDown } from "lucide-react"
+"use client";
 
-interface MenuProps {
-  trigger: React.ReactNode
-  children: React.ReactNode
-  align?: "left" | "right"
-  showChevron?: boolean
+import React, {
+  useState,
+  Children,
+  cloneElement,
+  isValidElement,
+  createContext,
+  useContext,
+  useRef,
+} from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { useOnClickOutside } from "@/hooks/useOnClickOutside";
+
+interface MenuContextType {
+  isOpen: boolean;
+  toggleMenu?: () => void;
+  closeMenu?: () => void;
+}
+const MenuContext = createContext<MenuContextType | null>(null);
+
+interface MenuContainerProps {
+  children: React.ReactNode;
+  className?: string;
 }
 
-export function Menu({ trigger, children, align = "left", showChevron = true }: MenuProps) {
-  const [isOpen, setIsOpen] = useState(false)
+export const MenuContainer: React.FC<MenuContainerProps> = ({
+  children,
+  className,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isOpen]);
+  const toggleMenu = () => setIsOpen(!isOpen);
+  const closeMenu = () => setIsOpen(false);
 
+  useOnClickOutside(menuRef, () => {
+    if (isOpen) {
+      closeMenu();
+    }
+  });
+
+  const items = Children.toArray(children).filter(isValidElement);
+  const toggleItem = items[0];
+  const menuItems = items.slice(1);
 
   return (
-    <div className="relative inline-block text-left" ref={menuRef}>
-      <div
-        onClick={() => setIsOpen(!isOpen)}
-        className="cursor-pointer inline-flex items-center"
-        role="button"
-        aria-haspopup="true"
-        aria-expanded={isOpen}
-      >
-        {trigger}
-        {showChevron && (
-          <ChevronDown className="ml-2 -mr-1 h-4 w-4 text-gray-500 dark:text-gray-400" aria-hidden="true" />
-        )}
-      </div>
+    <MenuContext.Provider value={{ isOpen, toggleMenu, closeMenu }}>
+      <div className={cn("relative", className)} ref={menuRef} data-expanded={isOpen}>
+        {/* Render Toggle Item */}
+        {toggleItem && cloneElement(toggleItem as React.ReactElement<any>, { 
+          isToggle: true, 
+        })}
 
-      {isOpen && (
-        <div
-          className={`absolute ${
-            align === "right" ? "right-0" : "left-0"
-          } mt-2 w-56 rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black dark:ring-gray-700 ring-opacity-9 focus:outline-none z-50`}
-          role="menu"
-          aria-orientation="vertical"
-          aria-labelledby="menu-button"
-        >
-          <div className="py-1" role="none">
-            {children}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: 'auto' }}
+              exit={{ opacity: 0, y: -10, height: 0 }}
+              transition={{ duration: 0.2, ease: "circOut" }}
+              className="absolute top-full right-0 mt-2 w-56 bg-background border border-border rounded-lg shadow-xl z-20 overflow-hidden"
+              id="mobile-menu-dropdown"
+            >
+              <ul className="py-1">
+                {menuItems.map((child, index) => (
+                   <li key={child.key !== null && child.key !== undefined ? child.key : index} className="block">
+                    {cloneElement(child as React.ReactElement<any>, {
+                      onClick: (event?: React.MouseEvent<HTMLElement>) => {
+                        if (child.props.onClick) {
+                          child.props.onClick(event);
+                        }
+                        setTimeout(() => {
+                          closeMenu();
+                        }, 150); 
+                      },
+                    })}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </MenuContext.Provider>
+  );
+};
 
 interface MenuItemProps {
-  children?: React.ReactNode
-  onClick?: () => void
-  disabled?: boolean
-  icon?: React.ReactNode
-  isActive?: boolean
+  icon?: React.ReactNode;
+  onClick?: (event?: React.MouseEvent<HTMLElement>) => void;
+  href?: string; 
+  className?: string;
+  isToggle?: boolean;
+  children?: React.ReactNode; 
+  'aria-label'?: string;
 }
 
-export function MenuItem({ children, onClick, disabled = false, icon, isActive = false }: MenuItemProps) {
-  return (
-    <button
-      className={`relative block w-full h-16 text-center group
-        ${disabled ? "text-gray-400 dark:text-gray-500 cursor-not-allowed" : "text-gray-600 dark:text-gray-300"}
-        ${isActive ? "bg-white/10 dark:bg-gray-700/50" : ""}
-        hover:bg-gray-100 dark:hover:bg-gray-700
-      `}
-      role="menuitem"
-      onClick={onClick}
-      disabled={disabled}
-    >
-      <span className="flex items-center justify-center h-full"> {/* Removed mt-[5%] for better centering with dynamic content */}
-        {icon && (
-          <span className={`h-6 w-6 transition-all duration-200 group-hover:[&_svg]:stroke-[2.5] ${children ? 'mr-2' : ''}`}>
-            {icon}
-          </span>
-        )}
-        {children}
-      </span>
-    </button>
-  )
-}
+export const MenuItem: React.FC<MenuItemProps> = ({
+  icon,
+  onClick,
+  href,
+  className,
+  isToggle,
+  children,
+  "aria-label": ariaLabel,
+}) => {
+  const context = useContext(MenuContext);
 
-export function MenuContainer({ children }: { children: React.ReactNode }) {
-  const [isExpanded, setIsExpanded] = useState(false)
-  const childrenArray = React.Children.toArray(children)
+  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    if (isToggle && context?.toggleMenu) {
+      context.toggleMenu();
+      event.stopPropagation(); // Prevent click from propagating to useOnClickOutside
+    } else if (onClick) {
+      onClick(event);
+      // If it's not a toggle, the closing is handled by cloneElement in MenuContainer
+    }
+  };
 
-  const handleToggle = () => {
-    setIsExpanded(!isExpanded);
+  const commonClasses = cn(
+    "flex items-center w-full text-sm text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:bg-muted/60",
+    isToggle 
+      ? "p-2 rounded-md justify-center hover:bg-muted/50 transition-colors" 
+      : "px-3 py-2.5 hover:bg-muted/50 gap-3 transition-colors", 
+    className
+  );
+
+  const content = (
+    <>
+      {icon && <span className="shrink-0 w-5 h-5 flex items-center justify-center">{icon}</span>}
+      {children && <span className="flex-grow text-left truncate">{children}</span>}
+    </>
+  );
+
+  if (isToggle) {
+    return (
+      <button 
+        type="button" 
+        className={commonClasses}
+        onClick={handleClick}
+        aria-expanded={context?.isOpen}
+        aria-controls={isToggle ? "mobile-menu-dropdown" : undefined}
+        aria-label={ariaLabel || "Toggle navigation menu"}
+      >
+        {icon} {/* Toggle button only shows icon, not children */}
+      </button>
+    );
   }
 
-  const containerRef = useRef<HTMLDivElement>(null);
+  // For regular menu items, if href is provided and no onClick, it's an anchor
+  // Otherwise, it's a button (especially if onClick is for JS navigation)
+  if (href && !onClick) { 
+    return (
+      <a 
+        href={href} 
+        className={commonClasses}
+        onClick={handleClick} // Allow context to potentially close, or native nav
+        aria-label={ariaLabel || (typeof children === 'string' ? children : "Menu item")}
+      >
+        {content}
+      </a>
+    );
+  }
 
-  // Close menu if clicked outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsExpanded(false);
-      }
-    }
-    if (isExpanded) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isExpanded]);
-
-
-  return (
-    <div className="relative w-[64px]" data-expanded={isExpanded} ref={containerRef}>
-      {/* Container for all items */}
-      <div className="relative">
-        {/* First item - always visible (toggle button) */}
-        <div 
-          className="relative w-16 h-16 bg-gray-100 dark:bg-gray-800 cursor-pointer rounded-full group will-change-transform z-50 flex items-center justify-center shadow-md hover:shadow-lg transition-shadow"
-          onClick={handleToggle}
-          role="button"
-          aria-expanded={isExpanded}
-          aria-controls="fluid-menu-items"
-          tabIndex={0}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleToggle();}}
-        >
-          {childrenArray[0]}
-        </div>
-
-        {/* Other items - animated */}
-        <div id="fluid-menu-items">
-          {childrenArray.slice(1).map((child, index) => (
-            <div 
-              key={index} 
-              className="absolute top-0 left-0 w-16 h-16 bg-gray-100 dark:bg-gray-800 will-change-transform rounded-full shadow-md flex items-center justify-center"
-              style={{
-                transform: `translateY(${isExpanded ? (index + 1) * (64 + 8) : 0}px)`, // 64px item height + 8px gap
-                opacity: isExpanded ? 1 : 0,
-                zIndex: 40 - index, // To ensure proper stacking
-                // clipPath: "circle(50% at 50% 50%)", // Simplified clip-path, adjust if specific shape needed
-                transition: `transform ${isExpanded ? '300ms' : '300ms'} cubic-bezier(0.4, 0, 0.2, 1) ${index * 30}ms,
-                           opacity ${isExpanded ? '250ms' : '300ms'} ease-out ${index * 20}ms`,
-                backfaceVisibility: 'hidden',
-                perspective: 1000,
-                WebkitFontSmoothing: 'antialiased',
-                pointerEvents: isExpanded ? 'auto' : 'none', // Allow clicks only when expanded
-              }}
-            >
-              {React.isValidElement(child) ? React.cloneElement(child as React.ReactElement<any>, {
-                // Pass down onClick to menu items to potentially close menu after action
-                onClick: () => {
-                  if (child.props.onClick) {
-                    child.props.onClick();
-                  }
-                  // Optionally close menu after item click, or let parent handle it
-                  // setIsExpanded(false); 
-                }
-              }) : child}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
+  return ( 
+    <button 
+      type="button" 
+      className={commonClasses}
+      onClick={handleClick} 
+      aria-label={ariaLabel || (typeof children === 'string' ? children : "Menu item")}
+    >
+      {content}
+    </button>
+  );
+};

@@ -1,21 +1,16 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react'; // Removed useState as MenuContainer handles its state
 import { Logo } from '@/components/talkzi/Logo';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
-import { cn } from '@/lib/utils'; // Added this import
+import { cn } from '@/lib/utils';
 
-// Import ShadCN DropdownMenu components
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+// Import custom MenuContainer and MenuItem
+import { MenuContainer, MenuItem } from '@/components/ui/fluid-menu';
 
 import {
   Menu as MenuIconLucide,
@@ -24,7 +19,7 @@ import {
   Heart as HeartIcon,
   Mail as MailIcon,
   Info,
-  // UsersRound, // Removed "Peoples"
+  // UsersRound, // "Peoples" link removed previously
 } from 'lucide-react';
 
 
@@ -39,7 +34,7 @@ const navLinks = [
 export function NewLandingHeader() {
   const router = useRouter();
   const { user } = useAuth();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // mobileMenuOpen state is no longer needed here; MenuContainer handles its own state
 
   const handleGetStarted = () => {
     if (user) {
@@ -50,12 +45,9 @@ export function NewLandingHeader() {
   };
 
   const handleDesktopNavLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    // Let the browser's native anchor scrolling handle this
-    // No need for e.preventDefault() if scroll-margin-top is working
-  };
-
-  const handleMobileNavLinkClick = (hash: string) => {
-    const id = hash.substring(1);
+    // Native anchor behavior will handle scrolling.
+    // e.preventDefault(); // Not needed if relying on native scroll + scroll-margin-top
+    const id = href.substring(1);
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({
@@ -63,7 +55,27 @@ export function NewLandingHeader() {
         block: 'start'
       });
     }
-    setMobileMenuOpen(false); // Explicitly close menu after click
+  };
+
+  const handleMobileNavLinkClick = (hash: string) => {
+    const header = document.getElementById('landing-page-header');
+    let headerOffset = 72; // Default offset
+    if (header) {
+      headerOffset = header.offsetHeight;
+    }
+
+    const id = hash.substring(1);
+    const element = document.getElementById(id);
+    if (element) {
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.scrollY - headerOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+    // Menu closing is handled by MenuContainer's wrapper logic with a setTimeout
   };
 
 
@@ -82,7 +94,7 @@ export function NewLandingHeader() {
           {navLinks.map((link) => (
             <a
               key={link.label}
-              href={link.href} // Native href will handle scrolling
+              href={link.href}
               onClick={(e) => handleDesktopNavLinkClick(e, link.href)}
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary cursor-pointer"
             >
@@ -98,7 +110,7 @@ export function NewLandingHeader() {
           </Button>
         </nav>
 
-        {/* Mobile Navigation - ShadCN DropdownMenu */}
+        {/* Mobile Navigation - Using custom fluid-menu */}
         <div className="md:hidden flex items-center space-x-2">
            <Button
             onClick={handleGetStarted}
@@ -108,52 +120,44 @@ export function NewLandingHeader() {
             Get Started
           </Button>
 
-          <DropdownMenu open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="p-2 rounded-md justify-center hover:bg-muted/50 transition-colors"
-                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-              >
-                {/* Animated Hamburger/X Icon */}
+          <MenuContainer className="relative z-50"> {/* MenuContainer handles its own open/close state */}
+            {/* Toggle Item: First child of MenuContainer, isToggle prop is handled internally by MenuContainer */}
+            <MenuItem
+              isToggle={true} // This prop is now used by MenuItem itself and MenuContainer
+              aria-label="Toggle navigation menu"
+              icon={
                 <div className="relative w-6 h-6 flex items-center justify-center">
-                  <MenuIconLucide
-                    size={22}
-                    strokeWidth={2}
-                    className={cn(
-                      "absolute transition-all duration-300 ease-in-out",
-                      mobileMenuOpen ? "opacity-0 rotate-90 scale-50" : "opacity-100 rotate-0 scale-100"
-                    )}
-                  />
-                  <X
-                    size={22}
-                    strokeWidth={2}
-                    className={cn(
-                      "absolute transition-all duration-300 ease-in-out",
-                      mobileMenuOpen ? "opacity-100 rotate-0 scale-100" : "opacity-0 -rotate-90 scale-50"
-                    )}
-                  />
+                  {/* These selectors now depend on data-expanded on MenuContainer's root */}
+                  <div className={cn(
+                    "absolute inset-0 transition-all duration-300 ease-in-out origin-center",
+                    "[div[data-expanded=true]_&]:opacity-0 [div[data-expanded=true]_&]:-rotate-90 [div[data-expanded=true]_&]:scale-50",
+                    "[div[data-expanded=false]_&]:opacity-100 [div[data-expanded=false]_&]:rotate-0 [div[data-expanded=false]_&]:scale-100"
+
+                  )}>
+                    <MenuIconLucide size={22} strokeWidth={2} />
+                  </div>
+                  <div className={cn(
+                    "absolute inset-0 transition-all duration-300 ease-in-out origin-center",
+                    "[div[data-expanded=true]_&]:opacity-100 [div[data-expanded=true]_&]:rotate-0 [div[data-expanded=true]_&]:scale-100",
+                    "[div[data-expanded=false]_&]:opacity-0 [div[data-expanded=false]_&]:rotate-90 [div[data-expanded=false]_&]:scale-50"
+                  )}>
+                    <X size={22} strokeWidth={2} />
+                  </div>
                 </div>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-background border-border shadow-xl z-[60]">
-              {navLinks.map((link) => (
-                <DropdownMenuItem
-                  key={link.label}
-                  onClick={() => {
-                    handleMobileNavLinkClick(link.href);
-                    // onOpenChange from DropdownMenu will set mobileMenuOpen to false
-                  }}
-                  className="flex items-center gap-3 px-3 py-2.5 text-sm text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
-                  aria-label={link.label}
-                >
-                  {link.icon && <span className="shrink-0 w-5 h-5 flex items-center justify-center">{link.icon}</span>}
-                  <span className="flex-grow text-left truncate">{link.label}</span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+              }
+            />
+            {/* Navigation items for the dropdown */}
+            {navLinks.map((link) => (
+              <MenuItem
+                key={link.href + link.label}
+                icon={link.icon}
+                onClick={() => handleMobileNavLinkClick(link.href)} // No href prop, rely on onClick
+                aria-label={link.label}
+              >
+                {link.label}
+              </MenuItem>
+            ))}
+          </MenuContainer>
         </div>
       </div>
     </header>
