@@ -6,7 +6,8 @@ import { Logo } from '@/components/talkzi/Logo';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import Link from 'next/link'; 
+import Link from 'next/link';
+import { cn } from '@/lib/utils'; // Added this import
 
 // Import ShadCN DropdownMenu components
 import {
@@ -19,18 +20,18 @@ import {
 import {
   Menu as MenuIconLucide,
   X,
-  LayoutGrid, 
-  Heart as HeartIcon, 
-  Mail as MailIcon, 
+  LayoutGrid,
+  Heart as HeartIcon,
+  Mail as MailIcon,
   Info,
-  // UsersRound, // "Peoples" link was removed as per user instruction
+  // UsersRound, // Removed "Peoples"
 } from 'lucide-react';
 
 
 const navLinks = [
   { href: '#features-section', label: 'Features', icon: <LayoutGrid size={18} strokeWidth={1.5} /> },
   { href: '#about-us-section', label: 'About Us', icon: <Info size={18} strokeWidth={1.5} /> },
-  // { href: '#peoples-subsection', label: 'Peoples', icon: <UsersRound size={18} strokeWidth={1.5} /> }, // Removed
+  // { href: '#peoples-subsection', label: 'Peoples', icon: <UsersRound size={18} strokeWidth={1.5} /> }, // "Peoples" link removed
   { href: '#values-section', label: 'Our Values', icon: <HeartIcon size={18} strokeWidth={1.5} /> },
   { href: '#footer-contact', label: 'Contact', icon: <MailIcon size={18} strokeWidth={1.5} /> },
 ];
@@ -48,36 +49,26 @@ export function NewLandingHeader() {
     }
   };
 
-  // For Desktop: Let native anchor behavior handle scrolling.
-  // The 'scroll-mt-20' or similar on target elements will provide the offset.
   const handleDesktopNavLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    // e.preventDefault(); // Removed: Let browser handle default scroll for href
-    // const elementId = href.substring(1);
-    // const element = document.getElementById(elementId);
-    // if (element) {
-    //   element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    // }
-    // No JavaScript scrolling needed here; browser handles href.
+    // Let the browser's native anchor scrolling handle this
+    // No need for e.preventDefault() if scroll-margin-top is working
   };
 
   const handleMobileNavLinkClick = (hash: string) => {
-    const id = hash.substring(1); // remove the '#'
+    const id = hash.substring(1);
     const element = document.getElementById(id);
-
     if (element) {
-      // The 'scroll-mt-20' (or similar) class on the target element provides a scroll-margin-top.
-      // 'block: 'start'' ensures the top of the element (after margin) aligns with the top of the viewport.
       element.scrollIntoView({
         behavior: 'smooth',
         block: 'start'
       });
     }
-    // The DropdownMenu will close itself via onOpenChange.
+    setMobileMenuOpen(false); // Explicitly close menu after click
   };
-  
+
 
   return (
-    <header 
+    <header
       id="landing-page-header"
       className="bg-background/95 sticky top-0 z-50 w-full border-b border-border/40 backdrop-blur supports-[backdrop-filter]:bg-background/60"
     >
@@ -92,7 +83,7 @@ export function NewLandingHeader() {
             <a
               key={link.label}
               href={link.href} // Native href will handle scrolling
-              onClick={(e) => handleDesktopNavLinkClick(e, link.href)} // onClick can be used for other purposes if needed
+              onClick={(e) => handleDesktopNavLinkClick(e, link.href)}
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary cursor-pointer"
             >
               {link.label}
@@ -116,12 +107,12 @@ export function NewLandingHeader() {
           >
             Get Started
           </Button>
-          
+
           <DropdownMenu open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="p-2 rounded-md justify-center hover:bg-muted/50 transition-colors"
                 aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               >
@@ -152,7 +143,7 @@ export function NewLandingHeader() {
                   key={link.label}
                   onClick={() => {
                     handleMobileNavLinkClick(link.href);
-                    // DropdownMenu's onOpenChange will set mobileMenuOpen to false
+                    // onOpenChange from DropdownMenu will set mobileMenuOpen to false
                   }}
                   className="flex items-center gap-3 px-3 py-2.5 text-sm text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
                   aria-label={link.label}
