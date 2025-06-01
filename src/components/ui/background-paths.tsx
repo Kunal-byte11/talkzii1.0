@@ -42,7 +42,7 @@ function FloatingPaths({ position }: { position: number }) {
                             pathOffset: [0, 1, 0],
                         }}
                         transition={{
-                            duration: 10 + Math.random() * 5, 
+                            duration: 6 + Math.random() * 4, // Faster animation
                             repeat: Number.POSITIVE_INFINITY,
                             ease: "linear",
                         }}
@@ -96,15 +96,15 @@ export function BackgroundPaths({
                                 {word.split("").map((letter, letterIndex) => (
                                     <motion.span
                                         key={`${wordIndex}-${letterIndex}`}
-                                        initial={{ y: 50, opacity: 0 }} 
+                                        initial={{ y: 20, opacity: 0 }} // Reduced initial y offset
                                         animate={{ y: 0, opacity: 1 }}
                                         transition={{
-                                            delay: wordIndex * 0.02 + letterIndex * 0.01, 
-                                            type: "tween", 
-                                            duration: 0.2,    
+                                            delay: wordIndex * 0.02 + letterIndex * 0.01,
+                                            type: "tween",
+                                            duration: 0.2,
                                             ease: "easeOut",
                                         }}
-                                        className="inline-block text-transparent bg-clip-text 
+                                        className="inline-block text-transparent bg-clip-text
                                         bg-gradient-to-r from-foreground to-foreground/80"
                                     >
                                         {letter}
@@ -113,23 +113,23 @@ export function BackgroundPaths({
                             </span>
                         ))}
                     </h1>
-                    
+
                     {subtitle && (
-                        <p className="text-base sm:text-lg text-muted-foreground mb-8 sm:mb-10 max-w-xl sm:max-w-2xl mx-auto px-2">
+                        <p className="text-base sm:text-lg text-muted-foreground mb-6 sm:mb-8 max-w-xl sm:max-w-2xl mx-auto px-2">
                             {subtitle}
                         </p>
                     )}
 
                     <div
-                        className="inline-block group relative bg-gradient-to-b from-foreground/5 to-background/5 
-                         p-px rounded-2xl backdrop-blur-lg 
+                        className="inline-block group relative bg-gradient-to-b from-foreground/5 to-background/5
+                         p-px rounded-2xl backdrop-blur-lg
                         overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300"
                     >
                         <Button
                             variant="ghost"
                             onClick={finalCtaClick}
                             className={cn(
-                                "rounded-[1.15rem] px-6 py-3 sm:px-8 sm:py-4 text-sm sm:text-base font-semibold backdrop-blur-md", 
+                                "rounded-[1.15rem] px-6 py-3 sm:px-8 sm:py-4 text-sm sm:text-base font-semibold backdrop-blur-md",
                                 "bg-card/95 hover:bg-card text-card-foreground",
                                 "transition-all duration-300 group-hover:-translate-y-0.5 border border-border",
                                 "hover:shadow-md"
@@ -139,7 +139,7 @@ export function BackgroundPaths({
                                 {ctaText}
                             </span>
                             <span
-                                className="ml-2 sm:ml-3 opacity-70 group-hover:opacity-100 group-hover:translate-x-1 
+                                className="ml-2 sm:ml-3 opacity-70 group-hover:opacity-100 group-hover:translate-x-1
                                 transition-all duration-300"
                             >
                                 →
