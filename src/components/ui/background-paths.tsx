@@ -79,7 +79,7 @@ export function BackgroundPaths({
     const finalCtaClick = onCtaClick || handleDefaultCtaClick;
 
     return (
-        <div className="relative min-h-[calc(100vh-4rem)] sm:min-h-screen w-full flex items-center justify-center overflow-hidden bg-background text-foreground py-16">
+        <div className="relative min-h-[calc(100vh-4rem)] sm:min-h-screen w-full flex items-center justify-center overflow-hidden bg-background text-foreground py-12 sm:py-16">
             <div className="absolute inset-0">
                 <FloatingPaths position={1} />
                 <FloatingPaths position={-1} />
@@ -92,7 +92,7 @@ export function BackgroundPaths({
                     transition={{ duration: 0.2 }} 
                     className="max-w-4xl mx-auto"
                 >
-                    <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 tracking-tight">
+                    <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-4 sm:mb-6 tracking-tight">
                         {words.map((word, wordIndex) => (
                             <span
                                 key={wordIndex}
@@ -120,7 +120,7 @@ export function BackgroundPaths({
                     </h1>
                     
                     {subtitle && (
-                        <p className="text-md sm:text-lg text-muted-foreground mb-10 max-w-2xl mx-auto">
+                        <p className="text-base sm:text-lg text-muted-foreground mb-8 sm:mb-10 max-w-xl sm:max-w-2xl mx-auto px-2">
                             {subtitle}
                         </p>
                     )}
@@ -134,7 +134,7 @@ export function BackgroundPaths({
                             variant="ghost"
                             onClick={finalCtaClick}
                             className={cn(
-                                "rounded-[1.15rem] px-6 py-3 sm:px-8 sm:py-4 text-base sm:text-lg font-semibold backdrop-blur-md",
+                                "rounded-[1.15rem] px-6 py-3 sm:px-8 sm:py-4 text-sm sm:text-base font-semibold backdrop-blur-md", // Adjusted text size for base
                                 "bg-card/95 hover:bg-card text-card-foreground",
                                 "transition-all duration-300 group-hover:-translate-y-0.5 border border-border",
                                 "hover:shadow-md"
