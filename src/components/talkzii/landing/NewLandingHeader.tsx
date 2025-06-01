@@ -45,18 +45,32 @@ export function NewLandingHeader() {
     // The scroll-mt-20 on sections should handle the offset.
   };
 
-  // For mobile navigation items - JS smooth scroll
   const handleMobileNavLinkClick = (hash: string) => {
     const el = document.querySelector(hash);
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
+      const header = document.getElementById('landing-page-header');
+      let headerOffset = 72; // Default offset if header not found or for some buffer (approx h-16 + some padding)
+      if (header) {
+        headerOffset = header.offsetHeight;
+      }
+  
+      const elementPosition = el.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.scrollY - headerOffset;
+  
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
     }
-    // The MenuContainer's onClick wrapper (in fluid-menu.tsx) will handle closing the menu.
+    // Menu closing is handled by MenuContainer's wrapper with a delay
   };
   
 
   return (
-    <header className="bg-background/95 sticky top-0 z-50 w-full border-b border-border/40 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header 
+      id="landing-page-header" // Added ID here
+      className="bg-background/95 sticky top-0 z-50 w-full border-b border-border/40 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+    >
       <div className="container mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" aria-label="Talkzii Home">
           <Logo width={120} height={30} className="h-auto" />
@@ -88,7 +102,7 @@ export function NewLandingHeader() {
            <Button
             onClick={handleGetStarted}
             size="sm"
-            className="rounded-full px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary/90 text-xs h-8"
+            className="rounded-full px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 text-xs h-8"
           >
             Get Started
           </Button>
@@ -113,9 +127,8 @@ export function NewLandingHeader() {
               <MenuItem
                 key={link.href + link.label} 
                 icon={link.icon}
-                onClick={() => handleMobileNavLinkClick(link.href)} // Use JS scroll
+                onClick={() => handleMobileNavLinkClick(link.href)}
                 aria-label={link.label}
-                // NO href prop here, so it renders as a button
               >
                 {link.label}
               </MenuItem>
@@ -126,3 +139,4 @@ export function NewLandingHeader() {
     </header>
   );
 }
+
