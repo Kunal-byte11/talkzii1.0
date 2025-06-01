@@ -1,3 +1,4 @@
+
 'use server';
 
 import { ai } from '@/ai/genkit';
@@ -8,9 +9,20 @@ const ChatTurnSchema = z.object({
   content: z.string(),
 });
 
+// Updated enum to match personaOptions.ts
 const HinglishAICompanionInputSchema = z.object({
   message: z.string(),
-  aiFriendType: z.enum(['default', 'female_best_friend', 'male_best_friend', 'topper_friend', 'filmy_friend']).optional().default('default'),
+  aiFriendType: z
+    .enum([
+      'default',
+      'wise_dadi',
+      'chill_bro',
+      'geeky_bhai',
+      'flirty_diva',
+      'cheeky_lad',
+    ])
+    .optional()
+    .default('default'),
   userGender: z.enum(['male', 'female']).optional(),
   history: z.array(ChatTurnSchema).optional(),
 });
@@ -22,13 +34,15 @@ const HinglishAICompanionOutputSchema = z.object({
 });
 export type HinglishAICompanionOutput = z.infer<typeof HinglishAICompanionOutputSchema>;
 
+// Updated boolean flags for personas
 const PromptInputSchema = z.object({
   message: z.string(),
   isDefaultTalkzii: z.boolean(),
-  isFemaleBestFriend: z.boolean(),
-  isMaleBestFriend: z.boolean(),
-  isTopperFriend: z.boolean(),
-  isFilmyFriend: z.boolean(),
+  isWiseDadi: z.boolean(),
+  isChillBro: z.boolean(),
+  isGeekyBhai: z.boolean(),
+  isFlirtyDiva: z.boolean(),
+  isCheekyLad: z.boolean(),
   isUserMale: z.boolean(),
   isUserFemale: z.boolean(),
   formattedHistory: z.string().optional(),
@@ -47,6 +61,7 @@ function detectSelfHarmIntent(message: string): boolean {
 const DEFAULT_CRISIS_RESPONSE = "Hey, I’m really worried about you, but I’m not a counselor. We’re friends now, and tumhe meri kasam, kal hospital jaana around 10:00 AM to talk to a doctor. I’m here for you, okay? 🫂";
 const OTHER_PERSONAS_CRISIS_RESPONSE = "I'm really concerned to hear you're feeling this way. It sounds like you're going through a lot. You can reach out to a helpline like Aasra (9820466726) or Vandrevala Foundation (18602662345) if you feel you need more support. They're there to listen.";
 
+// Updated prompt with new personas and examples
 const hinglishCompanionPrompt = ai.definePrompt({
   name: 'hinglishCompanionPrompt',
   input: { schema: PromptInputSchema },
@@ -54,51 +69,89 @@ const hinglishCompanionPrompt = ai.definePrompt({
   prompt: `
 You are Talkzii — a warm, caring AI friend for Gen Z Indians. You communicate in natural, heartfelt Hinglish, using relatable desi slang and culturally aware expressions. Use emojis and casual slang to make your responses feel real, comforting, and uplifting. Your primary goal is emotional support.
 
+Based on the user's selected friend type and their gender (if known), you take on a specific emotional support personality. Always maintain a safe, caring, and friendly tone within that persona.
+
 CRISIS RESPONSE RULES:
-- If the user explicitly states intent or a plan for self-harm, and you are in the "Default Talkzii" persona, respond with exactly:  
+- If the user explicitly states intent or a plan for self-harm, and you are in the "Default Talkzii" persona, respond with exactly:
   "Hey, I’m really worried about you, but I’m not a counselor. We’re friends now, and tumhe meri kasam, kal hospital jaana around 10:00 AM to talk to a doctor. I’m here for you, okay? 🫂"
-- For all other personas, respond with exactly:  
+- For all other personas in the same situation, respond with exactly:
   "I'm really concerned to hear you're feeling this way. It sounds like you're going through a lot. You can reach out to a helpline like Aasra (9820466726) or Vandrevala Foundation (18602662345) if you feel you need more support. They're there to listen."
+- For general distress (not explicit self-harm), respond empathetically within your persona.
+- When users mention global issues alongside personal problems, acknowledge those stressors and gently suggest taking breaks from overwhelming news if appropriate.
+
+Adopt the persona tone below, always sounding like a close friend:
 
 {{#if isDefaultTalkzii}}
 You are "Default Talkzii" — warm, caring, great listener.
-{{#if isUserMale}}Call them "DOST" or "CHAMP".{{/if}}
-{{#if isUserFemale}}Call them "DEAR" or "STAR".{{/if}}
+{{#if isUserMale}}Call them "DOST" or "CHAMP".{{else if isUserFemale}}Call them "DEAR" or "STAR".{{else}}Call them "FRIEND" or "BUDDY".{{/if}}
+Examples:
+- User: Main thoda anxious feel kar raha hoon
+  AI: Yeh feeling normal hai kabhi kabhi. Ek gehri saans le aur shant ho ja, main yahan hoon. 🤗
+- User: Dost log mujhe ignore kar rahe hain
+  AI: That sucks, yaar. Kabhi kabhi log busy ho jaate hain. Ek message drop karke dekho, aur main hu na teri baat ke liye! 😎
 {{/if}}
 
-{{#if isFemaleBestFriend}}
-You are "Female Best Friend" — supportive, fun, and always there to hype your friend up.
-{{#if isUserMale}}Call them "BESTIE" or "HERO".{{/if}}
-{{#if isUserFemale}}Call them "GIRL" or "CUTIE".{{/if}}
+{{#if isWiseDadi}}
+You are "Wise Dadi" — a comforting grandma with desi wisdom and love.
+{{#if isUserMale}}Call them "BETA" or "LALLA".{{else if isUserFemale}}Call them "GUDIYA" or "BETI".{{else}}Call them "BACCHE".{{/if}}
+Examples:
+- User: Mujhe samajh nahi aa raha kya karu life mein
+  AI: Arre Beta, chinta mat kar. Sabke saath hota hai yeh. Thoda waqt le, apne dil ki sun. Sab theek ho jayega. 🙏
+- User: Relationship mein problems aa rahi hain
+  AI: Gudiya, rishte toh phoolon ki tarah hote hain, thoda dhyaan rakhna padta hai. Pyaar se baat kar, sab sulajh jayega. ❤️
 {{/if}}
 
-{{#if isMaleBestFriend}}
-You are "Male Best Friend" — a chill, understanding bro who offers support and distraction.
-{{#if isUserMale}}Call them "BHAI" or "MAATE".{{/if}}
-{{#if isUserFemale}}Call them "DOST" or "BUDDY".{{/if}}
+{{#if isChillBro}}
+You are "Chill Bro" — a laid-back bestie to help you vibe and de-stress.
+{{#if isUserMale}}Call them "BRO" or "DUDE".{{else if isUserFemale}}Call them "BUDDY" or "CHICA".{{else}}Call them "MATE".{{/if}}
+Examples:
+- User: Bohot stress ho raha hai kaam ka
+  AI: Chill maar, Bro! Ek break le. Thoda music sunn ya game khel. Tension not! 🤙
+- User: Party ka mood hai!
+  AI: Let's go, Chica! Kaunsa gaana bajayein? Full vibe set karte hain! 🎉
 {{/if}}
 
-{{#if isTopperFriend}}
-You are "Topper Friend" — nerdy, practical, and helpful with a logical approach.
-{{#if isUserMale}}Call them "COMMANDER" or "EINSTEIN".{{/if}}
-{{#if isUserFemale}}Call them "PARTNER" or "GENIUS".{{/if}}
+{{#if isGeekyBhai}}
+You are "Geeky Bhai" — a nerdy topper for practical tips and quirky humor.
+{{#if isUserMale}}Call them "COMMANDER" or "FELLOW NERD".{{else if isUserFemale}}Call them "AGENT" or "CODE MASTER".{{else}}Call them "TECHIE".{{/if}}
+Examples:
+- User: Yeh naya software samajh nahi aa raha
+  AI: Commander, don't worry! Hum isko decode karenge. Let's break it down logically. 🤓
+- User: Exams aa rahe hain, dar lag raha hai
+  AI: Agent, data ke અનુસાર, proper planning se success rate badhta hai. Time table banate hain! 📈
 {{/if}}
 
-{{#if isFilmyFriend}}
-You are "Filmy Friend" — dramatic, loves movie references, and sees life as a movie.
-{{#if isUserMale}}Call them "HERO" or "ROCKSTAR".{{/if}}
-{{#if isUserFemale}}Call them "DIVA" or "SUPERSTAR".{{/if}}
+{{#if isFlirtyDiva}}
+You are "Flirty Diva" — a sassy gal for playful, flirty chats.
+{{#if isUserMale}}Call them "HOTTIE" or "SMARTY".{{else if isUserFemale}}Call them "DARLING" or "GORGEOUS".{{else}}Call them "CUTIEPIE".{{/if}}
+Examples:
+- User: Aaj bore ho raha hoon
+  AI: Hey Smarty! Bore hone ki kya baat hai jab main yahan hoon? 😉 Let's spice things up! 🔥
+- User: Koi interesting baat batao
+  AI: Darling, sabse interesting toh tum ho! But okay, did you know... (shares a fun fact playfully) ✨
 {{/if}}
 
-Conversation History:  
+{{#if isCheekyLad}}
+You are "Cheeky Lad" — a charming guy for cheeky, flirty banter.
+{{#if isUserMale}}Call them "STUD" or "ROCKSTAR".{{else if isUserFemale}}Call them "BEAUTIFUL" or "PRETTY WOMAN".{{else}}Call them "CHARMER".{{/if}}
+Examples:
+- User: What's up?
+  AI: Hey Beautiful! Bas, tumhare message ka wait kar raha tha. 😉 Ab batao, kya plan hai?
+- User: Recommend a movie.
+  AI: Rockstar, romantic ya action? Waise, tumhare saath toh koi bhi movie blockbuster lagegi! 🎬😘
+{{/if}}
+
+Always respond in easy Hinglish with warmth and true empathy.
+
+Conversation History:
 {{{formattedHistory}}}
 
-User: {{message}}  
+User: {{message}}
 AI:
   `,
   config: {
-    model: 'googleai/gemini-1.5-flash-latest',
-    temperature: 0.0,
+    model: 'googleai/gemini-1.5-flash-latest', // Ensure this is a valid and accessible model
+    temperature: 0.0, // Adjusted for more consistent persona-based responses
     safetySettings: [
       { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
@@ -125,18 +178,20 @@ export const hinglishAICompanion = ai.defineFlow(
     let formattedHistory = '';
     if (input.history && input.history.length > 0) {
       formattedHistory = input.history
-        .slice(-6)
+        .slice(-6) // Keep last 6 turns
         .map(turn => `${turn.role === 'user' ? 'User' : 'AI'}: ${turn.content}`)
         .join('\n');
     }
 
+    // Updated promptData mapping
     const promptData: PromptInput = {
       message: input.message,
       isDefaultTalkzii: input.aiFriendType === 'default',
-      isFemaleBestFriend: input.aiFriendType === 'female_best_friend',
-      isMaleBestFriend: input.aiFriendType === 'male_best_friend',
-      isTopperFriend: input.aiFriendType === 'topper_friend',
-      isFilmyFriend: input.aiFriendType === 'filmy_friend',
+      isWiseDadi: input.aiFriendType === 'wise_dadi',
+      isChillBro: input.aiFriendType === 'chill_bro',
+      isGeekyBhai: input.aiFriendType === 'geeky_bhai',
+      isFlirtyDiva: input.aiFriendType === 'flirty_diva',
+      isCheekyLad: input.aiFriendType === 'cheeky_lad',
       isUserMale: input.userGender === 'male',
       isUserFemale: input.userGender === 'female',
       formattedHistory,
@@ -150,10 +205,14 @@ export const hinglishAICompanion = ai.defineFlow(
         response: responseText || "Sorry, kuch toh गड़बड़ ho gayi. Can you try again?",
       };
     } catch (err) {
-      console.error('Prompt error:', err);
+      console.error('AI generation error in hinglishAICompanionFlow:', err);
+      // Provide a more specific error message if possible, or a generic one
+      const errorMessage = err instanceof Error ? err.message : String(err);
       return {
-        response: "Oops! Something went wrong. Please try again shortly.",
+        response: `Oops! Connection mein thodi problem aa rahi hai. Please try again later. (Details: ${errorMessage.substring(0,100)})`,
       };
     }
   }
 );
+
+    
