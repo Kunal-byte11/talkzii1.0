@@ -41,6 +41,16 @@ export function NewLandingHeader() {
 
   const handleDesktopNavLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     // Native anchor behavior will handle scrolling, scroll-margin-top will provide offset.
+    // No prevention needed.
+  };
+
+  const handleMobileNavLinkClick = (href: string) => {
+    const targetId = href.substring(1); // Remove #
+    const targetElement = document.getElementById(targetId);
+    if (targetElement) {
+      targetElement.scrollIntoView({ behavior: 'smooth' });
+    }
+    // The menu closing is handled by MenuContainer's wrapper around onClick
   };
   
 
@@ -102,9 +112,9 @@ export function NewLandingHeader() {
               <MenuItem
                 key={link.href + link.label} 
                 icon={link.icon}
-                href={link.href} // Added href prop
+                onClick={() => handleMobileNavLinkClick(link.href)} // Use JS scroll
                 aria-label={link.label}
-                // Removed onClick that called handleMobileNavLinkClick
+                // No href prop here, so MenuItem renders as a button
               >
                 {link.label}
               </MenuItem>
@@ -115,4 +125,3 @@ export function NewLandingHeader() {
     </header>
   );
 }
-
