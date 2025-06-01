@@ -1,13 +1,21 @@
 
 "use client";
 
+import React, { useState } from 'react'; // Added useState
 import { Logo } from '@/components/talkzi/Logo';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link'; 
 
-import { MenuContainer, MenuItem } from '@/components/ui/fluid-menu'; 
+// Import ShadCN DropdownMenu components
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
 import {
   Menu as MenuIconLucide,
   X,
@@ -15,14 +23,14 @@ import {
   Heart as HeartIcon, 
   Mail as MailIcon, 
   Info,
-  // UsersRound, // Removed as 'Peoples' link is removed
+  // UsersRound, // "Peoples" link was removed in a previous step
 } from 'lucide-react';
 
 
 const navLinks = [
   { href: '#features-section', label: 'Features', icon: <LayoutGrid size={18} strokeWidth={1.5} /> },
   { href: '#about-us-section', label: 'About Us', icon: <Info size={18} strokeWidth={1.5} /> },
-  // { href: '#peoples-subsection', label: 'Peoples', icon: <UsersRound size={18} strokeWidth={1.5} /> }, // Removed Peoples
+  // { href: '#peoples-subsection', label: 'Peoples', icon: <UsersRound size={18} strokeWidth={1.5} /> }, // Peoples removed
   { href: '#values-section', label: 'Our Values', icon: <HeartIcon size={18} strokeWidth={1.5} /> },
   { href: '#footer-contact', label: 'Contact', icon: <MailIcon size={18} strokeWidth={1.5} /> },
 ];
@@ -30,6 +38,7 @@ const navLinks = [
 export function NewLandingHeader() {
   const router = useRouter();
   const { user } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // State for mobile menu icon
 
   const handleGetStarted = () => {
     if (user) {
@@ -45,7 +54,7 @@ export function NewLandingHeader() {
 
   const handleMobileNavLinkClick = (hash: string) => {
     const header = document.getElementById('landing-page-header');
-    let headerOffset = 72; // Default offset, approx h-16 (64px) + some buffer
+    let headerOffset = 72; 
     if (header) {
       headerOffset = header.offsetHeight;
     }
@@ -60,7 +69,7 @@ export function NewLandingHeader() {
         behavior: 'smooth'
       });
     }
-    // Menu closing is handled by MenuContainer's wrapper with a delay
+    // DropdownMenu handles closing itself
   };
   
 
@@ -95,7 +104,7 @@ export function NewLandingHeader() {
           </Button>
         </nav>
 
-        {/* Mobile Navigation - Stack Menu */}
+        {/* Mobile Navigation - ShadCN DropdownMenu */}
         <div className="md:hidden flex items-center space-x-2">
            <Button
             onClick={handleGetStarted}
@@ -105,33 +114,27 @@ export function NewLandingHeader() {
             Get Started
           </Button>
           
-          <MenuContainer className="relative z-50">
-            <MenuItem 
-              isToggle={true}
-              aria-label="Toggle navigation menu"
-              icon={
-                <div className="relative w-6 h-6 flex items-center justify-center">
-                  <div className="absolute inset-0 transition-all duration-200 ease-in-out origin-center opacity-100 scale-100 rotate-0 [div[data-expanded=true]_>div>&]:opacity-0 [div[data-expanded=true]_>div>&]:scale-90 [div[data-expanded=true]_>div>&]:-rotate-90">
-                    <MenuIconLucide size={22} strokeWidth={2} />
-                  </div>
-                  <div className="absolute inset-0 transition-all duration-200 ease-in-out origin-center opacity-0 scale-90 rotate-90 [div[data-expanded=true]_>div>&]:opacity-100 [div[data-expanded=true]_>div>&]:scale-100 [div[data-expanded=true]_>div>&]:rotate-0">
-                    <X size={22} strokeWidth={2} />
-                  </div>
-                </div>
-              }
-            />
-            {/* Navigation items for the dropdown */}
-            {navLinks.map((link) => (
-              <MenuItem
-                key={link.href + link.label} 
-                icon={link.icon}
-                onClick={() => handleMobileNavLinkClick(link.href)} // No href prop, rely on onClick
-                aria-label={link.label}
-              >
-                {link.label}
-              </MenuItem>
-            ))}
-          </MenuContainer>
+          <DropdownMenu open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="p-2 rounded-md justify-center hover:bg-muted/50 transition-colors">
+                {mobileMenuOpen ? <X size={22} strokeWidth={2} /> : <MenuIconLucide size={22} strokeWidth={2} />}
+                <span className="sr-only">Toggle navigation menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-background border-border shadow-xl z-50">
+              {navLinks.map((link) => (
+                <DropdownMenuItem
+                  key={link.href + link.label}
+                  onClick={() => handleMobileNavLinkClick(link.href)}
+                  className="flex items-center gap-3 px-3 py-2.5 text-sm text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
+                  aria-label={link.label}
+                >
+                  {link.icon && <span className="shrink-0 w-5 h-5 flex items-center justify-center">{link.icon}</span>}
+                  <span className="flex-grow text-left truncate">{link.label}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
