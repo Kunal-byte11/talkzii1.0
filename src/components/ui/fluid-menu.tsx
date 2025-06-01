@@ -47,7 +47,7 @@ export const MenuContainer: React.FC<MenuContainerProps> = ({ children, classNam
               exit={{ opacity: 0, y: -10, height: 0 }}
               transition={{ duration: 0.2, ease: "circOut" }}
               className="absolute top-full right-0 mt-2 w-56 bg-background border border-border rounded-lg shadow-xl z-20 overflow-hidden"
-              id="mobile-menu-dropdown" // Added for aria-controls
+              id="mobile-menu-dropdown"
             >
               <ul className="py-1">
                 {menuItems.map((child, index) => (
@@ -57,7 +57,6 @@ export const MenuContainer: React.FC<MenuContainerProps> = ({ children, classNam
                         if (child.props.onClick) {
                           child.props.onClick(event);
                         }
-                        // Add a small delay before closing the menu
                         setTimeout(() => {
                           closeMenu();
                         }, 150); 
@@ -98,7 +97,7 @@ export const MenuItem: React.FC<MenuItemProps> = ({
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     if (isToggle && context?.toggleMenu) {
       context.toggleMenu();
-      event.stopPropagation(); // Prevent event from bubbling if it's the toggle
+      event.stopPropagation();
     } else if (onClick) {
       onClick(event);
     }
