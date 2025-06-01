@@ -219,11 +219,12 @@ export function ChatInterface() {
     setShowSubscriptionModal(false);
   };
 
+  const personaDisplayName = personaOptions.find(p => p.value === currentAiFriendType)?.label || 'Talkzii';
+
   if (isAuthLoading || !isClientSide) {
-    return <div className="flex flex-col items-center justify-center h-full"><TypingIndicator personaImageUrl={currentAiPersonaImage} /> <p className="ml-2 text-sm text-muted-foreground">Loading chat state...</p></div>;
+    return <div className="flex flex-col items-center justify-center h-full"><TypingIndicator personaImageUrl={currentAiPersonaImage} personaName={personaDisplayName} /> <p className="ml-2 text-sm text-muted-foreground">Loading chat state...</p></div>;
   }
   
-  const personaDisplayName = personaOptions.find(p => p.value === currentAiFriendType)?.label || 'Default Talkzii';
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -236,7 +237,7 @@ export function ChatInterface() {
               {!user && <p className="text-sm">You're chatting as a guest.</p>}
               <p className="text-sm">AI Persona: <span className="font-semibold capitalize text-primary">{personaDisplayName}</span>.</p>
               {user && profile?.gender && (
-                <p className="text-sm">Your gender is set to: <span className="font-semibold capitalize text-primary">{profile.gender}</span>.</p>
+                <p className="text-sm">Your gender is set to: <span className="font-semibold capitalize text-primary">{profile.gender.replace(/_/g, ' ')}</span>.</p>
               )}
               <p className="text-sm">Type your first message below.</p>
             </div>
@@ -244,7 +245,7 @@ export function ChatInterface() {
           {messages.map((msg) => (
             <MessageBubble key={msg.id} message={msg} onFeedback={handleFeedback} />
           ))}
-          {isAiLoading && <TypingIndicator personaImageUrl={currentAiPersonaImage} />}
+          {isAiLoading && <TypingIndicator personaImageUrl={currentAiPersonaImage} personaName={personaDisplayName} />}
         </div>
       </ScrollArea>
       <ChatInputBar onSendMessage={handleSendMessage} isLoading={isAiLoading} />
