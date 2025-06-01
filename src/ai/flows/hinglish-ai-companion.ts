@@ -9,7 +9,6 @@ const ChatTurnSchema = z.object({
   content: z.string(),
 });
 
-// Updated enum to match personaOptions.ts
 const HinglishAICompanionInputSchema = z.object({
   message: z.string(),
   aiFriendType: z
@@ -34,7 +33,6 @@ const HinglishAICompanionOutputSchema = z.object({
 });
 export type HinglishAICompanionOutput = z.infer<typeof HinglishAICompanionOutputSchema>;
 
-// Updated boolean flags for personas
 const PromptInputSchema = z.object({
   message: z.string(),
   isDefaultTalkzii: z.boolean(),
@@ -61,7 +59,6 @@ function detectSelfHarmIntent(message: string): boolean {
 const DEFAULT_CRISIS_RESPONSE = "Hey, I’m really worried about you, but I’m not a counselor. We’re friends now, and tumhe meri kasam, kal hospital jaana around 10:00 AM to talk to a doctor. I’m here for you, okay? 🫂";
 const OTHER_PERSONAS_CRISIS_RESPONSE = "I'm really concerned to hear you're feeling this way. It sounds like you're going through a lot. You can reach out to a helpline like Aasra (9820466726) or Vandrevala Foundation (18602662345) if you feel you need more support. They're there to listen.";
 
-// Updated prompt with new personas and examples
 const hinglishCompanionPrompt = ai.definePrompt({
   name: 'hinglishCompanionPrompt',
   input: { schema: PromptInputSchema },
@@ -150,8 +147,8 @@ User: {{message}}
 AI:
   `,
   config: {
-    model: 'googleai/gemini-1.5-flash-latest', // Ensure this is a valid and accessible model
-    temperature: 0.0, // Adjusted for more consistent persona-based responses
+    model: 'googleai/gemini-1.5-flash-latest',
+    temperature: 0.0,
     safetySettings: [
       { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
@@ -178,12 +175,11 @@ export const hinglishAICompanion = ai.defineFlow(
     let formattedHistory = '';
     if (input.history && input.history.length > 0) {
       formattedHistory = input.history
-        .slice(-6) // Keep last 6 turns
+        .slice(-6)
         .map(turn => `${turn.role === 'user' ? 'User' : 'AI'}: ${turn.content}`)
         .join('\n');
     }
 
-    // Updated promptData mapping
     const promptData: PromptInput = {
       message: input.message,
       isDefaultTalkzii: input.aiFriendType === 'default',
@@ -198,15 +194,14 @@ export const hinglishAICompanion = ai.defineFlow(
     };
 
     try {
-      const llmResponse = await hinglishCompanionPrompt.generate(promptData);
-      const responseText = llmResponse.output()?.response;
+      const llmResponse = await hinglishCompanionPrompt(promptData);
+      const responseText = llmResponse.output?.response;
 
       return {
         response: responseText || "Sorry, kuch toh गड़बड़ ho gayi. Can you try again?",
       };
     } catch (err) {
       console.error('AI generation error in hinglishAICompanionFlow:', err);
-      // Provide a more specific error message if possible, or a generic one
       const errorMessage = err instanceof Error ? err.message : String(err);
       return {
         response: `Oops! Connection mein thodi problem aa rahi hai. Please try again later. (Details: ${errorMessage.substring(0,100)})`,
@@ -214,5 +209,3 @@ export const hinglishAICompanion = ai.defineFlow(
     }
   }
 );
-
-    
