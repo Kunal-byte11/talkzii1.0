@@ -23,7 +23,7 @@ function FloatingPaths({ position }: { position: number }) {
     return (
         <div className="absolute inset-0 pointer-events-none">
             <svg
-                className="w-full h-full text-[hsl(var(--chart-5))]" // Using chart-5 for darker pinkish
+                className="w-full h-full text-[hsl(var(--chart-5))]"
                 viewBox="0 0 696 316"
                 fill="none"
             >
@@ -42,7 +42,7 @@ function FloatingPaths({ position }: { position: number }) {
                             pathOffset: [0, 1, 0],
                         }}
                         transition={{
-                            duration: 10 + Math.random() * 5, // Animation speed adjusted (was 20 + random * 10)
+                            duration: 10 + Math.random() * 5, 
                             repeat: Number.POSITIVE_INFINITY,
                             ease: "linear",
                         }}
@@ -89,7 +89,7 @@ export function BackgroundPaths({
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8 }}
+                    transition={{ duration: 0.4 }} // Reduced duration from 0.8
                     className="max-w-4xl mx-auto"
                 >
                     <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 tracking-tight">
@@ -101,12 +101,12 @@ export function BackgroundPaths({
                                 {word.split("").map((letter, letterIndex) => (
                                     <motion.span
                                         key={`${wordIndex}-${letterIndex}`}
-                                        initial={{ y: 50, opacity: 0 }} // Start a bit lower for more visible animation
+                                        initial={{ y: 50, opacity: 0 }} 
                                         animate={{ y: 0, opacity: 1 }}
                                         transition={{
-                                            delay: wordIndex * 0.02 + letterIndex * 0.01, // Reduced delay
-                                            type: "tween", // Changed from spring
-                                            duration: 0.2,    // Faster animation for each letter
+                                            delay: wordIndex * 0.02 + letterIndex * 0.01, 
+                                            type: "tween", 
+                                            duration: 0.2,    
                                             ease: "easeOut",
                                         }}
                                         className="inline-block text-transparent bg-clip-text 
