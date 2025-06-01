@@ -23,7 +23,7 @@ function FloatingPaths({ position }: { position: number }) {
     return (
         <div className="absolute inset-0 pointer-events-none">
             <svg
-                className="w-full h-full text-primary" 
+                className="w-full h-full text-[hsl(var(--chart-5))]"
                 viewBox="0 0 696 316"
                 fill="none"
             >
@@ -42,7 +42,7 @@ function FloatingPaths({ position }: { position: number }) {
                             pathOffset: [0, 1, 0],
                         }}
                         transition={{
-                            duration: 20 + Math.random() * 10,
+                            duration: 10 + Math.random() * 5, // Made animation faster
                             repeat: Number.POSITIVE_INFINITY,
                             ease: "linear",
                         }}
