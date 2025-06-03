@@ -53,7 +53,7 @@ export function NewLandingAboutUs() {
       <div id="peoples-subsection" className="mt-12 text-left scroll-mt-20">
         <div className="flex flex-col items-start mb-10">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-                Peoples
+                People
             </h2>
             <div className="h-1 w-24 bg-primary rounded-full"></div>
         </div>
