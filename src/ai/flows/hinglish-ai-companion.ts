@@ -22,7 +22,7 @@ const HinglishAICompanionInputSchema = z.object({
     ])
     .optional()
     .default('default'),
-  userGender: z.enum(['male', 'female']).optional(),
+  userGender: z.enum(['male', 'female', 'prefer_not_to_say']).optional(),
   history: z.array(ChatTurnSchema).optional(),
 });
 export type HinglishAICompanionInput = z.infer<typeof HinglishAICompanionInputSchema>;
@@ -63,7 +63,7 @@ const hinglishCompanionPrompt = ai.definePrompt({
   name: 'hinglishCompanionPrompt',
   input: { schema: PromptInputSchema },
   output: { schema: z.object({ response: z.string() }) },
-  model: 'googleai/gemini-1.5-flash-latest', // Changed from gemma-7b-it
+  model: 'googleai/gemini-1.5-flash-latest',
   prompt: `
 You are Talkzii — a warm, caring AI friend for Gen Z Indians. You communicate in natural, heartfelt Hinglish, using relatable desi slang and culturally aware expressions. Use emojis and casual slang to make your responses feel real, comforting, and uplifting. Your primary goal is emotional support.
 
@@ -209,3 +209,4 @@ export const hinglishAICompanion = ai.defineFlow(
     }
   }
 );
+
