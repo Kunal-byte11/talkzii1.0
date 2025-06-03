@@ -3,15 +3,16 @@
 
 import dynamic from 'next/dynamic';
 import { NewLandingHeader } from '@/components/talkzii/landing/NewLandingHeader';
-import { NewLandingHero } from '@/components/talkzii/landing/NewLandingHero'; // Restored this import
-import { Skeleton } from '@/components/ui/skeleton'; // For loading state
+import { NewLandingHero } from '@/components/talkzii/landing/NewLandingHero';
+import { Skeleton } from '@/components/ui/skeleton'; 
+import { ComingSoonBanner } from '@/components/talkzi/ComingSoonBanner';
 
 // Dynamically import components that are below the fold
 const NewLandingFeatures = dynamic(() => 
   import('@/components/talkzii/landing/NewLandingFeatures').then(mod => mod.NewLandingFeatures),
   { 
     loading: () => <div className="container mx-auto px-4 py-10"><Skeleton className="h-48 w-full" /></div>,
-    ssr: false // Ensure these are client-side to benefit from lazy loading
+    ssr: false 
   }
 );
 const NewLandingAboutUs = dynamic(() => 
@@ -44,7 +45,8 @@ export default function HomePage() {
     >
       <div>
         <NewLandingHeader />
-        <NewLandingHero /> {/* Restored NewLandingHero here */}
+        <ComingSoonBanner />
+        <NewLandingHero />
         <NewLandingFeatures />
         <NewLandingAboutUs />
         <NewLandingValues />

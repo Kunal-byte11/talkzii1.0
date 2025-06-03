@@ -10,6 +10,7 @@ import { LoadingSpinner } from '@/components/talkzi/LoadingSpinner';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Logo } from '@/components/talkzi/Logo';
+import { ComingSoonBanner } from '@/components/talkzi/ComingSoonBanner';
 
 export default function ChatPage() {
   const { user, signOut, isLoading: isAuthLoading } = useAuth();
@@ -25,10 +26,10 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-dvh bg-background"> {/* Changed h-screen to min-h-dvh */}
+    <div className="flex flex-col min-h-dvh bg-background">
       <header className="sticky top-0 z-20 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 max-w-5xl mx-auto items-center justify-between px-4">
-          <div className="flex items-center w-12"> {/* Left icon container */}
+          <div className="flex items-center w-12">
             <Button variant="ghost" size="icon" title="Menu" className="text-foreground">
               <MenuIcon className="h-6 w-6" />
               <span className="sr-only">Menu</span>
@@ -63,7 +64,8 @@ export default function ChatPage() {
           </div>
         </div>
       </header>
-      <main className="flex-grow overflow-hidden"> {/* flex-grow will make ChatInterface take remaining space */}
+      <ComingSoonBanner />
+      <main className="flex-grow overflow-hidden">
         <ChatInterface />
       </main>
     </div>

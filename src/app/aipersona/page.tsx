@@ -10,10 +10,10 @@ import { LogOut, User as UserIcon, Home } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/talkzi/LoadingSpinner';
-// import { AuthRequiredMessage } from '@/components/talkzi/AuthRequiredMessage'; // Not used
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { personaOptions } from '@/lib/personaOptions'; // Using shared persona options
+import { personaOptions } from '@/lib/personaOptions';
+import { ComingSoonBanner } from '@/components/talkzi/ComingSoonBanner';
 
 const getAIFriendTypeKey = (userId?: string) => userId ? `talkzii_ai_friend_type_${userId}` : 'talkzii_ai_friend_type_guest';
 const getChatHistoryKey = (userId?: string) => userId ? `talkzii_chat_history_${userId}` : 'talkzii_chat_history_guest';
@@ -34,9 +34,9 @@ export default function AIPersonaPage() {
     if (isAuthLoading) return; 
 
     setIsPersonaLoading(true);
-    if (!user) { // Guest user
+    if (!user) { 
       setSelectedPersona('default');
-    } else { // Logged-in user
+    } else { 
       try {
         const savedPersona = localStorage.getItem(AI_FRIEND_TYPE_KEY);
         setSelectedPersona(savedPersona || 'default');     
@@ -63,10 +63,10 @@ export default function AIPersonaPage() {
   };
 
   const handlePersonaSelect = (personaValue: string) => {
-    if (!user) { // Guest user
+    if (!user) { 
       if (personaValue === 'default') {
-        setSelectedPersona('default'); // Allow selecting default
-        handleGuestPersonaConfirm(); // Directly proceed to chat for guests selecting default
+        setSelectedPersona('default'); 
+        handleGuestPersonaConfirm(); 
       } else {
         const personaLabel = personaOptions.find(p => p.value === personaValue)?.label || "this persona";
         toast({
@@ -77,7 +77,6 @@ export default function AIPersonaPage() {
       return; 
     }
 
-    // Logged-in user: direct navigation
     setSelectedPersona(personaValue);
     try {
       const previousSavedPersona = localStorage.getItem(AI_FRIEND_TYPE_KEY) || 'default';
@@ -143,7 +142,7 @@ export default function AIPersonaPage() {
             )}
           </div>
         </header>
-
+        <ComingSoonBanner />
         {user && (
             <div className="px-4 pt-3 text-left">
                 <p className="text-sm text-muted-foreground mb-1 flex items-center justify-start">
@@ -164,7 +163,7 @@ export default function AIPersonaPage() {
               className={cn(
                 "flex flex-col gap-3 text-center pb-3 items-center p-3 rounded-xl border-2 transition-all duration-200 ease-in-out hover:shadow-lg cursor-pointer",
                 selectedPersona === persona.value ? 'border-primary ring-2 ring-primary shadow-xl bg-primary/5' : 'border-border bg-card hover:border-primary/50',
-                !user && persona.value !== 'default' && 'opacity-70 hover:border-border hover:shadow-none' // Keep visual cue but click handled by toast
+                !user && persona.value !== 'default' && 'opacity-70 hover:border-border hover:shadow-none'
               )}
             >
               <div className="relative px-4 w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40">
@@ -185,7 +184,6 @@ export default function AIPersonaPage() {
           ))}
         </div>
         
-        {/* "Confirm & Chat" button only for guests */}
         {!user && (
           <div className="px-4 py-6 mt-4">
             <Button

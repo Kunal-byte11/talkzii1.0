@@ -13,6 +13,7 @@ import { LoadingSpinner } from '@/components/talkzi/LoadingSpinner';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { personaOptions } from '@/lib/personaOptions';
+import { ComingSoonBanner } from '@/components/talkzi/ComingSoonBanner';
 
 const getAIFriendTypeKey = (userId?: string) => userId ? `talkzii_ai_friend_type_${userId}` : 'talkzii_ai_friend_type_guest';
 const getChatHistoryKey = (userId?: string) => userId ? `talkzii_chat_history_${userId}` : 'talkzii_chat_history_guest';
@@ -30,7 +31,7 @@ export default function ExplorePage() {
   const handlePersonaChat = (personaValue: string) => {
     if (!isClientReady) return;
 
-    if (!user) { // Guest user
+    if (!user) { 
       if (personaValue === 'default') {
         try {
           localStorage.removeItem(getAIFriendTypeKey(undefined));
@@ -53,7 +54,6 @@ export default function ExplorePage() {
       return;
     }
 
-    // Logged-in user
     try {
       const AI_FRIEND_TYPE_KEY_USER = getAIFriendTypeKey(user.id);
       const CHAT_HISTORY_KEY_USER = getChatHistoryKey(user.id);
@@ -126,7 +126,7 @@ export default function ExplorePage() {
             )}
           </div>
         </header>
-
+        <ComingSoonBanner />
         {user && (
             <div className="px-4 pt-3 text-left">
                 <p className="text-sm text-muted-foreground mb-1 flex items-center justify-start">
