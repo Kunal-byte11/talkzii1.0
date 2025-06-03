@@ -51,10 +51,10 @@ export function ChatInputBar({ onSendMessage, isLoading }: ChatInputBarProps) {
           onKeyDown={handleKeyDown}
         />
         <div className="flex items-center gap-1 pr-1">
-          <Button variant="ghost" size="icon" type="button" className="shrink-0 text-muted-foreground hover:text-primary h-9 w-9">
+          {/* <Button variant="ghost" size="icon" type="button" className="shrink-0 text-muted-foreground hover:text-primary h-9 w-9">
             <Smile className="h-5 w-5" />
             <span className="sr-only">Emoji</span>
-          </Button>
+          </Button> */}
           <Button 
             type="submit" 
             size="default" 

@@ -3,7 +3,7 @@
 
 import dynamic from 'next/dynamic';
 import { NewLandingHeader } from '@/components/talkzii/landing/NewLandingHeader';
-import { BackgroundPaths } from '@/components/ui/background-paths'; 
+import { NewLandingHero } from '@/components/talkzii/landing/NewLandingHero'; // Restored this import
 import { Skeleton } from '@/components/ui/skeleton'; // For loading state
 
 // Dynamically import components that are below the fold
@@ -44,11 +44,7 @@ export default function HomePage() {
     >
       <div>
         <NewLandingHeader />
-        <BackgroundPaths 
-          title="Chat with your AI Dost"
-          subtitle="Connect with AI companions for engaging conversations and personalized experiences."
-          ctaText="Explore Talkzii"
-        />
+        <NewLandingHero /> {/* Restored NewLandingHero here */}
         <NewLandingFeatures />
         <NewLandingAboutUs />
         <NewLandingValues />
