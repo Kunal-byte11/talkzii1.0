@@ -1,106 +1,106 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-  font-family: var(--font-plus-jakarta-sans), var(--font-noto-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-poppins), var(--font-plus-jakarta-sans), var(--font-noto-sans), Arial, Helvetica, sans-serif;
 }
 
 @layer base {
   :root {
-    /* Light Theme based on user's latest design */
-    --background: 270 25% 98.2%; /* #f9f9fb */
-    --foreground: 255 15% 8.2%; /* #121019 */
+    /* Light Theme based on PRD */
+    --background: 220 100% 98%; /* #F5F8FF Soft, desaturated light blue */
+    --foreground: 240 10% 25%; /* Dark gray for text */
 
-    --card: 0 0% 100%; /* Assuming cards would be white on the new light bg */
-    --card-foreground: 255 15% 8.2%; /* #121019 */
+    --card: 0 0% 100%; 
+    --card-foreground: 240 10% 25%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 255 15% 8.2%;
+    --popover-foreground: 240 10% 25%;
 
-    /* Primary is now the light lavender for hero button */
-    --primary: 258 45% 80.8%; /* #cabeee */
-    --primary-foreground: 255 15% 8.2%; /* #121019 (text on hero button) */
+    --primary: 257 81% 62%; /* #7F5AF0 Vibrant purple */
+    --primary-foreground: 0 0% 100%; /* White text on vibrant purple */
 
-    /* Secondary can be a supporting color, let's keep it soft */
-    --secondary: 270 50% 90%; /* Lighter purple for secondary elements if needed */
-    --secondary-foreground: 255 15% 8.2%;
+    --secondary: 257 50% 90%; /* Lighter shade of primary */
+    --secondary-foreground: 240 10% 25%;
 
-    --muted: 270 25% 94%; /* For muted backgrounds like input fields from previous designs */
-    --muted-foreground: 256 25% 45.3%; /* #66588d (for feature descriptions, etc.) */
+    --muted: 220 60% 94%; 
+    --muted-foreground: 240 10% 45%;
 
-    /* Accent can be a different vibrant color or a variation */
-    --accent: 274 81% 50%; /* Original Purple, can be used for other accents if needed */
-    --accent-foreground: 257 33% 98%;
+    --accent: 318 100% 70%; /* #FF66C4 Vivid pink-purple */
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 270 25% 90%; /* #e2e2f1 light border */
-    --input: 270 25% 94%; /* #eee7f3 (light input background from auth page design) */
-    --ring: 258 45% 75%; /* Ring color based on new primary */
+    --border: 220 25% 90%; 
+    --input: 220 30% 96%; 
+    --ring: 257 81% 62%; /* Ring matches primary */
     
-    --chart-1: 274 70% 55%;
-    --chart-2: 280 65% 60%;
-    --chart-3: 270 60% 50%;
-    --chart-4: 260 55% 65%;
+    --chart-1: 257 70% 55%;
+    --chart-2: 318 70% 65%;
+    --chart-3: 220 60% 70%;
+    --chart-4: 200 55% 65%;
     --chart-5: 290 50% 50%;
     --radius: 0.75rem;
     
-    --sidebar-background: 270 25% 97%;
-    --sidebar-foreground: 255 15% 10%;
-    --sidebar-primary: 258 45% 80.8%;
-    --sidebar-primary-foreground: 255 15% 8.2%;
-    --sidebar-accent: 274 81% 50%;
-    --sidebar-accent-foreground: 257 33% 98%;
-    --sidebar-border: 270 25% 88%;
-    --sidebar-ring: 258 45% 75%;
+    /* Sidebar variables - can be adjusted to match new theme */
+    --sidebar-background: 220 80% 97%;
+    --sidebar-foreground: 240 10% 20%;
+    --sidebar-primary: 257 81% 62%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 318 100% 70%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 220 25% 88%;
+    --sidebar-ring: 257 81% 62%;
   }
 
   .dark {
-    /* Dark theme - For consistency, using the new branding's dark color as bg */
-    --background: 255 15% 8.2%; /* #121019 */
-    --foreground: 270 25% 98.2%; /* #f9f9fb */
+    /* Dark Theme based on PRD (inverted/adjusted) */
+    --background: 240 10% 10%; /* Dark blue/grey */
+    --foreground: 220 100% 98%; /* Light blue/white text */
 
-    --card: 255 15% 12%; /* Slightly lighter than background */
-    --card-foreground: 270 25% 98.2%;
+    --card: 240 10% 15%; 
+    --card-foreground: 220 100% 98%;
 
-    --popover: 255 15% 12%;
-    --popover-foreground: 270 25% 98.2%;
+    --popover: 240 10% 15%;
+    --popover-foreground: 220 100% 98%;
 
-    --primary: 258 45% 80.8%; /* #cabeee */
-    --primary-foreground: 255 15% 8.2%; /* #121019 */
+    --primary: 257 81% 68%; /* Slightly brighter purple for dark mode */
+    --primary-foreground: 240 10% 10%; 
+
+    --secondary: 257 50% 30%; 
+    --secondary-foreground: 220 100% 98%;
+
+    --muted: 240 10% 20%;
+    --muted-foreground: 220 60% 75%;
     
-    --secondary: 270 25% 20%; 
-    --secondary-foreground: 270 25% 98.2%;
-
-    --muted: 255 15% 15%;
-    --muted-foreground: 256 25% 65.3%; /* Lighter version of #66588d for dark */
-    
-    --accent: 274 81% 60%; /* Brighter purple for dark mode accent */
-    --accent-foreground: 255 15% 8.2%;
+    --accent: 318 100% 75%; /* Brighter pink-purple for dark mode */
+    --accent-foreground: 240 10% 10%;
 
     --destructive: 0 60% 50%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 255 15% 15%;
-    --input: 255 15% 18%; 
-    --ring: 258 45% 70%; 
+    --border: 240 10% 20%;
+    --input: 240 10% 22%; 
+    --ring: 257 81% 68%; 
     
-    --chart-1: 258 45% 70%;
-    --chart-2: 260 50% 75%;
-    --chart-3: 270 55% 65%;
-    --chart-4: 280 60% 80%;
-    --chart-5: 290 65% 60%;
+    --chart-1: 257 70% 65%;
+    --chart-2: 318 70% 70%;
+    --chart-3: 220 60% 75%;
+    --chart-4: 200 55% 70%;
+    --chart-5: 290 50% 60%;
 
-    --sidebar-background: 255 15% 10%;
-    --sidebar-foreground: 270 25% 97%;
-    --sidebar-primary: 258 45% 80.8%;
-    --sidebar-primary-foreground: 255 15% 8.2%;
-    --sidebar-accent: 274 81% 60%;
-    --sidebar-accent-foreground: 255 15% 8.2%;
-    --sidebar-border: 255 15% 15%;
-    --sidebar-ring: 258 45% 70%;
+    /* Sidebar dark variables */
+    --sidebar-background: 240 10% 12%;
+    --sidebar-foreground: 220 80% 97%;
+    --sidebar-primary: 257 81% 68%;
+    --sidebar-primary-foreground: 240 10% 10%;
+    --sidebar-accent: 318 100% 75%;
+    --sidebar-accent-foreground: 240 10% 10%;
+    --sidebar-border: 240 10% 20%;
+    --sidebar-ring: 257 81% 68%;
   }
 }
 
@@ -118,23 +118,21 @@ body {
 }
 
 .gradient-button {
-  /* This might need adjustment if primary is now very light */
   @apply bg-gradient-to-r from-primary to-accent text-primary-foreground;
 }
 
-
-/* Adjusted Neumorphism for Light Theme */
+/* Neumorphism - adjust with new theme variables if needed */
 .neumorphic-shadow-soft {
   box-shadow: 6px 6px 12px hsl(var(--background) / 0.7), 
-              -6px -6px 12px hsl(var(--background) / 0.9),
+              -6px -6px 12px hsl(var(--card) / 0.9), /* Use card or a lighter variant of bg */
               inset 2px 2px 3px hsl(var(--background) / 0.6),
-              inset -2px -2px 3px hsl(var(--background) / 0.8);
-  background-color: hsl(var(--background)); /* Ensure background matches */
+              inset -2px -2px 3px hsl(var(--card) / 0.8);
+  background-color: hsl(var(--background));
 }
 
 .neumorphic-shadow-inset-soft {
   box-shadow: inset 4px 4px 8px hsl(var(--muted) / 0.5), 
-              inset -4px -4px 8px hsl(var(--background) / 0.9);
+              inset -4px -4px 8px hsl(var(--card) / 0.9); /* Use card or a lighter variant of bg */
   background-color: hsl(var(--background));
 }
 
@@ -143,4 +141,18 @@ body {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid hsla(var(--border) / 0.3);
+}
+
+/* Font specific classes for personas */
+.font-poppins {
+  font-family: var(--font-poppins), sans-serif;
+}
+.font-hind {
+  font-family: var(--font-hind), serif;
+}
+.font-geist-mono {
+  font-family: var(--font-geist-mono), monospace;
+}
+.font-plus-jakarta-sans {
+  font-family: var(--font-plus-jakarta-sans), sans-serif;
 }

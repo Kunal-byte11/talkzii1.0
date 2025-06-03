@@ -8,7 +8,9 @@ export interface ChatMessage {
   isCrisis?: boolean;
   feedback?: 'liked' | 'disliked' | null; 
   userPromptText?: string; 
-  personaImage?: string; // Added for AI persona image
+  personaImage?: string;
+  aiBubbleColor?: string; // For persona-specific AI bubble background
+  aiTextColor?: string; // For persona-specific AI bubble text
 }
 
 export interface UserProfile {

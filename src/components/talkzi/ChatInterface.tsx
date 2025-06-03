@@ -15,7 +15,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageSquareText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/client';
-import { personaOptions, getDefaultPersonaImage } from '@/lib/personaOptions';
+import { personaOptions, getDefaultPersonaImage, getPersonaTheme, type PersonaTheme } from '@/lib/personaOptions';
+import { cn } from '@/lib/utils';
 
 const getChatHistoryKey = (userId?: string) => userId ? `talkzii_chat_history_${userId}` : 'talkzii_chat_history_guest';
 const getAIFriendTypeKey = (userId?: string) => userId ? `talkzii_ai_friend_type_${userId}` : 'talkzii_ai_friend_type_guest';
@@ -51,6 +52,7 @@ export function ChatInterface() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [currentAiFriendType, setCurrentAiFriendType] = useState<string>('default');
   const [currentAiPersonaImage, setCurrentAiPersonaImage] = useState<string>(getDefaultPersonaImage());
+  const [currentPersonaTheme, setCurrentPersonaTheme] = useState<PersonaTheme | undefined>(getPersonaTheme('default'));
   const [isClientSide, setIsClientSide] = useState(false);
 
   const { chatCount, incrementChatCount, isLoading: isChatCountLoading } = useChatCounter(user?.id);
@@ -98,6 +100,7 @@ export function ChatInterface() {
     setCurrentAiFriendType(activePersonaType);
     const persona = personaOptions.find(p => p.value === activePersonaType);
     setCurrentAiPersonaImage(persona?.imageUrl || getDefaultPersonaImage());
+    setCurrentPersonaTheme(persona?.theme || getPersonaTheme('default'));
 
   }, [localStorageKeys, isAuthLoading, isClientSide, user]);
 
@@ -150,14 +153,12 @@ export function ChatInterface() {
         return;
       }
     } else {
-      // Still loading chat count, maybe disallow sending or show a small loader/toast?
-      // For now, let's prevent sending if count is crucial and still loading.
       toast({ title: "Please wait", description: "Verifying message allowance..." });
       return;
     }
 
     const userMessage = addMessage(userInput, 'user');
-    incrementChatCount(); // Increment count as user's message is now added
+    incrementChatCount();
     setIsAiLoading(true);
 
     try {
@@ -181,10 +182,16 @@ export function ChatInterface() {
       
       const activePersona = personaOptions.find(p => p.value === (personaForAI || 'default'));
       const personaImg = activePersona?.imageUrl || getDefaultPersonaImage();
+      const personaBubbleTheme = activePersona?.theme;
 
       const aiResponse = await hinglishAICompanion(companionInput);
       if (aiResponse.response) {
-        addMessage(aiResponse.response, 'ai', { userPromptText: userMessage.text, personaImage: personaImg });
+        addMessage(aiResponse.response, 'ai', { 
+          userPromptText: userMessage.text, 
+          personaImage: personaImg,
+          aiBubbleColor: personaBubbleTheme?.primaryColor,
+          aiTextColor: personaBubbleTheme?.bubbleTextColor,
+        });
       } else {
         addMessage("Sorry, I couldn't process that. Try again!", 'system');
       }
@@ -238,18 +245,7 @@ export function ChatInterface() {
 
 
   const handleSubscribe = () => {
-    // In a real app, this would trigger a subscription flow.
-    // For demo, we can reset the chat count for the user.
-    // if (user) {
-    //   resetChatCount(); // This would reset the user-specific count
-    // } else {
-    //   // Guest subscription doesn't make sense, they should log in.
-    //   toast({ title: "Login to Subscribe", description: "Please log in or create an account to subscribe." });
-    //   setShowSubscriptionModal(false);
-    //   return;
-    // }
     toast({ title: "Subscribed! (Demo)", description: "Enjoy unlimited chats! (Note: Chat count reset for this demo session)" });
-    // resetChatCount(); // Resetting for demo purposes. Actual subscription would grant a different status.
     setShowSubscriptionModal(false);
   };
 
@@ -262,9 +258,10 @@ export function ChatInterface() {
     return <div className="flex flex-col items-center justify-center h-full"><TypingIndicator personaImageUrl={currentAiPersonaImage} personaName={personaDisplayName} /> <p className="ml-2 text-sm text-muted-foreground">Loading chat state...</p></div>;
   }
   
+  const activeFontClass = currentPersonaTheme?.fontClassName || 'font-poppins';
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className={cn("flex flex-col h-full bg-background", activeFontClass)}>
       <ScrollArea className="flex-grow p-4 md:p-6" ref={scrollAreaRef}>
         <div className="max-w-3xl mx-auto space-y-4 pb-4">
           {messages.length === 0 && !isAiLoading && (
@@ -272,13 +269,13 @@ export function ChatInterface() {
               <MessageSquareText className="mx-auto h-12 w-12 mb-4 text-primary/70" />
               <p className="text-lg font-semibold">Start a conversation!</p>
               <p className="text-sm">
-                Chatting with: <span className="font-semibold capitalize text-primary">{personaDisplayName}</span>
+                Chatting with: <span className="font-semibold capitalize" style={{color: currentPersonaTheme?.accentColor || 'hsl(var(--primary))'}}>{personaDisplayName}</span>
               </p>
               {user && profile?.gender && (
-                <p className="text-sm">Your gender is set to: <span className="font-semibold capitalize text-primary">{profile.gender.replace(/_/g, ' ')}</span>.</p>
+                <p className="text-sm">Your gender is set to: <span className="font-semibold capitalize" style={{color: currentPersonaTheme?.accentColor || 'hsl(var(--primary))'}}>{profile.gender.replace(/_/g, ' ')}</span>.</p>
               )}
               <p className="text-sm">
-                Messages remaining: <span className="font-semibold text-primary">{messagesRemaining} / {messageLimit}</span>
+                Messages remaining: <span className="font-semibold" style={{color: currentPersonaTheme?.accentColor || 'hsl(var(--primary))'}}>{messagesRemaining} / {messageLimit}</span>
               </p>
               <p className="text-sm mt-1">Type your first message below.</p>
             </div>
@@ -286,17 +283,18 @@ export function ChatInterface() {
           {messages.map((msg) => (
             <MessageBubble key={msg.id} message={msg} onFeedback={handleFeedback} />
           ))}
-          {isAiLoading && <TypingIndicator personaImageUrl={currentAiPersonaImage} personaName={personaDisplayName} />}
+          {isAiLoading && <TypingIndicator personaImageUrl={currentAiPersonaImage} personaName={personaDisplayName} personaTheme={currentPersonaTheme} />}
         </div>
       </ScrollArea>
       <div className="px-4 py-1 text-center text-xs text-muted-foreground">
         {isChatCountLoading ? 'Loading message count...' : `Messages used: ${chatCount} / ${messageLimit}. ${user ? 'Logged in.' : 'Guest session.'}`}
       </div>
-      <ChatInputBar onSendMessage={handleSendMessage} isLoading={isAiLoading || isChatCountLoading} />
+      <ChatInputBar onSendMessage={handleSendMessage} isLoading={isAiLoading || isChatCountLoading} sendButtonAccentColor={currentPersonaTheme?.accentColor} />
       <SubscriptionModal
         isOpen={showSubscriptionModal}
         onClose={() => setShowSubscriptionModal(false)}
         onSubscribe={handleSubscribe}
+        accentColor={currentPersonaTheme?.accentColor}
       />
     </div>
   );

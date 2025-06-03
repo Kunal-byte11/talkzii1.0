@@ -19,17 +19,33 @@ const MessageBubbleComponent = ({ message }: MessageBubbleProps) => {
   const isCrisis = message.isCrisis;
 
   const AvatarComponent = isUser ? User : Bot;
-  const avatarBgClass = isUser ? 'bg-primary/20' : 'bg-input';
-  const avatarTextClass = isUser ? 'text-primary' : 'text-foreground';
+  
+  // Default avatar styles
+  let avatarBgClass = isUser ? 'bg-primary/20' : 'bg-input';
+  let avatarTextClass = isUser ? 'text-primary' : 'text-foreground';
 
-  const bubbleColorClass = isUser
+  // Default bubble styles
+  let bubbleColorClass = isUser
     ? 'bg-primary text-primary-foreground'
-    : isCrisis
-    ? 'bg-destructive/80 text-destructive-foreground'
     : 'bg-input text-foreground';
   
+  let bubbleStyle = {};
+
+  if (isAI) {
+    if (message.aiBubbleColor && message.aiTextColor) {
+      bubbleStyle = { backgroundColor: message.aiBubbleColor, color: message.aiTextColor };
+      // Avatar background for AI can be a lighter shade of its bubble or a neutral
+      avatarBgClass = 'bg-muted'; // Or derive from aiBubbleColor
+      avatarTextClass = message.aiTextColor; // Or a fixed contrast color
+    }
+  } else if (isCrisis) {
+    bubbleColorClass = 'bg-destructive/80 text-destructive-foreground';
+    avatarBgClass = 'bg-destructive text-destructive-foreground';
+  }
+  
   const messageAlignment = isUser ? 'items-end justify-end' : 'items-start justify-start';
-  const labelText = isUser ? "User" : isCrisis ? "System" : "AI";
+  const labelText = isUser ? "You" : isCrisis ? "System Alert" : (personaOptions.find(p=>p.imageUrl === message.personaImage)?.label || "AI");
+
 
   if (isSystem && !isCrisis) {
     return (
@@ -50,9 +66,9 @@ const MessageBubbleComponent = ({ message }: MessageBubbleProps) => {
         <div className={cn('flex items-end gap-2 max-w-[80%] sm:max-w-[70%]', 'flex-row')}>
           <div className={cn(
             "flex items-center justify-center h-10 w-10 rounded-full shrink-0 self-start",
-            "bg-destructive text-destructive-foreground" 
+            avatarBgClass 
           )}>
-            <AlertTriangle className="h-5 w-5" />
+            <AlertTriangle className="h-5 w-5 text-destructive-foreground" />
           </div>
           <div
             className={cn(
@@ -60,6 +76,7 @@ const MessageBubbleComponent = ({ message }: MessageBubbleProps) => {
               bubbleColorClass,
               'border border-destructive'
             )}
+            style={bubbleStyle}
           >
             <p className="text-sm whitespace-pre-wrap break-words">{message.text}</p>
           </div>
@@ -78,8 +95,8 @@ const MessageBubbleComponent = ({ message }: MessageBubbleProps) => {
       </p>
       <div className={cn('flex items-end gap-2 max-w-[80%] sm:max-w-[70%]', isUser ? 'flex-row-reverse' : 'flex-row')}>
         <div className={cn(
-          "flex items-center justify-center h-10 w-10 rounded-full shrink-0 self-start overflow-hidden", // Added overflow-hidden
-          avatarBgClass // Keep background for fallback or if image fails
+          "flex items-center justify-center h-10 w-10 rounded-full shrink-0 self-start overflow-hidden",
+          avatarBgClass
         )}>
           {isAI && message.personaImage ? (
             <Image src={message.personaImage} alt="AI Persona" width={40} height={40} className="object-cover" />
@@ -90,8 +107,9 @@ const MessageBubbleComponent = ({ message }: MessageBubbleProps) => {
         <div
           className={cn(
             'px-4 py-3 shadow-md min-w-[60px] rounded-xl',
-            bubbleColorClass
+            isAI ? '' : bubbleColorClass // AI uses inline style, user uses class
           )}
+          style={isAI ? bubbleStyle : {}}
         >
           <p className="text-base font-normal leading-normal whitespace-pre-wrap break-words">{message.text}</p>
         </div>
@@ -99,6 +117,9 @@ const MessageBubbleComponent = ({ message }: MessageBubbleProps) => {
     </div>
   );
 };
+
+// To import personaOptions for label
+import { personaOptions } from '@/lib/personaOptions';
 
 export const MessageBubble = React.memo(MessageBubbleComponent);
 MessageBubble.displayName = 'MessageBubble';
