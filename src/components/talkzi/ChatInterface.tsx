@@ -7,7 +7,7 @@ import { MessageBubble } from './MessageBubble';
 import { ChatInputBar } from './ChatInputBar';
 import { TypingIndicator } from './TypingIndicator';
 import { SubscriptionModal } from './SubscriptionModal';
-// import { useChatCounter } from '@/hooks/useChatCounter'; // Temporarily disabled
+import { useChatCounter } from '@/hooks/useChatCounter';
 import { detectCrisis } from '@/ai/flows/crisis-detection';
 import { hinglishAICompanion, type HinglishAICompanionInput } from '@/ai/flows/hinglish-ai-companion';
 import { useToast } from '@/hooks/use-toast';
@@ -15,10 +15,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageSquareText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/client';
-import { personaOptions, getDefaultPersonaImage } from '@/lib/personaOptions'; // Import shared persona options
+import { personaOptions, getDefaultPersonaImage } from '@/lib/personaOptions';
 
 const getChatHistoryKey = (userId?: string) => userId ? `talkzii_chat_history_${userId}` : 'talkzii_chat_history_guest';
 const getAIFriendTypeKey = (userId?: string) => userId ? `talkzii_ai_friend_type_${userId}` : 'talkzii_ai_friend_type_guest';
+
+const GUEST_MESSAGE_LIMIT = 10;
+const LOGGED_IN_FREE_TIER_MESSAGE_LIMIT = 20;
 
 async function saveMessageFeedbackToSupabase(feedbackData: {
   message_id: string;
@@ -46,9 +49,11 @@ export function ChatInterface() {
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const [currentAiFriendType, setCurrentAiFriendType] = useState<string>('default'); // Default to string
+  const [currentAiFriendType, setCurrentAiFriendType] = useState<string>('default');
   const [currentAiPersonaImage, setCurrentAiPersonaImage] = useState<string>(getDefaultPersonaImage());
   const [isClientSide, setIsClientSide] = useState(false);
+
+  const { chatCount, incrementChatCount, isLoading: isChatCountLoading } = useChatCounter(user?.id);
 
   const [localStorageKeys, setLocalStorageKeys] = useState({
     chatHistory: getChatHistoryKey(user?.id),
@@ -133,7 +138,26 @@ export function ChatInterface() {
   const handleSendMessage = useCallback(async (userInput: string) => {
     if (!userInput.trim()) return;
 
+    if (!isChatCountLoading) {
+      const currentLimit = user ? LOGGED_IN_FREE_TIER_MESSAGE_LIMIT : GUEST_MESSAGE_LIMIT;
+      if (chatCount >= currentLimit) {
+        setShowSubscriptionModal(true);
+        toast({
+          title: "Message Limit Reached",
+          description: `You've used all your ${user ? 'free tier' : 'guest'} messages. Please subscribe for unlimited chats!`,
+          variant: "default"
+        });
+        return;
+      }
+    } else {
+      // Still loading chat count, maybe disallow sending or show a small loader/toast?
+      // For now, let's prevent sending if count is crucial and still loading.
+      toast({ title: "Please wait", description: "Verifying message allowance..." });
+      return;
+    }
+
     const userMessage = addMessage(userInput, 'user');
+    incrementChatCount(); // Increment count as user's message is now added
     setIsAiLoading(true);
 
     try {
@@ -150,7 +174,6 @@ export function ChatInterface() {
         companionInput.userGender = profile.gender;
       }
       
-      // currentAiFriendType is already up-to-date from useEffect
       const personaForAI = currentAiFriendType as HinglishAICompanionInput['aiFriendType'];
       if (personaForAI && personaForAI !== 'default') {
           companionInput.aiFriendType = personaForAI;
@@ -176,7 +199,7 @@ export function ChatInterface() {
     } finally {
       setIsAiLoading(false);
     }
-  }, [user, profile, toast, currentAiFriendType]); 
+  }, [user, profile, toast, currentAiFriendType, chatCount, incrementChatCount, isChatCountLoading]); 
 
   const handleFeedback = useCallback(async (messageId: string, feedbackType: 'liked' | 'disliked') => {
     if (!user) {
@@ -215,11 +238,25 @@ export function ChatInterface() {
 
 
   const handleSubscribe = () => {
-    toast({ title: "Subscribed!", description: "Welcome to Talkzii Premium! (This is a demo)" });
+    // In a real app, this would trigger a subscription flow.
+    // For demo, we can reset the chat count for the user.
+    // if (user) {
+    //   resetChatCount(); // This would reset the user-specific count
+    // } else {
+    //   // Guest subscription doesn't make sense, they should log in.
+    //   toast({ title: "Login to Subscribe", description: "Please log in or create an account to subscribe." });
+    //   setShowSubscriptionModal(false);
+    //   return;
+    // }
+    toast({ title: "Subscribed! (Demo)", description: "Enjoy unlimited chats! (Note: Chat count reset for this demo session)" });
+    // resetChatCount(); // Resetting for demo purposes. Actual subscription would grant a different status.
     setShowSubscriptionModal(false);
   };
 
   const personaDisplayName = personaOptions.find(p => p.value === currentAiFriendType)?.label || 'Talkzii';
+  const messageLimit = user ? LOGGED_IN_FREE_TIER_MESSAGE_LIMIT : GUEST_MESSAGE_LIMIT;
+  const messagesRemaining = isChatCountLoading ? '...' : Math.max(0, messageLimit - chatCount);
+
 
   if (isAuthLoading || !isClientSide) {
     return <div className="flex flex-col items-center justify-center h-full"><TypingIndicator personaImageUrl={currentAiPersonaImage} personaName={personaDisplayName} /> <p className="ml-2 text-sm text-muted-foreground">Loading chat state...</p></div>;
@@ -234,12 +271,16 @@ export function ChatInterface() {
             <div className="text-center text-muted-foreground py-10">
               <MessageSquareText className="mx-auto h-12 w-12 mb-4 text-primary/70" />
               <p className="text-lg font-semibold">Start a conversation!</p>
-              {!user && <p className="text-sm">You're chatting as a guest.</p>}
-              <p className="text-sm">AI Persona: <span className="font-semibold capitalize text-primary">{personaDisplayName}</span>.</p>
+              <p className="text-sm">
+                Chatting with: <span className="font-semibold capitalize text-primary">{personaDisplayName}</span>
+              </p>
               {user && profile?.gender && (
                 <p className="text-sm">Your gender is set to: <span className="font-semibold capitalize text-primary">{profile.gender.replace(/_/g, ' ')}</span>.</p>
               )}
-              <p className="text-sm">Type your first message below.</p>
+              <p className="text-sm">
+                Messages remaining: <span className="font-semibold text-primary">{messagesRemaining} / {messageLimit}</span>
+              </p>
+              <p className="text-sm mt-1">Type your first message below.</p>
             </div>
           )}
           {messages.map((msg) => (
@@ -248,7 +289,10 @@ export function ChatInterface() {
           {isAiLoading && <TypingIndicator personaImageUrl={currentAiPersonaImage} personaName={personaDisplayName} />}
         </div>
       </ScrollArea>
-      <ChatInputBar onSendMessage={handleSendMessage} isLoading={isAiLoading} />
+      <div className="px-4 py-1 text-center text-xs text-muted-foreground">
+        {isChatCountLoading ? 'Loading message count...' : `Messages used: ${chatCount} / ${messageLimit}. ${user ? 'Logged in.' : 'Guest session.'}`}
+      </div>
+      <ChatInputBar onSendMessage={handleSendMessage} isLoading={isAiLoading || isChatCountLoading} />
       <SubscriptionModal
         isOpen={showSubscriptionModal}
         onClose={() => setShowSubscriptionModal(false)}

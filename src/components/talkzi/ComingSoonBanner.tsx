@@ -9,19 +9,19 @@ import { cn } from '@/lib/utils';
 const LOCAL_STORAGE_KEY = 'talkzii_coming_soon_banner_dismissed_v2';
 
 export function ComingSoonBanner() {
-  const [isVisible, setIsVisible] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
+  // Assume banner is visible by default to show it with initial page load
+  const [isVisible, setIsVisible] = useState(true); 
 
   useEffect(() => {
-    setIsMounted(true);
+    // On the client, check if it was dismissed and hide if necessary
     try {
       const dismissed = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (dismissed !== 'true') {
-        setIsVisible(true);
+      if (dismissed === 'true') {
+        setIsVisible(false);
       }
     } catch (error) {
       console.warn("Could not read from localStorage for ComingSoonBanner:", error);
-      setIsVisible(true); 
+      // If localStorage fails, banner remains visible as per default state
     }
   }, []);
 
@@ -34,7 +34,7 @@ export function ComingSoonBanner() {
     }
   };
 
-  if (!isMounted || !isVisible) {
+  if (!isVisible) {
     return null;
   }
 
