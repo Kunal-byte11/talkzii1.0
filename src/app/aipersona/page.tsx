@@ -24,6 +24,7 @@ export default function AIPersonaPage() {
   const { user, signOut, isLoading: isAuthLoading } = useAuth();
   const [selectedPersona, setSelectedPersona] = useState<string>('default');
   const [isPersonaLoading, setIsPersonaLoading] = useState(true);
+  const [isRedirecting, setIsRedirecting] = useState(false); // Added for loading state before navigation
   const { toast } = useToast();
 
   const AI_FRIEND_TYPE_KEY = useMemo(() => {
@@ -49,17 +50,23 @@ export default function AIPersonaPage() {
   }, [isAuthLoading, AI_FRIEND_TYPE_KEY, user]);
 
   const handleGuestPersonaConfirm = () => {
-    try {
-      localStorage.removeItem(getAIFriendTypeKey(undefined)); 
-      localStorage.removeItem(getChatHistoryKey(undefined)); 
-      toast({
-        title: "Continuing as Guest",
-        description: "You'll be chatting with Talkzii (default).",
-      });
-    } catch (error) {
-      console.error("Error clearing guest localStorage", error);
-    }
-    router.push('/chat');
+    setSelectedPersona('default'); // Ensure visual feedback
+    setIsRedirecting(true); // Show spinner immediately
+
+    setTimeout(() => {
+      try {
+        localStorage.removeItem(getAIFriendTypeKey(undefined)); 
+        localStorage.removeItem(getChatHistoryKey(undefined)); 
+        toast({
+          title: "Continuing as Guest",
+          description: "You'll be chatting with Talkzii (default).",
+        });
+      } catch (error) {
+        console.error("Error clearing guest localStorage", error);
+        // Optionally, handle error e.g., setIsRedirecting(false) if critical
+      }
+      router.push('/chat');
+    }, 50); // Small delay to allow UI update
   };
 
   const handlePersonaSelect = (personaValue: string) => {
@@ -77,38 +84,49 @@ export default function AIPersonaPage() {
       return; 
     }
 
-    setSelectedPersona(personaValue);
-    try {
-      const previousSavedPersona = localStorage.getItem(AI_FRIEND_TYPE_KEY) || 'default';
-      if (previousSavedPersona !== personaValue) {
-        const currentChatHistoryKey = getChatHistoryKey(user.id); 
-        localStorage.removeItem(currentChatHistoryKey);
-        toast({
-          title: "Persona Changed",
-          description: "Your chat history has been cleared for the new persona.",
-        });
-      }
+    setSelectedPersona(personaValue); // Update UI for card selection
+    setIsRedirecting(true); // Show spinner immediately
 
-      if (personaValue === 'default') {
-        localStorage.removeItem(AI_FRIEND_TYPE_KEY);
-      } else {
-        localStorage.setItem(AI_FRIEND_TYPE_KEY, personaValue);
+    // Defer localStorage and navigation to allow spinner to render
+    setTimeout(() => {
+      try {
+        const previousSavedPersona = localStorage.getItem(AI_FRIEND_TYPE_KEY) || 'default';
+        if (previousSavedPersona !== personaValue) {
+          const currentChatHistoryKey = getChatHistoryKey(user.id); 
+          localStorage.removeItem(currentChatHistoryKey);
+          toast({
+            title: "Persona Changed",
+            description: "Your chat history has been cleared for the new persona.",
+          });
+        }
+
+        if (personaValue === 'default') {
+          localStorage.removeItem(AI_FRIEND_TYPE_KEY);
+        } else {
+          localStorage.setItem(AI_FRIEND_TYPE_KEY, personaValue);
+        }
+      } catch (error) {
+        console.error("Error during persona confirmation/localStorage operations for user", error);
+        toast({
+          title: "Error",
+          description: "Could not save your persona preference or clear chat history.",
+          variant: "destructive"
+        });
+        // Optionally, setIsRedirecting(false) if this error should prevent navigation
+        // For now, we'll proceed to router.push even if localStorage fails to match previous behavior
       }
-    } catch (error) {
-      console.error("Error during persona confirmation/localStorage operations for user", error);
-      toast({
-        title: "Error",
-        description: "Could not save your persona preference or clear chat history.",
-        variant: "destructive"
-      });
-      return; 
-    }
-    router.push('/chat');
+      router.push('/chat');
+    }, 50); // Small delay (e.g., 50ms) to ensure UI update
   };
 
 
-  if (isAuthLoading || isPersonaLoading) {
-    return <LoadingSpinner message={isAuthLoading ? "Verifying authentication..." : "Loading persona settings..."} />;
+  if (isAuthLoading || isPersonaLoading || isRedirecting) {
+    const message = isRedirecting
+      ? `Preparing chat with ${personaOptions.find(p => p.value === selectedPersona)?.label || 'Talkzii'}...`
+      : isAuthLoading
+      ? "Verifying authentication..."
+      : "Loading persona settings...";
+    return <LoadingSpinner message={message} />;
   }
 
   return (
