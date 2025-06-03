@@ -74,18 +74,12 @@ export function ChatInputBar({ onSendMessage, isLoading, sendButtonAccentColor, 
     if (isComposing) return; // Don't submit while composing
 
     if (event.key === 'Enter') {
-      if (!event.shiftKey && !event.ctrlKey && !event.metaKey) {
-        // Simple Enter
-        if (window.innerWidth >= 768) { // Desktop: submit
-          event.preventDefault();
-          handleSubmit();
-        }
-        // Mobile: simple Enter creates a new line (default textarea behavior)
-      } else if (event.ctrlKey || event.metaKey) {
-        // Ctrl/Cmd + Enter: always submit
+      if (event.ctrlKey || event.metaKey) { // Ctrl+Enter or Cmd+Enter to send
         event.preventDefault();
         handleSubmit();
       }
+      // If Enter is pressed without Ctrl/Meta (or with Shift),
+      // do nothing here; allow default textarea behavior (insert newline).
     } else if (event.key === 'Escape' && inputValue) {
       event.preventDefault();
       setInputValue('');
@@ -104,10 +98,10 @@ export function ChatInputBar({ onSendMessage, isLoading, sendButtonAccentColor, 
     }
   };
 
-  const sendButtonStyle = sendButtonAccentColor 
+  const sendButtonStyle = sendButtonAccentColor
     ? { backgroundColor: sendButtonAccentColor, color: 'hsl(var(--primary-foreground))' }
     : {};
-  
+
   const canSend = inputValue.trim() && !isComposing;
 
   return (
@@ -125,8 +119,8 @@ export function ChatInputBar({ onSendMessage, isLoading, sendButtonAccentColor, 
           onCompositionStart={() => setIsComposing(true)}
           onCompositionEnd={() => setIsComposing(false)}
           placeholder={
-            isClientRendered && window.innerWidth >= 768 
-            ? "Type a message (Enter to send, Shift+Enter for new line)" 
+            isClientRendered && window.innerWidth >= 768
+            ? "Type your message. Press Enter for new line, Ctrl+Enter to send."
             : "Type a message..."
           }
           className={cn(
@@ -138,11 +132,11 @@ export function ChatInputBar({ onSendMessage, isLoading, sendButtonAccentColor, 
           onKeyDown={handleKeyDown}
           style={{ lineHeight: '1.6' }} // Ensure enough line height for readability
         />
-        
-        <Button 
-          type="submit" 
+
+        <Button
+          type="submit"
           size="sm" // Slightly smaller button
-          disabled={!canSend || isLoading} 
+          disabled={!canSend || isLoading}
           className={cn(
             "text-primary-foreground rounded-lg h-9 min-w-9 px-3 text-sm font-medium shrink-0 transition-all duration-150 ease-in-out",
             !sendButtonAccentColor && "bg-primary hover:bg-primary/90",
@@ -162,7 +156,7 @@ export function ChatInputBar({ onSendMessage, isLoading, sendButtonAccentColor, 
           )}
         </Button>
       </div>
-      
+
       {isClientRendered && window.innerWidth < 768 && !isLoading && (
         <div className="text-[11px] text-muted-foreground/80 text-center mt-1.5 px-1">
           Press Enter for new line • Ctrl+Enter to send
@@ -205,4 +199,3 @@ let isClientRendered = false;
 if (typeof window !== 'undefined') {
   isClientRendered = true;
 }
-
