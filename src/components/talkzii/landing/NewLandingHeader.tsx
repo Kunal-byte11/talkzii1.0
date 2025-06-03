@@ -11,15 +11,6 @@ import { cn } from '@/lib/utils';
 
 import { MenuItem, MenuContainer } from "@/components/ui/fluid-menu";
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
-import { Separator } from '@/components/ui/separator';
-import {
   Menu as MenuIcon,
   X,
   LayoutGrid,
@@ -42,52 +33,29 @@ export function NewLandingHeader() {
   const router = useRouter();
   const { user } = useAuth();
   const [isNavigating, setIsNavigating] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const handleGetStarted = () => {
+  const handleGetStarted = (isMobile = false) => {
     setIsNavigating(true);
     if (user) {
       router.push('/aipersona');
     } else {
       router.push('/auth');
     }
+    // setIsNavigating(false) is not set here as the component will likely unmount
+    // or re-render upon navigation, resetting the state.
   };
 
-  const handleDesktopNavLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+  const handleNavLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     const id = href.substring(1);
     const element = document.getElementById(id);
     if (element) {
-      e.preventDefault(); // Prevent default jump if element exists for smooth scroll
+      e.preventDefault(); 
       element.scrollIntoView({
         behavior: 'smooth',
         block: 'start' 
       });
     }
-    // If element not found (e.g. on another page), allow default link behavior
   };
-
-  const handleMobileNavLinkClick = (hash: string) => {
-    const header = document.getElementById('landing-page-header');
-    let headerOffset = header?.offsetHeight || 72; 
-
-    const id = hash.substring(1); 
-    const element = document.getElementById(id);
-
-    setIsMobileMenuOpen(false); // Close sheet first
-
-    if (element) {
-      setTimeout(() => {
-        const elementPosition = element.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.scrollY - headerOffset;
-
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: 'smooth'
-        });
-      }, 50); 
-    }
-  };
-
 
   return (
     <header
@@ -105,14 +73,14 @@ export function NewLandingHeader() {
             <a
               key={link.label}
               href={link.href}
-              onClick={(e) => handleDesktopNavLinkClick(e, link.href)}
+              onClick={(e) => handleNavLinkClick(e, link.href)}
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary cursor-pointer"
             >
               {link.label}
             </a>
           ))}
           <Button
-            onClick={handleGetStarted}
+            onClick={() => handleGetStarted(false)}
             size="sm"
             className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-4 py-2"
             disabled={isNavigating}
@@ -128,65 +96,55 @@ export function NewLandingHeader() {
           </Button>
         </nav>
 
-        {/* Mobile Navigation - Using Sheet */}
+        {/* Mobile Navigation - Fluid Menu */}
         <div className="md:hidden flex items-center gap-2">
-           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" title="Menu" className="text-foreground">
-                <MenuIcon className="h-6 w-6" />
-                <span className="sr-only">Open Menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-[280px] sm:w-[300px] p-0 pt-6 flex flex-col bg-background">
-              <SheetHeader className="px-6 pb-4">
-                 <SheetClose asChild>
-                    <Link href="/" passHref className="self-start">
-                        <Logo width={100} height={34} />
-                    </Link>
-                </SheetClose>
-              </SheetHeader>
-              <Separator />
-              <nav className="flex-grow p-4 space-y-2">
-                {navLinks.map((link) => (
-                  <SheetClose asChild key={link.label}>
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-start text-base py-3"
-                      onClick={() => handleMobileNavLinkClick(link.href)}
-                    >
-                      {React.cloneElement(link.icon, { className: "mr-3 h-5 w-5"})}
-                      {link.label}
-                    </Button>
-                  </SheetClose>
-                ))}
-              </nav>
-              <Separator />
-              <div className="p-4 mt-auto">
-                <SheetClose asChild>
-                  <Button
-                    onClick={handleGetStarted}
-                    className="w-full gradient-button text-base py-3"
-                    disabled={isNavigating}
-                  >
-                    {isNavigating ? (
-                      <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Loading...
-                      </>
-                    ) : (
-                      <>
-                        <LogIn className="mr-3 h-5 w-5" />
-                        Let's Chat
-                      </>
-                    )}
-                  </Button>
-                </SheetClose>
-              </div>
-               <div className="px-6 py-3 text-center text-xs text-muted-foreground">
-                   © {new Date().getFullYear()} Talkzii
+          <Button
+            onClick={() => handleGetStarted(true)}
+            size="sm"
+            variant="outline"
+            className="rounded-full px-3 py-1.5 text-xs border-primary text-primary hover:bg-primary/5"
+            disabled={isNavigating}
+          >
+            {isNavigating ? (
+               <>
+                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                Wait..
+              </>
+            ) : "Let's Chat"}
+          </Button>
+          <MenuContainer className="relative"> {/* data-expanded is handled internally by MenuContainer */}
+            <MenuItem
+              isToggle
+              icon={
+                <div className="relative w-5 h-5 text-foreground">
+                  {/* MenuIcon appears when data-expanded is false or not present */}
+                  <div className="absolute inset-0 transition-all duration-300 ease-in-out origin-center opacity-100 scale-100 rotate-0 [div[data-expanded=true]_&]:opacity-0 [div[data-expanded=true]_&]:scale-0 [div[data-expanded=true]_&]:-rotate-180">
+                    <MenuIcon size={20} strokeWidth={2} />
+                  </div>
+                  {/* X icon appears when data-expanded is true */}
+                  <div className="absolute inset-0 transition-all duration-300 ease-in-out origin-center opacity-0 scale-0 rotate-180 [div[data-expanded=true]_&]:opacity-100 [div[data-expanded=true]_&]:scale-100 [div[data-expanded=true]_&]:rotate-0">
+                    <X size={20} strokeWidth={2} />
+                  </div>
                 </div>
-            </SheetContent>
-          </Sheet>
+              }
+              aria-label="Toggle mobile menu"
+            />
+            {navLinks.map((link) => (
+              <MenuItem
+                key={link.label}
+                icon={React.cloneElement(link.icon, {size: 16, strokeWidth: 2})}
+                href={link.href}
+                onClick={(e) => {
+                  // This onClick on MenuItem is for closing the menu and then handling navigation
+                  // The actual smooth scroll is done by handleNavLinkClick
+                  // The MenuContainer's cloneElement handles closing the menu
+                  handleNavLinkClick(e as React.MouseEvent<HTMLAnchorElement>, link.href);
+                }}
+              >
+                {link.label}
+              </MenuItem>
+            ))}
+          </MenuContainer>
         </div>
       </div>
     </header>
