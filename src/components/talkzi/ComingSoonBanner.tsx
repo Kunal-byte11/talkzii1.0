@@ -45,7 +45,7 @@ export function ComingSoonBanner() {
       "shadow-md print:hidden"
     )}>
       <p className="font-semibold text-sm sm:text-base">
-        🚀 Talkzii 2.0 is Coming Soon! Get ready for an even better experience. ✨
+        🚀 Talkzii 1.0 is Coming Soon! Get ready for an even better experience. ✨
       </p>
       <Button
         variant="ghost"
