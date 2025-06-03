@@ -7,7 +7,7 @@ export function NewLandingHero() {
   // Removed handleGetStarted function
 
   const heroStyle = {
-    backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%), url("https://lh3.googleusercontent.com/aida-public/AB6AXuCYCZmtEn12MUuqRpBzjeIkT5FRuFBySz5CJW4WnFhNbifr8oBgf73t2tYdZ71btXPSfwRuk9Wqd87QH0YU0_I7jnMkxu4kN7fDaaGNvaxlCdHJjYfqETns9D3sC2AjQQ8umay1HxTRHNfC6Vpwrk2PY6nbjTsH6T4J4QFOhEneSGSXRp8PctPagkopTtqBbZJ9LH8QYk_DpYSabJPaMf2jKglQ4LqEs2xJBWrBow8CZWVpI24Ni5Z9UzHMzPfGloPLrGS4Hes7ug");',
+    backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%), url("https://lh3.googleusercontent.com/aida-public/AB6AXuCYCZmtEn12MUuqRpBzjeIkT5FRuFBySz5CJW4WnFhNbifr8oBgf73t2tYdZ71btXPSfwRuk9Wqd87QH0YU0_I7jnMkxu4kN7fDaaGNvaxlCdHJjYfqETns9D3sC2AjQQ8umay1HxTRHNfC6Vpwrk2PY6nbjTsH6T4J4QFOhEneSGSXRp8PctPagkopTtqBbZJ9LH8QYk_DpYSabJPaMf2jKglQ4LqEs2xJBWrBow8CZWVpI24Ni5Z9UzHMzPfGloPLrGS4Hes7ug")',
   };
 
   return (
