@@ -11,12 +11,22 @@ import { cn } from '@/lib/utils';
 
 import { MenuItem, MenuContainer } from "@/components/ui/fluid-menu";
 import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import { Separator } from '@/components/ui/separator';
+import {
   Menu as MenuIcon,
   X,
   LayoutGrid,
   Heart as HeartIcon,
   Mail as MailIcon,
   Info,
+  LogIn,
   Loader2
 } from 'lucide-react';
 
@@ -32,10 +42,10 @@ export function NewLandingHeader() {
   const router = useRouter();
   const { user } = useAuth();
   const [isNavigating, setIsNavigating] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleGetStarted = () => {
     setIsNavigating(true);
-    // router.push will trigger page unload, isNavigating will reset if user comes back
     if (user) {
       router.push('/aipersona');
     } else {
@@ -44,15 +54,16 @@ export function NewLandingHeader() {
   };
 
   const handleDesktopNavLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    // e.preventDefault(); // Keep default for standard anchor jump if JS fails
     const id = href.substring(1);
     const element = document.getElementById(id);
     if (element) {
+      e.preventDefault(); // Prevent default jump if element exists for smooth scroll
       element.scrollIntoView({
         behavior: 'smooth',
         block: 'start' 
       });
     }
+    // If element not found (e.g. on another page), allow default link behavior
   };
 
   const handleMobileNavLinkClick = (hash: string) => {
@@ -62,9 +73,9 @@ export function NewLandingHeader() {
     const id = hash.substring(1); 
     const element = document.getElementById(id);
 
+    setIsMobileMenuOpen(false); // Close sheet first
+
     if (element) {
-      // For fluid menu, closing is handled by MenuItem itself after onClick
-      // Delay scrolling slightly to allow menu to start closing visually
       setTimeout(() => {
         const elementPosition = element.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.scrollY - headerOffset;
@@ -73,7 +84,7 @@ export function NewLandingHeader() {
           top: offsetPosition,
           behavior: 'smooth'
         });
-      }, 50); // Small delay
+      }, 50); 
     }
   };
 
@@ -117,54 +128,67 @@ export function NewLandingHeader() {
           </Button>
         </nav>
 
-        {/* Mobile Navigation - Using Fluid Menu */}
+        {/* Mobile Navigation - Using Sheet */}
         <div className="md:hidden flex items-center gap-2">
-          <Button
-            onClick={handleGetStarted}
-            size="sm"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-3 py-2 text-xs" // Adjusted for "Start"
-            disabled={isNavigating}
-          >
-            {isNavigating ? (
-              <>
-                <Loader2 className="mr-1 h-3 w-3 animate-spin" /> {/* Smaller loader */}
-                <span>Wait..</span>
-              </>
-            ) : (
-              "Start" // Shorter text for mobile
-            )}
-          </Button>
-          <MenuContainer>
-            <MenuItem
-              icon={
-                <div className="relative w-6 h-6">
-                  <div className="absolute inset-0 transition-all duration-300 ease-in-out origin-center opacity-100 scale-100 rotate-0 [div[data-expanded=true]_&]:opacity-0 [div[data-expanded=true]_&]:scale-0 [div[data-expanded=true]_&]:-rotate-180">
-                    <MenuIcon size={20} strokeWidth={2} className="text-foreground" />
-                  </div>
-                  <div className="absolute inset-0 transition-all duration-300 ease-in-out origin-center opacity-0 scale-0 rotate-180 [div[data-expanded=true]_&]:opacity-100 [div[data-expanded=true]_&]:scale-100 [div[data-expanded=true]_&]:rotate-0">
-                    <X size={20} strokeWidth={2} className="text-foreground" />
-                  </div>
+           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" title="Menu" className="text-foreground">
+                <MenuIcon className="h-6 w-6" />
+                <span className="sr-only">Open Menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[280px] sm:w-[300px] p-0 pt-6 flex flex-col bg-background">
+              <SheetHeader className="px-6 pb-4">
+                 <SheetClose asChild>
+                    <Link href="/" passHref className="self-start">
+                        <Logo width={100} height={34} />
+                    </Link>
+                </SheetClose>
+              </SheetHeader>
+              <Separator />
+              <nav className="flex-grow p-4 space-y-2">
+                {navLinks.map((link) => (
+                  <SheetClose asChild key={link.label}>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-base py-3"
+                      onClick={() => handleMobileNavLinkClick(link.href)}
+                    >
+                      {React.cloneElement(link.icon, { className: "mr-3 h-5 w-5"})}
+                      {link.label}
+                    </Button>
+                  </SheetClose>
+                ))}
+              </nav>
+              <Separator />
+              <div className="p-4 mt-auto">
+                <SheetClose asChild>
+                  <Button
+                    onClick={handleGetStarted}
+                    className="w-full gradient-button text-base py-3"
+                    disabled={isNavigating}
+                  >
+                    {isNavigating ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <LogIn className="mr-3 h-5 w-5" />
+                        Let's Chat
+                      </>
+                    )}
+                  </Button>
+                </SheetClose>
+              </div>
+               <div className="px-6 py-3 text-center text-xs text-muted-foreground">
+                   © {new Date().getFullYear()} Talkzii
                 </div>
-              }
-              isToggle={true}
-              aria-label="Toggle navigation menu"
-            />
-            {navLinks.map((link) => (
-              <MenuItem
-                key={link.label}
-                icon={React.cloneElement(link.icon, { className: "text-muted-foreground"})}
-                onClick={() => {
-                  handleMobileNavLinkClick(link.href);
-                }}
-                aria-label={link.label}
-              >
-                <span className="text-foreground">{link.label}</span>
-              </MenuItem>
-            ))}
-          </MenuContainer>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </header>
   );
 }
-
