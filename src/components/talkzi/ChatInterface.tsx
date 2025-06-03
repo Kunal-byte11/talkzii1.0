@@ -12,11 +12,12 @@ import { detectCrisis } from '@/ai/flows/crisis-detection';
 import { hinglishAICompanion, type HinglishAICompanionInput } from '@/ai/flows/hinglish-ai-companion';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageSquareText } from 'lucide-react';
+import { MessageSquareText, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 import { personaOptions, getDefaultPersonaImage, getPersonaTheme, type PersonaTheme } from '@/lib/personaOptions';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 const getChatHistoryKey = (userId?: string) => userId ? `talkzii_chat_history_${userId}` : 'talkzii_chat_history_guest';
 const getAIFriendTypeKey = (userId?: string) => userId ? `talkzii_ai_friend_type_${userId}` : 'talkzii_ai_friend_type_guest';
@@ -42,18 +43,26 @@ async function saveMessageFeedbackToSupabase(feedbackData: {
   }
 }
 
-
 export function ChatInterface() {
   const { user, profile, isLoading: isAuthLoading } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const { toast } = useToast();
+  
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null); // To store the actual scrollable viewport
+  const messagesEndRef = useRef<HTMLDivElement>(null); // Fallback for simple scrollIntoView
+
   const [currentAiFriendType, setCurrentAiFriendType] = useState<string>('default');
   const [currentAiPersonaImage, setCurrentAiPersonaImage] = useState<string>(getDefaultPersonaImage());
   const [currentPersonaTheme, setCurrentPersonaTheme] = useState<PersonaTheme | undefined>(getPersonaTheme('default'));
   const [isClientSide, setIsClientSide] = useState(false);
+  
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const [isNearBottom, setIsNearBottom] = useState(true);
+  const [lastMessageCount, setLastMessageCount] = useState(0);
+
 
   const { chatCount, incrementChatCount, isLoading: isChatCountLoading } = useChatCounter(user?.id);
 
@@ -61,6 +70,89 @@ export function ChatInterface() {
     chatHistory: getChatHistoryKey(user?.id),
     aiFriendType: getAIFriendTypeKey(user?.id),
   });
+
+  const scrollToBottom = useCallback((smooth: boolean = true) => {
+    if (viewportRef.current) {
+      const scrollOptions: ScrollToOptions = {
+        top: viewportRef.current.scrollHeight,
+        behavior: smooth ? 'smooth' : 'auto'
+      };
+      viewportRef.current.scrollTo(scrollOptions);
+    } else if (messagesEndRef.current) { // Fallback
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: smooth ? 'smooth' : 'auto',
+        block: 'end'
+      });
+    }
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    if (!viewportRef.current) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = viewportRef.current;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    const nearBottom = distanceFromBottom < 150; // Increased threshold
+    
+    setIsNearBottom(nearBottom);
+    setShowScrollToBottom(!nearBottom && messages.length > 3); // Show if not near bottom and some messages exist
+  }, [messages.length]);
+
+  useEffect(() => {
+    const scrollAreaElement = scrollAreaRef.current;
+    if (scrollAreaElement) {
+      const viewportElement = scrollAreaElement.querySelector('[data-radix-scroll-area-viewport]') as HTMLDivElement;
+      if (viewportElement) {
+        viewportRef.current = viewportElement;
+        viewportElement.addEventListener('scroll', handleScroll, { passive: true });
+        
+        // Initial check
+        handleScroll();
+
+        return () => {
+          viewportElement.removeEventListener('scroll', handleScroll);
+        };
+      }
+    }
+  }, [handleScroll, isClientSide]); // Rerun if isClientSide changes, to ensure viewportRef is set
+
+  useEffect(() => {
+    // Auto-scroll if user is near bottom OR if a new message was added by user/AI
+    const newMessagesAdded = messages.length > lastMessageCount;
+    if (isNearBottom || newMessagesAdded) {
+      const timeoutId = setTimeout(() => {
+        scrollToBottom(true);
+      }, newMessagesAdded ? 50 : 100); // Quicker scroll for new messages
+      
+      return () => clearTimeout(timeoutId);
+    }
+    // Update lastMessageCount only if not scrolling, to track new messages correctly
+    if (!newMessagesAdded) {
+       setLastMessageCount(messages.length);
+    }
+  }, [messages, isNearBottom, lastMessageCount, scrollToBottom]);
+
+  useEffect(() => {
+    // Specifically scroll when AI starts loading and user is near bottom
+    if (isAiLoading && isNearBottom) {
+      scrollToBottom(true);
+    }
+  }, [isAiLoading, isNearBottom, scrollToBottom]);
+
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showSubscriptionModal) {
+        setShowSubscriptionModal(false);
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'end') {
+        e.preventDefault();
+        scrollToBottom(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showSubscriptionModal, scrollToBottom]);
 
   useEffect(() => {
     setIsClientSide(true);
@@ -79,7 +171,16 @@ export function ChatInterface() {
 
     try {
       const storedHistory = localStorage.getItem(localStorageKeys.chatHistory);
-      setMessages(storedHistory ? JSON.parse(storedHistory) : []);
+      const loadedMessages = storedHistory ? JSON.parse(storedHistory) : [];
+      setMessages(loadedMessages);
+      setLastMessageCount(loadedMessages.length); // Initialize lastMessageCount
+      
+      if (loadedMessages.length > 0) {
+         // Use requestAnimationFrame to ensure DOM is ready for scrolling
+        requestAnimationFrame(() => {
+          scrollToBottom(false); // Immediate scroll on load
+        });
+      }
     } catch (error) {
       console.error("Error loading chat history from localStorage", error);
       setMessages([]);
@@ -102,7 +203,7 @@ export function ChatInterface() {
     setCurrentAiPersonaImage(persona?.imageUrl || getDefaultPersonaImage());
     setCurrentPersonaTheme(persona?.theme || getPersonaTheme('default'));
 
-  }, [localStorageKeys, isAuthLoading, isClientSide, user]);
+  }, [localStorageKeys, isAuthLoading, isClientSide, user, scrollToBottom]);
 
 
   useEffect(() => {
@@ -114,18 +215,7 @@ export function ChatInterface() {
     }
   }, [messages, localStorageKeys.chatHistory, isAuthLoading, isClientSide]);
 
-   useEffect(() => {
-    if (scrollAreaRef.current) {
-      const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
-      if (viewport) {
-        requestAnimationFrame(() => {
-          viewport.scrollTop = viewport.scrollHeight;
-        });
-      }
-    }
-  }, [messages, isAiLoading]);
-
-  const addMessage = (text: string, sender: ChatMessage['sender'], options: Partial<ChatMessage> = {}) => {
+   const addMessage = (text: string, sender: ChatMessage['sender'], options: Partial<ChatMessage> = {}) => {
     const newMessage: ChatMessage = {
       id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       text,
@@ -134,7 +224,11 @@ export function ChatInterface() {
       feedback: null,
       ...options,
     };
-    setMessages(prev => [...prev, newMessage]);
+    setMessages(prev => {
+      const newMessages = [...prev, newMessage];
+      setLastMessageCount(newMessages.length); // Update immediately for scroll logic
+      return newMessages;
+    });
     return newMessage;
   };
 
@@ -160,6 +254,9 @@ export function ChatInterface() {
     const userMessage = addMessage(userInput, 'user');
     incrementChatCount();
     setIsAiLoading(true);
+    
+    // Explicitly scroll after user sends a message
+    // setTimeout(() => scrollToBottom(true), 50); // Already handled by useEffect on messages change
 
     try {
       const crisisResponse = await detectCrisis({ message: userInput });
@@ -171,7 +268,7 @@ export function ChatInterface() {
 
       const companionInput: HinglishAICompanionInput = { message: userInput };
       
-      if (user && profile?.gender && (profile.gender === 'male' || profile.gender === 'female')) {
+      if (user && profile?.gender && (profile.gender === 'male' || profile.gender === 'female' || profile.gender === 'prefer_not_to_say')) {
         companionInput.userGender = profile.gender;
       }
       
@@ -206,7 +303,7 @@ export function ChatInterface() {
     } finally {
       setIsAiLoading(false);
     }
-  }, [user, profile, toast, currentAiFriendType, chatCount, incrementChatCount, isChatCountLoading]); 
+  }, [user, profile, toast, currentAiFriendType, chatCount, incrementChatCount, isChatCountLoading, scrollToBottom]); 
 
   const handleFeedback = useCallback(async (messageId: string, feedbackType: 'liked' | 'disliked') => {
     if (!user) {
@@ -261,7 +358,7 @@ export function ChatInterface() {
   const activeFontClass = currentPersonaTheme?.fontClassName || 'font-poppins';
 
   return (
-    <div className={cn("flex flex-col h-full bg-background", activeFontClass)}>
+    <div className={cn("flex flex-col h-full bg-background relative", activeFontClass)}>
       <ScrollArea className="flex-grow p-4 md:p-6" ref={scrollAreaRef}>
         <div className="max-w-3xl mx-auto space-y-4 pb-4">
           {messages.length === 0 && !isAiLoading && (
@@ -284,12 +381,38 @@ export function ChatInterface() {
             <MessageBubble key={msg.id} message={msg} onFeedback={handleFeedback} />
           ))}
           {isAiLoading && <TypingIndicator personaImageUrl={currentAiPersonaImage} personaName={personaDisplayName} personaTheme={currentPersonaTheme} />}
+          <div ref={messagesEndRef} /> {/* Element to scroll to */}
         </div>
       </ScrollArea>
-      <div className="px-4 py-1 text-center text-xs text-muted-foreground">
+
+      {showScrollToBottom && (
+        <Button
+          onClick={() => scrollToBottom(true)}
+          variant="outline"
+          size="icon"
+          className="fixed bottom-24 right-4 md:right-6 z-20 rounded-full w-10 h-10 p-0 shadow-lg bg-background/80 hover:bg-muted border-border backdrop-blur-sm transition-all duration-200 hover:scale-110"
+          aria-label="Scroll to bottom"
+        >
+          <ChevronDown className="h-5 w-5 text-foreground" />
+        </Button>
+      )}
+
+      <div className="px-4 py-1 text-center text-xs text-muted-foreground border-t">
         {isChatCountLoading ? 'Loading message count...' : `Messages used: ${chatCount} / ${messageLimit}. ${user ? 'Logged in.' : 'Guest session.'}`}
       </div>
-      <ChatInputBar onSendMessage={handleSendMessage} isLoading={isAiLoading || isChatCountLoading} sendButtonAccentColor={currentPersonaTheme?.accentColor} />
+      
+      <ChatInputBar 
+        onSendMessage={handleSendMessage} 
+        isLoading={isAiLoading || isChatCountLoading} 
+        sendButtonAccentColor={currentPersonaTheme?.accentColor}
+        onFocus={() => {
+          if (window.innerWidth < 768 && !isNearBottom) {
+             // Delay slightly for virtual keyboard
+            setTimeout(() => scrollToBottom(true), 300);
+          }
+        }}
+      />
+      
       <SubscriptionModal
         isOpen={showSubscriptionModal}
         onClose={() => setShowSubscriptionModal(false)}
