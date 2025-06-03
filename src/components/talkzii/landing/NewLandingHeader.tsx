@@ -1,7 +1,7 @@
 
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react'; // Added useState
 import { Logo } from '@/components/talkzi/Logo';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -19,14 +19,13 @@ import {
   Heart as HeartIcon,
   Mail as MailIcon,
   Info,
-  // UsersRound, // Removed as per previous instruction
+  Loader2 // Added Loader2 for spinner
 } from 'lucide-react';
 
 
 const navLinks = [
   { href: '#features-section', label: 'Features', icon: <LayoutGrid size={18} strokeWidth={1.5} /> },
   { href: '#about-us-section', label: 'About Us', icon: <Info size={18} strokeWidth={1.5} /> },
-  // { href: '#peoples-subsection', label: 'Peoples', icon: <UsersRound size={18} strokeWidth={1.5} /> }, // "Peoples" link removed
   { href: '#values-section', label: 'Our Values', icon: <HeartIcon size={18} strokeWidth={1.5} /> },
   { href: '#footer-contact', label: 'Contact', icon: <MailIcon size={18} strokeWidth={1.5} /> },
 ];
@@ -34,37 +33,37 @@ const navLinks = [
 export function NewLandingHeader() {
   const router = useRouter();
   const { user } = useAuth();
+  const [isNavigating, setIsNavigating] = useState(false); // Added loading state
 
   const handleGetStarted = () => {
+    setIsNavigating(true); // Set loading state
     if (user) {
       router.push('/aipersona');
     } else {
       router.push('/auth');
     }
+    // No need to setIsNavigating(false) here, as component will unmount or re-render on navigation
   };
 
   const handleDesktopNavLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    // Native anchor behavior will handle scrolling.
-    // e.preventDefault(); // Not needed if relying on native scroll + scroll-margin-top
     const id = href.substring(1);
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({
         behavior: 'smooth',
-        block: 'start' // 'start' should respect scroll-margin-top
+        block: 'start' 
       });
     }
   };
 
   const handleMobileNavLinkClick = (hash: string) => {
     const header = document.getElementById('landing-page-header');
-    let headerOffset = header?.offsetHeight || 72; // Default if header not found or height is 0
+    let headerOffset = header?.offsetHeight || 72; 
 
-    const id = hash.substring(1); // Remove the '#' to get the actual ID
+    const id = hash.substring(1); 
     const element = document.getElementById(id);
 
     if (element) {
-      // Wait for the menu to close (animation duration) before scrolling
       setTimeout(() => {
         const elementPosition = element.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.scrollY - headerOffset;
@@ -73,9 +72,8 @@ export function NewLandingHeader() {
           top: offsetPosition,
           behavior: 'smooth'
         });
-      }, 300); // Delay should ideally match or slightly exceed menu close animation
+      }, 300); 
     }
-    // Menu closing is handled by MenuContainer's wrapper logic with its own setTimeout
   };
 
 
@@ -105,8 +103,16 @@ export function NewLandingHeader() {
             onClick={handleGetStarted}
             size="sm"
             className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-4 py-2"
+            disabled={isNavigating} // Disable button when navigating
           >
-            Get Started
+            {isNavigating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              "Get Started"
+            )}
           </Button>
         </nav>
 
@@ -116,8 +122,16 @@ export function NewLandingHeader() {
             onClick={handleGetStarted}
             size="sm"
             className="rounded-full px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 text-xs h-8"
+            disabled={isNavigating} // Disable button when navigating
           >
-            Get Started
+            {isNavigating ? (
+              <>
+                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                Wait...
+              </>
+            ) : (
+              "Get Started"
+            )}
           </Button>
 
           <MenuContainer className="relative z-50">
