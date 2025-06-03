@@ -32,7 +32,7 @@ interface ChatMemory {
     lastMentionedEntities: string[];
     conversationTone: 'casual' | 'formal' | 'friendly' | 'professional';
   };
-  chatHistory: { // Stores summarized exchanges for long-term memory context
+  chatHistory: {
     messageId: string;
     userMessage: string;
     aiResponse: string;
@@ -43,11 +43,15 @@ interface ChatMemory {
 const getChatHistoryKey = (userId?: string) => userId ? `talkzii_chat_history_${userId}` : 'talkzii_chat_history_guest';
 const getChatMemoryKey = (userId?: string) => userId ? `talkzii_chat_memory_${userId}` : 'talkzii_chat_memory_guest';
 const getAIFriendTypeKey = (userId?: string) => userId ? `talkzii_ai_friend_type_${userId}` : 'talkzii_ai_friend_type_guest';
+const getMemoryWarningKey = (userId?: string) => userId ? `talkzii_memory_warning_shown_${userId}` : 'talkzii_memory_warning_shown_guest';
+
 
 const GUEST_MESSAGE_LIMIT = 10;
 const LOGGED_IN_FREE_TIER_MESSAGE_LIMIT = 20;
-const MAX_MEMORY_MESSAGES = 20; // Keep last 20 exchanges in memory log
-const MAX_CONTEXT_MESSAGES = 5; // Send last 5 exchanges from memory log to AI for context
+const MAX_MEMORY_MESSAGES = 20; 
+const MAX_CONTEXT_MESSAGES = 5; 
+const MEMORY_WARNING_THRESHOLD = 18; // Show warning when memory is 90% full (18/20)
+
 
 // Helper functions for memory management
 const extractUserInfo = (message: string): Partial<ChatMemory['userProfile']> => {
@@ -62,7 +66,7 @@ const extractUserInfo = (message: string): Partial<ChatMemory['userProfile']> =>
   for (const pattern of namePatterns) {
     const match = message.match(pattern);
     if (match && match[1]) {
-      info.name = match[1].trim().split(' ')[0]; // Take first word as name
+      info.name = match[1].trim().split(' ')[0]; 
       info.name = info.name.charAt(0).toUpperCase() + info.name.slice(1).toLowerCase();
       break;
     }
@@ -80,11 +84,11 @@ const extractUserInfo = (message: string): Partial<ChatMemory['userProfile']> =>
       if (match[1]) interests.push(match[1].trim().toLowerCase());
     });
   }
-  if (interests.length > 0) info.interests = [...new Set(interests)]; // Unique interests
+  if (interests.length > 0) info.interests = [...new Set(interests)]; 
   
   const personalPatterns: Record<string, RegExp> = {
     age: /(?:i am|i'm)\s+(\d+)\s+years?\s+old/i,
-    location: /(?:i (?:live|am) (?:in|from|at))\s+([a-zA-Z\s,]+)/i, // Allow spaces and commas
+    location: /(?:i (?:live|am) (?:in|from|at))\s+([a-zA-Z\s,]+)/i, 
     job: /(?:i (?:work|am)\s+(?:as|a)\s+)([a-zA-Z\s]+)/i,
     profession: /(?:my job is|i am a|i work as)\s+([a-zA-Z\s]+)/i
   };
@@ -125,7 +129,7 @@ const buildContextForAI = (memory: ChatMemory, currentMessage: string): string =
   }
   
   if (contextParts.length === 0) {
-    return currentMessage; // No prior context to add, send original message
+    return currentMessage; 
   }
 
   let finalContext = 'CONTEXT FOR AI:\n';
@@ -163,11 +167,12 @@ export function ChatInterface() {
   });
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
-  const [showMemoryIndicator, setShowMemoryIndicator] = useState(false); // For "Remembered!" pop-up
+  const [showMemoryIndicator, setShowMemoryIndicator] = useState(false); 
+  const [hasShownMemoryFullWarning, setHasShownMemoryFullWarning] = useState(false);
   const { toast } = useToast();
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const viewportRef = useRef<HTMLDivElement | null>(null); // Changed type
+  const viewportRef = useRef<HTMLDivElement | null>(null); 
   const messagesEndRef = useRef<HTMLDivElement>(null); 
 
   const [currentAiFriendType, setCurrentAiFriendType] = useState<string>('default');
@@ -185,12 +190,13 @@ export function ChatInterface() {
     chatHistory: getChatHistoryKey(user?.id),
     chatMemory: getChatMemoryKey(user?.id),
     aiFriendType: getAIFriendTypeKey(user?.id),
+    memoryWarning: getMemoryWarningKey(user?.id),
   });
 
   // Memory management functions
   const updateChatMemory = useCallback((userMessageText: string, aiResponseText: string, messageId: string) => {
     setChatMemory(prevMemory => {
-      const newMemory = JSON.parse(JSON.stringify(prevMemory)); // Deep copy for safety
+      const newMemory = JSON.parse(JSON.stringify(prevMemory)); 
       
       const extractedInfo = extractUserInfo(userMessageText);
       let infoLearned = false;
@@ -204,7 +210,7 @@ export function ChatInterface() {
         const oldInterestsSize = new Set(newMemory.userProfile.interests || []).size;
         const newInterestsArray = [...new Set([...(newMemory.userProfile.interests || []), ...extractedInfo.interests])];
         if (newInterestsArray.length > oldInterestsSize) infoLearned = true;
-        newMemory.userProfile.interests = newInterestsArray.slice(-10); // Keep last 10 unique interests
+        newMemory.userProfile.interests = newInterestsArray.slice(-10); 
       }
       
       if (extractedInfo.personalInfo && Object.keys(extractedInfo.personalInfo).length > 0) {
@@ -237,6 +243,8 @@ export function ChatInterface() {
     });
     try {
       localStorage.removeItem(localStorageKeys.chatMemory);
+      localStorage.removeItem(localStorageKeys.memoryWarning); 
+      setHasShownMemoryFullWarning(false); 
       toast({
         title: "Memory Cleared",
         description: "Chat memory has been reset. I won't remember our previous conversations or personal details.",
@@ -245,7 +253,7 @@ export function ChatInterface() {
       console.error("Error clearing chat memory from localStorage:", error);
       toast({ title: "Error", description: "Could not clear chat memory.", variant: "destructive" });
     }
-  }, [localStorageKeys.chatMemory, toast]);
+  }, [localStorageKeys.chatMemory, localStorageKeys.memoryWarning, toast]);
 
   const scrollToBottom = useCallback((smooth: boolean = true) => {
     if (viewportRef.current) {
@@ -259,16 +267,16 @@ export function ChatInterface() {
     if (!viewportRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = viewportRef.current;
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-    const nearBottomState = distanceFromBottom < 150; // Increased threshold
+    const nearBottomState = distanceFromBottom < 150; 
     setIsNearBottom(nearBottomState);
-    setShowScrollToBottom(!nearBottomState && messages.length > 3); // Show if not near bottom and some messages exist
+    setShowScrollToBottom(!nearBottomState && messages.length > 3); 
   }, [messages.length]);
 
   useEffect(() => {
     const scrollEl = viewportRef.current;
-    if (scrollEl && isClientSide) { // Ensure viewportRef.current and client side
+    if (scrollEl && isClientSide) { 
       scrollEl.addEventListener('scroll', handleScroll, { passive: true });
-      handleScroll(); // Initial check
+      handleScroll(); 
       return () => scrollEl.removeEventListener('scroll', handleScroll);
     }
   }, [handleScroll, isClientSide]); 
@@ -276,11 +284,11 @@ export function ChatInterface() {
   useEffect(() => {
     const newMessagesAdded = messages.length > lastMessageCount;
     if (isNearBottom || newMessagesAdded) {
-      const timeoutId = setTimeout(() => scrollToBottom(true), newMessagesAdded ? 50 : 100); // Quicker scroll if new msg
+      const timeoutId = setTimeout(() => scrollToBottom(true), newMessagesAdded ? 50 : 100); 
       if (newMessagesAdded) setLastMessageCount(messages.length);
       return () => clearTimeout(timeoutId);
     }
-    // Only update lastMessageCount if not auto-scrolling to prevent loop with isNearBottom
+    
     if (!newMessagesAdded) setLastMessageCount(messages.length);
   }, [messages, isNearBottom, lastMessageCount, scrollToBottom]);
 
@@ -292,9 +300,11 @@ export function ChatInterface() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && showSubscriptionModal) setShowSubscriptionModal(false);
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'end') { e.preventDefault(); scrollToBottom(true); }
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key.toLowerCase() === 'delete' || e.key === 'Backspace')) { 
-        e.preventDefault(); 
-        clearChatMemory(); 
+      if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'delete' || e.key === 'Backspace')) { 
+         if (e.shiftKey) { // Only trigger clear memory if Shift is also pressed
+            e.preventDefault(); 
+            clearChatMemory(); 
+         }
       }
     };
     document.addEventListener('keydown', handleKeyDown);
@@ -315,6 +325,7 @@ export function ChatInterface() {
       chatHistory: getChatHistoryKey(user?.id),
       chatMemory: getChatMemoryKey(user?.id),
       aiFriendType: getAIFriendTypeKey(user?.id),
+      memoryWarning: getMemoryWarningKey(user?.id),
     });
   }, [user]);
 
@@ -324,24 +335,28 @@ export function ChatInterface() {
       const storedHistory = localStorage.getItem(localStorageKeys.chatHistory);
       const loadedMessages = storedHistory ? JSON.parse(storedHistory) : [];
       setMessages(loadedMessages);
-      setLastMessageCount(loadedMessages.length); // Initialize lastMessageCount
+      setLastMessageCount(loadedMessages.length); 
       
       const storedMemory = localStorage.getItem(localStorageKeys.chatMemory);
       if (storedMemory) setChatMemory(JSON.parse(storedMemory));
       else setChatMemory({ userProfile: {}, conversationContext: { recentTopics: [], lastMentionedEntities: [], conversationTone: 'friendly' }, chatHistory: [] });
 
-      if (loadedMessages.length > 0) requestAnimationFrame(() => scrollToBottom(false)); // Scroll on load
+      const warningShown = localStorage.getItem(localStorageKeys.memoryWarning) === 'true';
+      setHasShownMemoryFullWarning(warningShown);
+
+      if (loadedMessages.length > 0) requestAnimationFrame(() => scrollToBottom(false)); 
     } catch (error) {
       console.error("Error loading data from localStorage", error);
       setMessages([]);
       setChatMemory({ userProfile: {}, conversationContext: { recentTopics: [], lastMentionedEntities: [], conversationTone: 'friendly' }, chatHistory: [] });
+      setHasShownMemoryFullWarning(false);
     }
 
     let activePersonaType = 'default';
-    if (!user) { // Guest user
-      try { localStorage.removeItem(getAIFriendTypeKey(undefined)); } // Clear any old guest persona
+    if (!user) { 
+      try { localStorage.removeItem(getAIFriendTypeKey(undefined)); } 
       catch (e) { console.error("Error clearing guest AI friend type", e); }
-    } else { // Logged-in user
+    } else { 
       try { activePersonaType = localStorage.getItem(localStorageKeys.aiFriendType) || 'default'; } 
       catch (error) { console.error("Error loading AI friend type from localStorage", error); }
     }
@@ -372,7 +387,6 @@ export function ChatInterface() {
     };
     setMessages(prev => {
       const newMsgs = [...prev, newMessage];
-      // setLastMessageCount(newMsgs.length); // Already handled by useEffect on messages
       return newMsgs;
     });
     return newMessage;
@@ -397,14 +411,10 @@ export function ChatInterface() {
     incrementChatCount();
     setIsAiLoading(true);
     
-    // Scroll after adding user message
-    // setTimeout(() => scrollToBottom(true), 50); // This is now handled by the useEffect [messages]
-
     try {
       const crisisResponse = await detectCrisis({ message: userInput });
       if (crisisResponse.isCrisis && crisisResponse.response) {
         const systemMessage = addMessage(crisisResponse.response, 'system', { isCrisis: true });
-        // Not updating full chat memory for crisis for privacy, but could log anonymized crisis event.
         setIsAiLoading(false);
         return;
       }
@@ -423,11 +433,23 @@ export function ChatInterface() {
       const aiLlmResponse = await hinglishAICompanion(companionInput);
       if (aiLlmResponse.response) {
         const aiMessageObject = addMessage(aiLlmResponse.response, 'ai', { 
-          userPromptText: userInput, // Save original user input, not the context-enhanced one
+          userPromptText: userInput, 
           personaImage: personaImg,
           aiBubbleColor: personaBubbleTheme?.primaryColor, aiTextColor: personaBubbleTheme?.bubbleTextColor,
         });
         updateChatMemory(userInput, aiLlmResponse.response, aiMessageObject.id);
+
+        // Check and show memory full warning
+        if (!hasShownMemoryFullWarning && chatMemory.chatHistory.length >= MEMORY_WARNING_THRESHOLD) {
+          setTimeout(() => { // Show after AI's main response
+             addMessage("Heads up! My short-term memory for our chat is getting full. I'll remember our recent chats, but might start forgetting the very oldest details to make space. 😊", 'system');
+          }, 100);
+          setHasShownMemoryFullWarning(true);
+          try {
+            localStorage.setItem(localStorageKeys.memoryWarning, 'true');
+          } catch (e) { console.error("Error saving memory warning flag", e); }
+        }
+
       } else {
         addMessage("Sorry, I couldn't process that. Try again!", 'system');
       }
@@ -438,7 +460,7 @@ export function ChatInterface() {
     } finally {
       setIsAiLoading(false);
     }
-  }, [user, profile, toast, currentAiFriendType, chatCount, incrementChatCount, isChatCountLoading, chatMemory, updateChatMemory, scrollToBottom]); 
+  }, [user, profile, toast, currentAiFriendType, chatCount, incrementChatCount, isChatCountLoading, chatMemory, updateChatMemory, hasShownMemoryFullWarning, localStorageKeys.memoryWarning]); 
 
   const handleFeedback = useCallback(async (messageId: string, feedbackType: 'liked' | 'disliked') => {
     if (!user) {
@@ -471,7 +493,6 @@ export function ChatInterface() {
   const handleSubscribe = () => {
     toast({ title: "Subscribed! (Demo)", description: "Enjoy unlimited chats! (Chat count reset for demo)" });
     setShowSubscriptionModal(false);
-    // Potentially reset chatCount here for demo purposes or handle via a "premium" flag
   };
 
   const personaDisplayName = personaOptions.find(p => p.value === currentAiFriendType)?.label || 'Talkzii';
@@ -564,14 +585,8 @@ export function ChatInterface() {
 
       <div className="px-4 py-1 text-center text-xs text-muted-foreground border-t flex items-center justify-center gap-x-3 flex-wrap">
         <span>
-          {isChatCountLoading ? 'Loading...' : `Msgs: ${chatCount}/${messageLimit}. ${user ? 'Logged in' : 'Guest'}`}
+          {isChatCountLoading ? 'Loading...' : `Messages remaining: ${messagesRemaining}/${messageLimit}. ${user ? 'Logged in' : 'Guest'}`}
         </span>
-        {hasMemoryData && (
-          <span className="flex items-center gap-1 text-primary/80">
-            <Brain className="h-3 w-3" />
-            Memory: {chatMemory.chatHistory.length}
-          </span>
-        )}
       </div>
       
       <ChatInputBar 
