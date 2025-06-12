@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AuthProvider } from '@/contexts/AuthContext';
+import { CookieConsentBanner } from '@/components/talkzi/CookieConsentBanner'; // Added import
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -52,12 +53,22 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${poppins.variable} ${plusJakartaSans.variable} ${notoSans.variable} ${geistMono.variable} ${hind.variable}`}>
+      <head>
+        {/* 
+          Google AdSense code snippet placeholder. 
+          Replace this comment block with the actual AdSense script tag.
+          Example:
+          <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID"
+                  crossOrigin="anonymous"></script> 
+        */}
+      </head>
       <body className={`antialiased flex flex-col min-h-screen bg-background text-foreground font-poppins`}>
         <AuthProvider>
           <div className="flex-grow">
             {children}
           </div>
           <Toaster />
+          <CookieConsentBanner /> {/* Added CookieConsentBanner */}
           <Analytics /> 
           <SpeedInsights />
         </AuthProvider>
