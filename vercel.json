@@ -1,10 +1,4 @@
 {
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ],
   "functions": {
     "api/**/*.py": {
       "runtime": "python3.9",
@@ -12,9 +6,19 @@
       "maxDuration": 10
     }
   },
-  "build": {
-    "env": {
-      "NEXT_TELEMETRY_DISABLED": "1"
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cross-Origin-Embedder-Policy",
+          "value": "require-corp"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
+        }
+      ]
     }
-  }
+  ]
 } 
