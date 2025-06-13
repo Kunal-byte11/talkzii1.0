@@ -1,18 +1,20 @@
-
 "use client";
 
 import type { ChatMessage } from '@/types/talkzi';
 import { cn } from '@/lib/utils';
-import { Bot, User, AlertTriangle } from 'lucide-react';
+import { Bot, User, AlertTriangle, Volume2 } from 'lucide-react';
 import React from 'react';
 import Image from 'next/image';
+import { personaOptions } from '@/lib/personaOptions';
 
 interface MessageBubbleProps {
   message: ChatMessage;
-  onFeedback?: (messageId: string, feedback: 'liked' | 'disliked') => void; 
+  onFeedback?: (messageId: string, feedbackType: 'liked' | 'disliked') => void;
+  onSpeak?: () => void;
+  isSpeaking?: boolean;
 }
 
-const MessageBubbleComponent = ({ message }: MessageBubbleProps) => {
+const MessageBubbleComponent = ({ message, onFeedback, onSpeak, isSpeaking }: MessageBubbleProps) => {
   const isUser = message.sender === 'user';
   const isAI = message.sender === 'ai';
   const isSystem = message.sender === 'system';
@@ -104,22 +106,36 @@ const MessageBubbleComponent = ({ message }: MessageBubbleProps) => {
             <AvatarComponent className={cn("h-5 w-5", avatarTextClass)} />
           )}
         </div>
-        <div
-          className={cn(
-            'px-4 py-3 shadow-md min-w-[60px] rounded-xl',
-            isAI ? '' : bubbleColorClass // AI uses inline style, user uses class
+        <div className="flex flex-col gap-1">
+          <div
+            className={cn(
+              'px-4 py-3 shadow-md min-w-[60px] rounded-xl',
+              isAI ? '' : bubbleColorClass
+            )}
+            style={isAI ? bubbleStyle : {}}
+          >
+            <p className="text-base font-normal leading-normal whitespace-pre-wrap break-words">{message.text}</p>
+          </div>
+          {isAI && onSpeak && (
+            <button
+              onClick={onSpeak}
+              disabled={isSpeaking}
+              className={cn(
+                'self-start px-2 py-1 text-xs rounded-full transition-colors',
+                'bg-muted hover:bg-muted/80 text-muted-foreground',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+                'flex items-center gap-1'
+              )}
+            >
+              <Volume2 size={14} />
+              {isSpeaking ? 'Speaking...' : 'Speak'}
+            </button>
           )}
-          style={isAI ? bubbleStyle : {}}
-        >
-          <p className="text-base font-normal leading-normal whitespace-pre-wrap break-words">{message.text}</p>
         </div>
       </div>
     </div>
   );
 };
-
-// To import personaOptions for label
-import { personaOptions } from '@/lib/personaOptions';
 
 export const MessageBubble = React.memo(MessageBubbleComponent);
 MessageBubble.displayName = 'MessageBubble';

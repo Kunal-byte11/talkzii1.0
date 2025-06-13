@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -12,12 +11,13 @@ import { detectCrisis } from '@/ai/flows/crisis-detection';
 import { hinglishAICompanion, type HinglishAICompanionInput } from '@/ai/flows/hinglish-ai-companion';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageSquareText, ChevronDown, Brain, Trash2 } from 'lucide-react';
+import { MessageSquareText, ChevronDown, Brain, Trash2, Volume2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 import { personaOptions, getDefaultPersonaImage, getPersonaTheme, type PersonaTheme } from '@/lib/personaOptions';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import AudioVisualizer from '@/components/AudioVisualizer';
 
 // Enhanced memory system
 interface ChatMemory {
@@ -192,6 +192,10 @@ export function ChatInterface() {
     aiFriendType: getAIFriendTypeKey(user?.id),
     memoryWarning: getMemoryWarningKey(user?.id),
   });
+
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [showVisualizer, setShowVisualizer] = useState(false);
+  const [currentAudioUrl, setCurrentAudioUrl] = useState('');
 
   // Memory management functions
   const updateChatMemory = useCallback((userMessageText: string, aiResponseText: string, messageId: string) => {
@@ -392,24 +396,66 @@ export function ChatInterface() {
     return newMessage;
   };
 
+  // Function to speak AI response
+  const speakResponse = async (text: string) => {
+    try {
+      setIsSpeaking(true);
+      const response = await fetch('/api/speech', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate speech');
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      setCurrentAudioUrl(audioUrl);
+      setShowVisualizer(true);
+
+      // Clean up URL when audio ends
+      const handleAudioEnd = () => {
+        setIsSpeaking(false);
+        setShowVisualizer(false);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      // Create a hidden audio element to trigger the visualizer
+      const audio = new Audio(audioUrl);
+      audio.onended = handleAudioEnd;
+      audio.onerror = (error) => {
+        console.error('Audio playback error:', error);
+        handleAudioEnd();
+      };
+
+      try {
+        await audio.play();
+      } catch (error) {
+        console.error('Error playing audio:', error);
+        handleAudioEnd();
+      }
+
+    } catch (error) {
+      console.error('Speech generation error:', error);
+      setIsSpeaking(false);
+      setShowVisualizer(false);
+      // Fallback to browser's speech synthesis
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.onend = () => setIsSpeaking(false);
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
   const handleSendMessage = useCallback(async (userInput: string) => {
     if (!userInput.trim()) return;
 
-    if (!isChatCountLoading) {
-      const currentLimit = user ? LOGGED_IN_FREE_TIER_MESSAGE_LIMIT : GUEST_MESSAGE_LIMIT;
-      if (chatCount >= currentLimit) {
-        setShowSubscriptionModal(true);
-        toast({ title: "Message Limit Reached", description: `You've used all your ${user ? 'free tier' : 'guest'} messages. Please subscribe!`});
-        return;
-      }
-    } else {
-      toast({ title: "Please wait", description: "Verifying message allowance..." });
-      return;
-    }
-
-    const userMessageObject = addMessage(userInput, 'user');
-    incrementChatCount();
     setIsAiLoading(true);
+    const userMessage = addMessage(userInput, 'user');
     
     try {
       const crisisResponse = await detectCrisis({ message: userInput });
@@ -431,36 +477,35 @@ export function ChatInterface() {
       const personaBubbleTheme = activePersona?.theme;
 
       const aiLlmResponse = await hinglishAICompanion(companionInput);
-      if (aiLlmResponse.response) {
-        const aiMessageObject = addMessage(aiLlmResponse.response, 'ai', { 
-          userPromptText: userInput, 
+      
+      const aiMessage = addMessage(aiLlmResponse.response, 'ai', {
           personaImage: personaImg,
-          aiBubbleColor: personaBubbleTheme?.primaryColor, aiTextColor: personaBubbleTheme?.bubbleTextColor,
+        aiBubbleColor: personaBubbleTheme?.bubbleColor,
+        aiTextColor: personaBubbleTheme?.textColor,
         });
-        updateChatMemory(userInput, aiLlmResponse.response, aiMessageObject.id);
 
-        // Check and show memory full warning
-        if (!hasShownMemoryFullWarning && chatMemory.chatHistory.length >= MEMORY_WARNING_THRESHOLD) {
-          setTimeout(() => { // Show after AI's main response
-             addMessage("Heads up! My short-term memory for our chat is getting full. I'll remember our recent chats, but might start forgetting the very oldest details to make space. 😊", 'system');
-          }, 100);
-          setHasShownMemoryFullWarning(true);
-          try {
-            localStorage.setItem(localStorageKeys.memoryWarning, 'true');
-          } catch (e) { console.error("Error saving memory warning flag", e); }
-        }
+      // Speak the AI response
+      await speakResponse(aiLlmResponse.response);
 
-      } else {
-        addMessage("Sorry, I couldn't process that. Try again!", 'system');
+      // Update chat memory
+      updateChatMemory(userInput, aiLlmResponse.response, aiMessage.id);
+
+      // Save to Supabase if user is logged in
+      if (user) {
+        await saveMessageFeedbackToSupabase({
+          message_id: aiMessage.id, user_id: user.id, ai_response_text: aiLlmResponse.response,
+          user_prompt_text: userInput, feedback: aiMessage.feedback || 'liked', ai_persona: personaTypeForAI,
+        });
       }
+      
+      incrementChatCount();
     } catch (error) {
-      console.error('AI interaction error:', error);
-      addMessage("Oops! Something went wrong. Please try again later.", 'system');
-      toast({ title: "Error", description: "Could not connect to the AI.", variant: "destructive" });
+      console.error('Error in handleSendMessage:', error);
+      addMessage('Sorry, something went wrong. Please try again.', 'system');
     } finally {
       setIsAiLoading(false);
     }
-  }, [user, profile, toast, currentAiFriendType, chatCount, incrementChatCount, isChatCountLoading, chatMemory, updateChatMemory, hasShownMemoryFullWarning, localStorageKeys.memoryWarning]); 
+  }, [user, profile, currentAiFriendType, chatMemory, addMessage, updateChatMemory, saveMessageFeedbackToSupabase, incrementChatCount]);
 
   const handleFeedback = useCallback(async (messageId: string, feedbackType: 'liked' | 'disliked') => {
     if (!user) {
@@ -509,6 +554,10 @@ export function ChatInterface() {
                        (chatMemory.userProfile.personalInfo && Object.keys(chatMemory.userProfile.personalInfo).length > 0) ||
                        (chatMemory.chatHistory && chatMemory.chatHistory.length > 0);
 
+  // Add handlers for mic start/stop
+  const handleMicStart = () => setShowVisualizer(true);
+  const handleMicStop = () => setShowVisualizer(false);
+
   return (
     <div className={cn("flex flex-col h-full bg-background relative", activeFontClass)}>
       {showMemoryIndicator && (
@@ -520,88 +569,118 @@ export function ChatInterface() {
         </div>
       )}
 
-      <ScrollArea className="flex-grow p-4 md:p-6" ref={scrollAreaRef}>
-        <div className="max-w-3xl mx-auto space-y-4 pb-4">
-          {messages.length === 0 && !isAiLoading && (
-            <div className="text-center text-muted-foreground py-10">
-              <MessageSquareText className="mx-auto h-12 w-12 mb-4 text-primary/70" />
-              <p className="text-lg font-semibold">Start a conversation!</p>
-              <p className="text-sm">
-                Chatting with: <span className="font-semibold capitalize" style={{color: currentPersonaTheme?.accentColor || 'hsl(var(--primary))'}}>{personaDisplayName}</span>
-              </p>
-              {user && profile?.gender && (
-                <p className="text-sm">Gender for AI: <span className="font-semibold capitalize" style={{color: currentPersonaTheme?.accentColor || 'hsl(var(--primary))'}}>{profile.gender.replace(/_/g, ' ')}</span></p>
-              )}
-              <p className="text-sm">
-                Messages remaining: <span className="font-semibold" style={{color: currentPersonaTheme?.accentColor || 'hsl(var(--primary))'}}>{messagesRemaining} / {messageLimit}</span>
-              </p>
-              
-              {hasMemoryData && (
-                <div className="mt-4 p-3 bg-muted/50 rounded-lg border border-border text-xs max-w-sm mx-auto">
-                  <div className="flex items-center justify-center gap-2 mb-1.5">
-                    <Brain className="h-4 w-4 text-primary" />
-                    <span className="font-medium text-primary">Memory Active</span>
-                  </div>
-                  {chatMemory.userProfile.name && (<p>Name: <span className="font-medium">{chatMemory.userProfile.name}</span></p>)}
-                  {chatMemory.userProfile.interests && chatMemory.userProfile.interests.length > 0 && (<p>Interests: <span className="font-medium">{chatMemory.userProfile.interests.slice(0,2).join(', ')}{chatMemory.userProfile.interests.length > 2 ? '...' : ''}</span></p>)}
-                  {chatMemory.chatHistory.length > 0 && (<p>History: <span className="font-medium">{chatMemory.chatHistory.length} exchanges</span></p>)}
-                </div>
-              )}
-              <p className="text-sm mt-2">Type your first message below.</p>
-            </div>
-          )}
-          {messages.map((msg) => ( <MessageBubble key={msg.id} message={msg} onFeedback={handleFeedback} /> ))}
-          {isAiLoading && ( <TypingIndicator personaImageUrl={currentAiPersonaImage} personaName={personaDisplayName} personaTheme={currentPersonaTheme} /> )}
-          <div ref={messagesEndRef} />
+      {showVisualizer && (
+        <div className="fixed inset-0 z-50">
+          <iframe 
+            src="/audiovisualizer" 
+            className="w-full h-full border-none"
+            onLoad={() => {
+              // Optionally, you can trigger mic input in the visualizer here
+            }}
+            onError={(error) => {
+              console.error('Error loading visualizer:', error);
+              setShowVisualizer(false);
+            }}
+          />
         </div>
-      </ScrollArea>
-
-      <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex gap-2 z-20">
-        {hasMemoryData && (
-          <Button
-            onClick={clearChatMemory}
-            variant="outline"
-            size="icon"
-            className="bg-background/70 backdrop-blur-sm hover:bg-destructive hover:text-destructive-foreground transition-colors h-8 w-8 sm:h-9 sm:w-9 rounded-full shadow"
-            title="Clear chat memory (Ctrl+Shift+Del/Backspace)"
-          >
-            <Trash2 className="h-4 w-4" />
-            <span className="sr-only">Clear Memory</span>
-          </Button>
-        )}
-      </div>
-
-      {showScrollToBottom && (
-        <Button
-          onClick={() => scrollToBottom(true)}
-          variant="outline"
-          size="icon"
-          className="fixed bottom-24 right-4 md:right-6 z-20 rounded-full w-10 h-10 p-0 shadow-lg bg-background/80 hover:bg-muted border-border backdrop-blur-sm transition-all duration-200 hover:scale-110"
-          aria-label="Scroll to bottom"
-        >
-          <ChevronDown className="h-5 w-5 text-foreground" />
-        </Button>
       )}
 
-      <div className="px-4 py-1 text-center text-xs text-muted-foreground border-t flex items-center justify-center gap-x-3 flex-wrap">
-        <span>
-          {isChatCountLoading ? 'Loading...' : `Messages remaining: ${messagesRemaining}/${messageLimit}. ${user ? 'Logged in' : 'Guest'}`}
-        </span>
+      {/* Hide chat interface when visualizer is shown */}
+      <div className={showVisualizer ? "opacity-0 pointer-events-none" : "opacity-100 transition-opacity duration-300"}>
+        <ScrollArea className="flex-grow p-4 md:p-6" ref={scrollAreaRef}>
+          <div className="max-w-3xl mx-auto space-y-4 pb-4">
+            {messages.length === 0 && !isAiLoading && (
+              <div className="text-center text-muted-foreground py-10">
+                <MessageSquareText className="mx-auto h-12 w-12 mb-4 text-primary/70" />
+                <p className="text-lg font-semibold">Start a conversation!</p>
+                <p className="text-sm">
+                  Chatting with: <span className="font-semibold capitalize" style={{color: currentPersonaTheme?.accentColor || 'hsl(var(--primary))'}}>{personaDisplayName}</span>
+                </p>
+                {user && profile?.gender && (
+                  <p className="text-sm">Gender for AI: <span className="font-semibold capitalize" style={{color: currentPersonaTheme?.accentColor || 'hsl(var(--primary))'}}>{profile.gender.replace(/_/g, ' ')}</span></p>
+                )}
+                <p className="text-sm">
+                  Messages remaining: <span className="font-semibold" style={{color: currentPersonaTheme?.accentColor || 'hsl(var(--primary))'}}>{messagesRemaining} / {messageLimit}</span>
+                </p>
+                
+                {hasMemoryData && (
+                  <div className="mt-4 p-3 bg-muted/50 rounded-lg border border-border text-xs max-w-sm mx-auto">
+                    <div className="flex items-center justify-center gap-2 mb-1.5">
+                      <Brain className="h-4 w-4 text-primary" />
+                      <span className="font-medium text-primary">Memory Active</span>
+                    </div>
+                    {chatMemory.userProfile.name && (<p>Name: <span className="font-medium">{chatMemory.userProfile.name}</span></p>)}
+                    {chatMemory.userProfile.interests && chatMemory.userProfile.interests.length > 0 && (<p>Interests: <span className="font-medium">{chatMemory.userProfile.interests.slice(0,2).join(', ')}{chatMemory.userProfile.interests.length > 2 ? '...' : ''}</span></p>)}
+                    {chatMemory.chatHistory.length > 0 && (<p>History: <span className="font-medium">{chatMemory.chatHistory.length} exchanges</span></p>)}
+                  </div>
+                )}
+                <p className="text-sm mt-2">Type your first message below.</p>
+              </div>
+            )}
+            {messages.map((msg) => (
+              <MessageBubble
+                key={msg.id}
+                message={msg}
+                onFeedback={handleFeedback}
+                onSpeak={() => speakResponse(msg.text)}
+                isSpeaking={isSpeaking}
+              />
+            ))}
+            {isAiLoading && ( <TypingIndicator personaImageUrl={currentAiPersonaImage} personaName={personaDisplayName} personaTheme={currentPersonaTheme} /> )}
+            <div ref={messagesEndRef} />
+          </div>
+        </ScrollArea>
+
+        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex gap-2 z-20">
+          {hasMemoryData && (
+            <Button
+              onClick={clearChatMemory}
+              variant="outline"
+              size="icon"
+              className="bg-background/70 backdrop-blur-sm hover:bg-destructive hover:text-destructive-foreground transition-colors h-8 w-8 sm:h-9 sm:w-9 rounded-full shadow"
+              title="Clear chat memory (Ctrl+Shift+Del/Backspace)"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span className="sr-only">Clear Memory</span>
+            </Button>
+          )}
+        </div>
+
+        {showScrollToBottom && (
+          <Button
+            onClick={() => scrollToBottom(true)}
+            variant="outline"
+            size="icon"
+            className="fixed bottom-24 right-4 md:right-6 z-20 rounded-full w-10 h-10 p-0 shadow-lg bg-background/80 hover:bg-muted border-border backdrop-blur-sm transition-all duration-200 hover:scale-110"
+            aria-label="Scroll to bottom"
+          >
+            <ChevronDown className="h-5 w-5 text-foreground" />
+          </Button>
+        )}
+
+        <div className="px-4 py-1 text-center text-xs text-muted-foreground border-t flex items-center justify-center gap-x-3 flex-wrap">
+          <span>
+            {isChatCountLoading ? 'Loading...' : `Messages remaining: ${messagesRemaining}/${messageLimit}. ${user ? 'Logged in' : 'Guest'}`}
+          </span>
+        </div>
+        
+        <ChatInputBar
+          onSendMessage={handleSendMessage}
+          isLoading={isAiLoading}
+          onMicStart={handleMicStart}
+          onMicStop={handleMicStop}
+          sendButtonAccentColor={currentPersonaTheme?.accentColor}
+          onFocus={() => { if (window.innerWidth < 768 && !isNearBottom) setTimeout(() => scrollToBottom(true), 300); }}
+          autoStartMicOnFocus={true}
+        />
+        
+        <SubscriptionModal
+          isOpen={showSubscriptionModal}
+          onClose={() => setShowSubscriptionModal(false)}
+          onSubscribe={handleSubscribe}
+          accentColor={currentPersonaTheme?.accentColor}
+        />
       </div>
-      
-      <ChatInputBar 
-        onSendMessage={handleSendMessage} 
-        isLoading={isAiLoading || isChatCountLoading} 
-        sendButtonAccentColor={currentPersonaTheme?.accentColor}
-        onFocus={() => { if (window.innerWidth < 768 && !isNearBottom) setTimeout(() => scrollToBottom(true), 300); }}
-      />
-      
-      <SubscriptionModal
-        isOpen={showSubscriptionModal}
-        onClose={() => setShowSubscriptionModal(false)}
-        onSubscribe={handleSubscribe}
-        accentColor={currentPersonaTheme?.accentColor}
-      />
     </div>
   );
 }

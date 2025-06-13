@@ -1,0 +1,110 @@
+.container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+    overflow: hidden;
+}
+
+.canvasContainer {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.controls {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.controlBtn {
+    padding: 12px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 25px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.controlBtn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
+}
+
+.controlBtn.active {
+    background: rgba(0, 255, 150, 0.3);
+    border-color: rgba(0, 255, 150, 0.6);
+    box-shadow: 0 0 20px rgba(0, 255, 150, 0.3);
+}
+
+.info {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    color: rgba(255, 255, 255, 0.7);
+    text-align: center;
+    font-size: 12px;
+    z-index: 100;
+}
+
+.modeSelector {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 100;
+}
+
+.select {
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    color: white;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+}
+
+.select option {
+    background: #1a1a2e;
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .controls {
+        flex-direction: row;
+        flex-wrap: wrap;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+    }
+    
+    .controlBtn {
+        padding: 8px 12px;
+        font-size: 12px;
+        flex: 1;
+        min-width: 80px;
+    }
+    
+    .modeSelector {
+        top: 60px;
+        right: 10px;
+    }
+    
+    .info {
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
+        font-size: 11px;
+    }
+} 

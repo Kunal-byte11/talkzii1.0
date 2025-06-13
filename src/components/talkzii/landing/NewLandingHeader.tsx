@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from 'react';
@@ -18,7 +17,8 @@ import {
   Mail as MailIcon,
   Info,
   LogIn,
-  Loader2
+  Loader2,
+  Mic
 } from 'lucide-react';
 
 
@@ -27,6 +27,7 @@ const navLinks = [
   { href: '#about-us-section', label: 'About Us', icon: <Info size={18} strokeWidth={1.5} /> },
   { href: '#values-section', label: 'Our Values', icon: <HeartIcon size={18} strokeWidth={1.5} /> },
   { href: '#footer-contact', label: 'Contact', icon: <MailIcon size={18} strokeWidth={1.5} /> },
+  { href: '/voice', label: 'Voice Chat', icon: <Mic size={18} strokeWidth={1.5} /> },
 ];
 
 export function NewLandingHeader() {
